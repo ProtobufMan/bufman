@@ -1,0 +1,46 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+syntax = "proto3";
+
+package registry.v1alpha;
+
+import "module/v1alpha/module.proto";
+
+// DownloadService is the download service.
+service DownloadService {
+  // DownloadManifestAndBlobs downloads a module in the manifest+blobs encoding format.
+  rpc DownloadManifestAndBlobs(DownloadManifestAndBlobsRequest) returns (DownloadManifestAndBlobsResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+  }
+}
+
+// DownloadManifestAndBlobsRequest specifies the module to download.
+message DownloadManifestAndBlobsRequest {
+  string owner = 1;
+  string repository = 2;
+  string reference = 3;
+}
+
+// DownloadManifestAndBlobsResponse is the returned resolved remote module.
+message DownloadManifestAndBlobsResponse {
+  // manifest is the manifest of the module's content.
+  module.v1alpha.Blob manifest = 1;
+  // blobs is a set of blobs that closes on the module's manifest to form the
+  // complete module's content.
+  repeated module.v1alpha.Blob blobs = 2;
+}
