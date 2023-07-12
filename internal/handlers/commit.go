@@ -55,7 +55,7 @@ func (handler *CommitServiceHandler) GetRepositoryCommitByReference(ctx context.
 	userID, _ := ctx.Value(constant.UserIDKey).(string)
 
 	// 验证用户权限
-	repository, permissionErr := handler.validator.CheckRepositoryCanAccess(userID, req.Msg.GetRepositoryOwner(), req.Msg.GetRepositoryName(), registryv1alphaconnect.RepositoryCommitServiceListRepositoryCommitsByReferenceProcedure)
+	repository, permissionErr := handler.validator.CheckRepositoryCanAccess(userID, req.Msg.GetRepositoryOwner(), req.Msg.GetRepositoryName(), registryv1alphaconnect.RepositoryCommitServiceGetRepositoryCommitByReferenceProcedure)
 	if permissionErr != nil {
 		return nil, connect.NewError(permissionErr.Code(), permissionErr.Err())
 	}
@@ -83,7 +83,7 @@ func (handler *CommitServiceHandler) ListRepositoryDraftCommits(ctx context.Cont
 	userID, _ := ctx.Value(constant.UserIDKey).(string)
 
 	// 验证用户权限
-	repository, permissionErr := handler.validator.CheckRepositoryCanAccess(userID, req.Msg.GetRepositoryOwner(), req.Msg.GetRepositoryName(), registryv1alphaconnect.RepositoryCommitServiceListRepositoryCommitsByReferenceProcedure)
+	repository, permissionErr := handler.validator.CheckRepositoryCanAccess(userID, req.Msg.GetRepositoryOwner(), req.Msg.GetRepositoryName(), registryv1alphaconnect.RepositoryCommitServiceListRepositoryDraftCommitsProcedure)
 	if permissionErr != nil {
 		return nil, connect.NewError(permissionErr.Code(), permissionErr.Err())
 	}
@@ -105,7 +105,7 @@ func (handler *CommitServiceHandler) DeleteRepositoryDraftCommit(ctx context.Con
 	userID := ctx.Value(constant.UserIDKey).(string)
 
 	// 验证用户权限
-	repository, permissionErr := handler.validator.CheckRepositoryCanEdit(userID, req.Msg.GetRepositoryOwner(), req.Msg.GetRepositoryName(), registryv1alphaconnect.RepositoryCommitServiceListRepositoryCommitsByReferenceProcedure)
+	repository, permissionErr := handler.validator.CheckRepositoryCanEdit(userID, req.Msg.GetRepositoryOwner(), req.Msg.GetRepositoryName(), registryv1alphaconnect.RepositoryCommitServiceDeleteRepositoryDraftCommitProcedure)
 	if permissionErr != nil {
 		return nil, connect.NewError(permissionErr.Code(), permissionErr.Err())
 	}

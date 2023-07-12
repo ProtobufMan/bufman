@@ -60,7 +60,7 @@ func (handler *TagServiceHandler) ListRepositoryTags(ctx context.Context, req *c
 	userID, _ := ctx.Value(constant.UserIDKey).(string)
 
 	// 验证用户权限
-	_, permissionErr := handler.validator.CheckRepositoryCanAccessByID(userID, req.Msg.GetRepositoryId(), registryv1alphaconnect.RepositoryTagServiceCreateRepositoryTagProcedure)
+	_, permissionErr := handler.validator.CheckRepositoryCanAccessByID(userID, req.Msg.GetRepositoryId(), registryv1alphaconnect.RepositoryTagServiceListRepositoryTagsProcedure)
 	if permissionErr != nil {
 		return nil, connect.NewError(permissionErr.Code(), permissionErr.Err())
 	}

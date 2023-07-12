@@ -7,7 +7,6 @@ import (
 	"github.com/ProtobufMan/bufman/internal/gen/registry/v1alpha/registryv1alphaconnect"
 	"github.com/ProtobufMan/bufman/internal/mapper"
 	"github.com/ProtobufMan/bufman/internal/model"
-	"github.com/ProtobufMan/bufman/internal/validity"
 	"gorm.io/gorm"
 )
 
@@ -21,14 +20,12 @@ type CommitService interface {
 type CommitServiceImpl struct {
 	repositoryMapper mapper.RepositoryMapper
 	commitMapper     mapper.CommitMapper
-	validator        validity.Validator
 }
 
 func NewCommitService() CommitService {
 	return &CommitServiceImpl{
 		repositoryMapper: &mapper.RepositoryMapperImpl{},
 		commitMapper:     &mapper.CommitMapperImpl{},
-		validator:        validity.NewValidator(),
 	}
 }
 
