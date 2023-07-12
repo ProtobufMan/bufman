@@ -2,6 +2,7 @@ package mapper
 
 import (
 	"errors"
+	"github.com/ProtobufMan/bufman/internal/constant"
 	"github.com/ProtobufMan/bufman/internal/dal"
 	"github.com/ProtobufMan/bufman/internal/model"
 	"gorm.io/gorm"
@@ -10,12 +11,16 @@ import (
 type CommitMapper interface {
 	Create(commit *model.Commit) error
 	GetDraftCountsByRepositoryID(repositoryID string) (int64, error)
+	FindLastByRepositoryID(repositoryID string) (*model.Commit, error)
 	FindByRepositoryIDAndCommitName(repositoryID string, commitName string) (*model.Commit, error)
 	FindByRepositoryIDAndTagName(repositoryID string, tagName string) (*model.Commit, error)
 	FindByRepositoryIDAndDraftName(repositoryID string, draftName string) (*model.Commit, error)
+	FindByRepositoryIDAndReference(repositoryID string, reference string) (*model.Commit, error)
 	FindPageByRepositoryID(repositoryID string, offset, limit int, reverse bool) (model.Commits, error)
+	FindPageByRepositoryIDAndDraftName(repositoryID, draftName string, offset, limit int, reverse bool) (model.Commits, error)
 	FindPageByRepositoryIDAndTagName(repositoryID string, tagName string, offset, limit int, reverse bool) (model.Commits, error)
 	FindPageByRepositoryIDAndCommitName(repositoryID string, commitName string, offset, limit int, reverse bool) (model.Commits, error)
+	FindPageByRepositoryIDAndReference(repositoryID string, reference string, offset, limit int, reverse bool) (model.Commits, error)
 	FindDraftPageByRepositoryID(repositoryID string, offset, limit int, reverse bool) (model.Commits, error)
 	DeleteByRepositoryIDAndDraftName(repositoryID string, draftName string) error
 }
@@ -67,9 +72,12 @@ func (c *CommitMapperImpl) Create(commit *model.Commit) error {
 		return tx.Commit.Save(commit)
 	})
 }
-
 func (c *CommitMapperImpl) GetDraftCountsByRepositoryID(repositoryID string) (int64, error) {
 	return dal.Commit.Where(dal.Commit.CommitID.Eq(repositoryID), dal.Commit.DraftName.Neq("")).Count()
+}
+
+func (c *CommitMapperImpl) FindLastByRepositoryID(repositoryID string) (*model.Commit, error) {
+	return dal.Commit.Where(dal.Commit.RepositoryID.Eq(repositoryID), dal.Commit.DraftName.Eq("")).Last()
 }
 
 func (c *CommitMapperImpl) FindByRepositoryIDAndCommitName(repositoryID string, commitName string) (*model.Commit, error) {
@@ -105,12 +113,50 @@ func (c *CommitMapperImpl) FindByRepositoryIDAndDraftName(repositoryID string, d
 	return dal.Commit.Where(dal.Commit.RepositoryID.Eq(repositoryID), dal.Commit.DraftName.Eq(draftName)).Last()
 }
 
+func (c *CommitMapperImpl) FindByRepositoryIDAndReference(repositoryID string, reference string) (*model.Commit, error) {
+	var commit *model.Commit
+	var err error
+	if reference == "" || reference == constant.DefaultBranch {
+		commit, err = c.FindLastByRepositoryID(repositoryID)
+	} else if len(reference) == constant.CommitLength {
+		// 查询commit
+		commit, err = c.FindByRepositoryIDAndCommitName(repositoryID, reference)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// 查询tag
+	commit, err = c.FindByRepositoryIDAndTagName(repositoryID, reference)
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, err
+	}
+	if err != nil {
+		// 查询draft
+		commit, err = c.FindByRepositoryIDAndDraftName(repositoryID, reference)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return commit, nil
+}
+
 func (c *CommitMapperImpl) FindPageByRepositoryID(repositoryID string, offset, limit int, reverse bool) (model.Commits, error) {
 	stmt := dal.Commit.Where(dal.Commit.RepositoryID.Eq(repositoryID), dal.Commit.DraftName.Eq("")).Offset(offset).Limit(limit)
 	if reverse {
 		stmt = stmt.Order(dal.Commit.SequenceID.Desc())
 	} else {
 		stmt = stmt.Order(dal.Commit.SequenceID)
+	}
+
+	return stmt.Find()
+}
+
+func (c *CommitMapperImpl) FindPageByRepositoryIDAndDraftName(repositoryID, draftName string, offset, limit int, reverse bool) (model.Commits, error) {
+	stmt := dal.Commit.Where(dal.Commit.RepositoryID.Eq(repositoryID), dal.Commit.DraftName.Eq(draftName)).Offset(offset).Limit(limit)
+	if reverse {
+		stmt = stmt.Order(dal.Commit.ID.Desc())
 	}
 
 	return stmt.Find()
@@ -163,6 +209,32 @@ func (c *CommitMapperImpl) FindPageByRepositoryIDAndTagName(repositoryID string,
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	return commits, nil
+}
+
+func (c *CommitMapperImpl) FindPageByRepositoryIDAndReference(repositoryID string, reference string, offset, limit int, reverse bool) (model.Commits, error) {
+	var commits model.Commits
+	var err error
+	if reference == "" || reference == constant.DefaultBranch {
+		commits, err = c.FindPageByRepositoryID(repositoryID, offset, limit, reverse)
+	} else if len(reference) == constant.CommitLength {
+		commits, err = c.FindPageByRepositoryIDAndCommitName(repositoryID, reference, offset, limit, reverse)
+	} else {
+		commits, err = c.FindPageByRepositoryIDAndTagName(repositoryID, reference, offset, limit, reverse)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	if len(commits) == 0 {
+		// 查询drafts
+		commits, err = c.FindPageByRepositoryIDAndDraftName(repositoryID, reference, offset, limit, reverse)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return commits, nil
