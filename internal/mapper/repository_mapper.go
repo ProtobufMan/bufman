@@ -71,16 +71,52 @@ func (r *RepositoryMapperImpl) FindAccessiblePageByUserID(userID string, offset,
 
 func (r *RepositoryMapperImpl) DeleteByRepositoryID(repositoryID string) error {
 	repository := &model.Repository{}
-	_, err := dal.Repository.Where(dal.Repository.RepositoryID.Eq(repositoryID)).Delete(repository)
+	return dal.Q.Transaction(func(tx *dal.Query) error {
+		// 删除repo
+		_, err := tx.Repository.Where(tx.Repository.RepositoryID.Eq(repositoryID)).Delete(repository)
+		if err != nil {
+			return err
+		}
 
-	return err
+		// 删除commit
+		_, err = tx.Commit.Where(tx.Commit.RepositoryID.Eq(repositoryID)).Delete()
+		if err != nil {
+			return err
+		}
+
+		// 删除tag
+		_, err = tx.Tag.Where(tx.Tag.RepositoryID.Eq(repositoryID)).Delete()
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
 }
 
 func (r *RepositoryMapperImpl) DeleteByUserNameAndRepositoryName(userName, RepositoryName string) error {
 	repository := &model.Repository{}
-	_, err := dal.Repository.Where(dal.Repository.UserName.Eq(userName), dal.Repository.RepositoryName.Eq(RepositoryName)).Delete(repository)
+	return dal.Q.Transaction(func(tx *dal.Query) error {
+		// 删除repo
+		_, err := tx.Repository.Where(tx.Repository.UserName.Eq(userName), tx.Repository.RepositoryName.Eq(RepositoryName)).Delete(repository)
+		if err != nil {
+			return err
+		}
 
-	return err
+		// 删除commit
+		_, err = tx.Commit.Where(tx.Commit.RepositoryID.Eq(repository.RepositoryID)).Delete()
+		if err != nil {
+			return err
+		}
+
+		// 删除tag
+		_, err = tx.Tag.Where(tx.Tag.RepositoryID.Eq(repository.RepositoryID)).Delete()
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
 }
 
 func (r *RepositoryMapperImpl) UpdateByUserNameAndRepositoryName(userName, RepositoryName string, repository *model.Repository) error {
