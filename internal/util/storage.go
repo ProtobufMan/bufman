@@ -5,7 +5,7 @@ import (
 	"github.com/ProtobufMan/bufman/internal/constant"
 	"io"
 	"os"
-	"strings"
+	"path"
 	"sync"
 )
 
@@ -41,7 +41,8 @@ func (helper *StorageHelperImpl) Store(fileName string, readCloser io.ReadCloser
 	defer helper.muDict[fileName].Unlock()
 
 	// 打开文件
-	file, err := os.OpenFile(fileName, os.O_CREATE|os.O_WRONLY|os.O_EXCL, 0666)
+	filePath := helper.GetFilePath(fileName)
+	file, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_EXCL, 0666)
 	if os.IsExist(err) {
 		// 已经存在，直接返回
 		return nil
@@ -82,5 +83,5 @@ func (helper *StorageHelperImpl) Read(fileName string) (io.Reader, error) {
 }
 
 func (helper *StorageHelperImpl) GetFilePath(fileName string) string {
-	return strings.Join([]string{constant.FileSavaDir, fileName}, string(os.PathSeparator))
+	return path.Join(constant.FileSavaDir, fileName)
 }
