@@ -7,20 +7,30 @@ import (
 	registryv1alpha "github.com/ProtobufMan/bufman/internal/gen/registry/v1alpha"
 	"github.com/ProtobufMan/bufman/internal/model"
 	"github.com/ProtobufMan/bufman/internal/services"
+	"github.com/ProtobufMan/bufman/internal/validity"
 	"github.com/bufbuild/connect-go"
 )
 
 type TagServiceHandler struct {
 	tagService services.TagService
+	validator  validity.Validator
 }
 
 func NewTagServiceHandler() *TagServiceHandler {
 	return &TagServiceHandler{
 		tagService: services.NewTagService(),
+		validator:  validity.NewValidator(),
 	}
 }
 
 func (handler *TagServiceHandler) CreateRepositoryTag(ctx context.Context, req *connect.Request[registryv1alpha.CreateRepositoryTagRequest]) (*connect.Response[registryv1alpha.CreateRepositoryTagResponse], error) {
+	// 验证参数
+	argErr := handler.validator.CheckTagName(req.Msg.GetName())
+	if argErr != nil {
+		return nil, connect.NewError(argErr.Code(), argErr.Err())
+	}
+
+	// 获取用户ID
 	userID := ctx.Value(constant.UserIDKey).(string)
 
 	tag, err := handler.tagService.CreateRepositoryTag(userID, req.Msg.GetRepositoryId(), req.Msg.GetName(), req.Msg.GetCommitName())
@@ -35,6 +45,12 @@ func (handler *TagServiceHandler) CreateRepositoryTag(ctx context.Context, req *
 }
 
 func (handler *TagServiceHandler) ListRepositoryTags(ctx context.Context, req *connect.Request[registryv1alpha.ListRepositoryTagsRequest]) (*connect.Response[registryv1alpha.ListRepositoryTagsResponse], error) {
+	// 验证参数
+	argErr := handler.validator.CheckPageSize(req.Msg.GetPageSize())
+	if argErr != nil {
+		return nil, connect.NewError(argErr.Code(), argErr.Err())
+	}
+
 	var tags model.Tags
 	var respErr e.ResponseError
 

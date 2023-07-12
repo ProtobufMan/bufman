@@ -9,25 +9,43 @@ import (
 	"github.com/ProtobufMan/bufman/internal/model"
 	"github.com/ProtobufMan/bufman/internal/services"
 	"github.com/ProtobufMan/bufman/internal/util/manifest"
+	"github.com/ProtobufMan/bufman/internal/validity"
 	"github.com/bufbuild/connect-go"
 )
 
 type PushServiceHandler struct {
 	pushService services.PushService
+	validator   validity.Validator
 }
 
 func NewPushServiceHandler() *PushServiceHandler {
 	return &PushServiceHandler{
 		pushService: services.NewPushService(),
+		validator:   validity.NewValidator(),
 	}
 }
 
 func (handler *PushServiceHandler) PushManifestAndBlobs(ctx context.Context, req *connect.Request[registryv1alpha.PushManifestAndBlobsRequest]) (*connect.Response[registryv1alpha.PushManifestAndBlobsResponse], error) {
-	if req.Msg.GetDraftName() == constant.DefaultBranch {
-		responseError := e.NewInvalidArgumentError("draft (can not be 'main')")
-		return nil, connect.NewError(responseError.Code(), responseError.Err())
+	// 验证参数
+
+	// 检查tags名称合法性
+	var argErr e.ResponseError
+	for _, tag := range req.Msg.GetTags() {
+		argErr = handler.validator.CheckTagName(tag)
+		if argErr != nil {
+			return nil, connect.NewError(argErr.Code(), argErr.Err())
+		}
 	}
 
+	// 检查draft名称合法性
+	if req.Msg.GetDraftName() != "" {
+		argErr = handler.validator.CheckDraftName(req.Msg.GetDraftName())
+		if argErr != nil {
+			return nil, connect.NewError(argErr.Code(), argErr.Err())
+		}
+	}
+
+	// draft和tag只能二选一
 	if req.Msg.GetDraftName() != "" && len(req.Msg.GetTags()) > 0 {
 		responseError := e.NewInvalidArgumentError("draft and tags (only choose one)")
 		return nil, connect.NewError(responseError.Code(), responseError.Err())

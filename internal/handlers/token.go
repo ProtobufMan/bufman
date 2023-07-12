@@ -5,16 +5,19 @@ import (
 	"github.com/ProtobufMan/bufman/internal/constant"
 	registryv1alpha "github.com/ProtobufMan/bufman/internal/gen/registry/v1alpha"
 	"github.com/ProtobufMan/bufman/internal/services"
+	"github.com/ProtobufMan/bufman/internal/validity"
 	"github.com/bufbuild/connect-go"
 )
 
 type TokenServiceHandler struct {
 	tokenService services.TokenService
+	validator    validity.Validator
 }
 
 func NewTokenServiceHandler() *TokenServiceHandler {
 	return &TokenServiceHandler{
 		tokenService: services.NewTokenService(),
+		validator:    validity.NewValidator(),
 	}
 }
 
@@ -47,6 +50,12 @@ func (handler *TokenServiceHandler) GetToken(ctx context.Context, req *connect.R
 }
 
 func (handler *TokenServiceHandler) ListTokens(ctx context.Context, req *connect.Request[registryv1alpha.ListTokensRequest]) (*connect.Response[registryv1alpha.ListTokensResponse], error) {
+	// 验证参数
+	argErr := handler.validator.CheckPageSize(req.Msg.GetPageSize())
+	if argErr != nil {
+		return nil, connect.NewError(argErr.Code(), argErr.Err())
+	}
+
 	userID := ctx.Value(constant.UserIDKey).(string)
 
 	// 查询token

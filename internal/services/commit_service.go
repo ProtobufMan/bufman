@@ -12,12 +12,9 @@ import (
 )
 
 type CommitService interface {
-	ListRepositoryCommitsByReference(ownerName, repositoryName, reference string, offset, limit int, reverse bool) (model.Commits, e.ResponseError)
-	ListRepositoryCommitsByReferenceWithUserID(userID, ownerName, repositoryName, reference string, offset, limit int, reverse bool) (model.Commits, e.ResponseError)
-	GetRepositoryCommitByReference(ownerName, repositoryName, reference string) (*model.Commit, e.ResponseError)
-	GetRepositoryCommitByReferenceWithUserID(userID, ownerName, repositoryName, reference string) (*model.Commit, e.ResponseError)
-	ListRepositoryDraftCommits(ownerName, repositoryName string, offset, limit int, reverse bool) (model.Commits, e.ResponseError)
-	ListRepositoryDraftCommitsWithUserID(userID, ownerName, repositoryName string, offset, limit int, reverse bool) (model.Commits, e.ResponseError)
+	ListRepositoryCommitsByReference(repositoryID, reference string, offset, limit int, reverse bool) (model.Commits, e.ResponseError)
+	GetRepositoryCommitByReference(repositoryID, reference string) (*model.Commit, e.ResponseError)
+	ListRepositoryDraftCommits(repositoryID string, offset, limit int, reverse bool) (model.Commits, e.ResponseError)
 	DeleteRepositoryDraftCommit(userID, ownerName, repositoryName, draftName string) e.ResponseError
 }
 
@@ -35,62 +32,18 @@ func NewCommitService() CommitService {
 	}
 }
 
-func (commitService *CommitServiceImpl) ListRepositoryCommitsByReference(ownerName, repositoryName, reference string, offset, limit int, reverse bool) (model.Commits, e.ResponseError) {
-	repository, respErr := commitService.validator.CheckRepositoryCanAccess(ownerName, repositoryName, registryv1alphaconnect.RepositoryCommitServiceListRepositoryCommitsByReferenceProcedure)
-	if respErr != nil {
-		return nil, respErr
-	}
-
-	return commitService.doListRepositoryCommitsByReference(repository, reference, offset, limit, reverse)
+func (commitService *CommitServiceImpl) ListRepositoryCommitsByReference(repositoryID, reference string, offset, limit int, reverse bool) (model.Commits, e.ResponseError) {
+	return commitService.doListRepositoryCommitsByReference(repositoryID, reference, offset, limit, reverse)
 }
 
-func (commitService *CommitServiceImpl) ListRepositoryCommitsByReferenceWithUserID(userID, ownerName, repositoryName, reference string, offset, limit int, reverse bool) (model.Commits, e.ResponseError) {
-	repository, respErr := commitService.validator.CheckRepositoryCanAccessWithUserID(userID, ownerName, repositoryName, registryv1alphaconnect.RepositoryCommitServiceListRepositoryCommitsByReferenceProcedure)
-	if respErr != nil {
-		return nil, respErr
-	}
-
-	return commitService.doListRepositoryCommitsByReference(repository, reference, offset, limit, reverse)
-}
-
-func (commitService *CommitServiceImpl) GetRepositoryCommitByReference(ownerName, repositoryName, reference string) (*model.Commit, e.ResponseError) {
-	repository, respErr := commitService.validator.CheckRepositoryCanAccess(ownerName, repositoryName, registryv1alphaconnect.RepositoryCommitServiceGetRepositoryCommitByReferenceProcedure)
-	if respErr != nil {
-		return nil, respErr
-	}
-
+func (commitService *CommitServiceImpl) GetRepositoryCommitByReference(repositoryID, reference string) (*model.Commit, e.ResponseError) {
 	// 查询commit
-	return commitService.doGetRepositoryCommitByReference(repository, reference)
+	return commitService.doGetRepositoryCommitByReference(repositoryID, reference)
 }
 
-func (commitService *CommitServiceImpl) GetRepositoryCommitByReferenceWithUserID(userID, ownerName, repositoryName, reference string) (*model.Commit, e.ResponseError) {
-	repository, respErr := commitService.validator.CheckRepositoryCanAccessWithUserID(userID, ownerName, repositoryName, registryv1alphaconnect.RepositoryCommitServiceGetRepositoryCommitByReferenceProcedure)
-	if respErr != nil {
-		return nil, respErr
-	}
-
-	// 查询commit
-	return commitService.doGetRepositoryCommitByReference(repository, reference)
-}
-
-func (commitService *CommitServiceImpl) ListRepositoryDraftCommits(ownerName, repositoryName string, offset, limit int, reverse bool) (model.Commits, e.ResponseError) {
-	repository, respErr := commitService.validator.CheckRepositoryCanAccess(ownerName, repositoryName, registryv1alphaconnect.RepositoryCommitServiceListRepositoryDraftCommitsProcedure)
-	if respErr != nil {
-		return nil, respErr
-	}
-
+func (commitService *CommitServiceImpl) ListRepositoryDraftCommits(repositoryID string, offset, limit int, reverse bool) (model.Commits, e.ResponseError) {
 	// 查询 draft
-	return commitService.doListRepositoryDraftCommit(repository, offset, limit, reverse)
-}
-
-func (commitService *CommitServiceImpl) ListRepositoryDraftCommitsWithUserID(userID, ownerName, repositoryName string, offset, limit int, reverse bool) (model.Commits, e.ResponseError) {
-	repository, respErr := commitService.validator.CheckRepositoryCanAccessWithUserID(userID, ownerName, repositoryName, registryv1alphaconnect.RepositoryCommitServiceListRepositoryDraftCommitsProcedure)
-	if respErr != nil {
-		return nil, respErr
-	}
-
-	// 查询 draft
-	return commitService.doListRepositoryDraftCommit(repository, offset, limit, reverse)
+	return commitService.doListRepositoryDraftCommit(repositoryID, offset, limit, reverse)
 }
 
 func (commitService *CommitServiceImpl) DeleteRepositoryDraftCommit(userID, ownerName, repositoryName, draftName string) e.ResponseError {
@@ -121,34 +74,31 @@ func (commitService *CommitServiceImpl) DeleteRepositoryDraftCommit(userID, owne
 	return nil
 }
 
-func (commitService *CommitServiceImpl) doListRepositoryCommitsByReference(repository *model.Repository, reference string, offset, limit int, reverse bool) (model.Commits, e.ResponseError) {
+func (commitService *CommitServiceImpl) doListRepositoryCommitsByReference(repositoryID string, reference string, offset, limit int, reverse bool) (model.Commits, e.ResponseError) {
 	var commits model.Commits
 	var err error
 	if reference == "" || reference == constant.DefaultBranch {
-		commits, err = commitService.commitMapper.FindPageByRepositoryID(repository.RepositoryID, offset, limit, reverse)
+		commits, err = commitService.commitMapper.FindPageByRepositoryID(repositoryID, offset, limit, reverse)
 	} else if len(reference) == constant.CommitLength {
-		commits, err = commitService.commitMapper.FindPageByRepositoryIDAndCommitName(repository.RepositoryID, reference, offset, limit, reverse)
+		commits, err = commitService.commitMapper.FindPageByRepositoryIDAndCommitName(repositoryID, reference, offset, limit, reverse)
 	} else {
-		commits, err = commitService.commitMapper.FindPageByRepositoryIDAndTagName(repository.RepositoryID, reference, offset, limit, reverse)
+		commits, err = commitService.commitMapper.FindPageByRepositoryIDAndTagName(repositoryID, reference, offset, limit, reverse)
 	}
 
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, e.NewNotFoundError("commit")
-		}
 		return nil, e.NewInternalError(registryv1alphaconnect.RepositoryCommitServiceListRepositoryCommitsByReferenceProcedure)
 	}
 
 	return commits, nil
 }
 
-func (commitService *CommitServiceImpl) doGetRepositoryCommitByReference(repository *model.Repository, reference string) (*model.Commit, e.ResponseError) {
+func (commitService *CommitServiceImpl) doGetRepositoryCommitByReference(repositoryID string, reference string) (*model.Commit, e.ResponseError) {
 	var commit *model.Commit
 	var err error
 	// repo is public
 	if len(reference) == constant.CommitLength {
 		// 查询commit
-		commit, err = commitService.commitMapper.FindByRepositoryIDAndCommitName(repository.RepositoryID, reference)
+		commit, err = commitService.commitMapper.FindByRepositoryIDAndCommitName(repositoryID, reference)
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return nil, e.NewNotFoundError("commit")
@@ -158,13 +108,19 @@ func (commitService *CommitServiceImpl) doGetRepositoryCommitByReference(reposit
 	}
 
 	// 查询tag
-	commit, err = commitService.commitMapper.FindByRepositoryIDAndTagName(repository.RepositoryID, reference)
+	commit, err = commitService.commitMapper.FindByRepositoryIDAndTagName(repositoryID, reference)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, e.NewInternalError(registryv1alphaconnect.RepositoryCommitServiceGetRepositoryCommitByReferenceProcedure)
 	}
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, e.NewNotFoundError("commit")
+			// 查询draft
+			commit, err = commitService.commitMapper.FindByRepositoryIDAndDraftName(repositoryID, reference)
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return nil, e.NewNotFoundError("commit")
+			}
+
+			return nil, e.NewInternalError(registryv1alphaconnect.RepositoryCommitServiceGetRepositoryCommitByReferenceProcedure)
 		}
 		return nil, e.NewInternalError(registryv1alphaconnect.RepositoryCommitServiceGetRepositoryCommitByReferenceProcedure)
 	}
@@ -172,15 +128,12 @@ func (commitService *CommitServiceImpl) doGetRepositoryCommitByReference(reposit
 	return commit, nil
 }
 
-func (commitService *CommitServiceImpl) doListRepositoryDraftCommit(repository *model.Repository, offset, limit int, reverse bool) (model.Commits, e.ResponseError) {
+func (commitService *CommitServiceImpl) doListRepositoryDraftCommit(repositoryID string, offset, limit int, reverse bool) (model.Commits, e.ResponseError) {
 	var commits model.Commits
 	var err error
 	// 查询draft
-	commits, err = commitService.commitMapper.FindDraftPageByRepositoryID(repository.RepositoryID, offset, limit, reverse)
+	commits, err = commitService.commitMapper.FindDraftPageByRepositoryID(repositoryID, offset, limit, reverse)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, e.NewNotFoundError("draft")
-		}
 		return nil, e.NewInternalError(registryv1alphaconnect.RepositoryCommitServiceListRepositoryDraftCommitsProcedure)
 	}
 

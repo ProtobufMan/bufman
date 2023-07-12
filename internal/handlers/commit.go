@@ -3,37 +3,43 @@ package handlers
 import (
 	"context"
 	"github.com/ProtobufMan/bufman/internal/constant"
-	"github.com/ProtobufMan/bufman/internal/e"
 	registryv1alpha "github.com/ProtobufMan/bufman/internal/gen/registry/v1alpha"
-	"github.com/ProtobufMan/bufman/internal/model"
+	"github.com/ProtobufMan/bufman/internal/gen/registry/v1alpha/registryv1alphaconnect"
 	"github.com/ProtobufMan/bufman/internal/services"
+	"github.com/ProtobufMan/bufman/internal/validity"
 	"github.com/bufbuild/connect-go"
 )
 
 type CommitServiceHandler struct {
 	commitService services.CommitService
+	validator     validity.Validator
 }
 
 func NewCommitServiceHandler() *CommitServiceHandler {
 	return &CommitServiceHandler{
 		commitService: services.NewCommitService(),
+		validator:     validity.NewValidator(),
 	}
 }
 
 func (handler *CommitServiceHandler) ListRepositoryCommitsByReference(ctx context.Context, req *connect.Request[registryv1alpha.ListRepositoryCommitsByReferenceRequest]) (*connect.Response[registryv1alpha.ListRepositoryCommitsByReferenceResponse], error) {
-	var commits model.Commits
-	var respErr e.ResponseError
-
-	// 尝试获取user ID
-	userID, ok := ctx.Value(constant.UserIDKey).(string)
-	if ok {
-		// 带有 user id
-		commits, respErr = handler.commitService.ListRepositoryCommitsByReferenceWithUserID(userID, req.Msg.GetRepositoryOwner(), req.Msg.GetRepositoryName(), req.Msg.GetReference(), int(req.Msg.GetPageOffset()), int(req.Msg.GetPageSize()), req.Msg.GetReverse())
-	} else {
-		// 不带 user id
-		commits, respErr = handler.commitService.ListRepositoryCommitsByReference(req.Msg.GetRepositoryOwner(), req.Msg.GetRepositoryName(), req.Msg.GetReference(), int(req.Msg.GetPageOffset()), int(req.Msg.GetPageSize()), req.Msg.GetReverse())
+	// 验证参数
+	argErr := handler.validator.CheckPageSize(req.Msg.GetPageSize())
+	if argErr != nil {
+		return nil, connect.NewError(argErr.Code(), argErr.Err())
 	}
 
+	// 尝试获取user ID
+	userID, _ := ctx.Value(constant.UserIDKey).(string)
+
+	// 验证用户权限
+	repository, permissionErr := handler.validator.CheckRepositoryCanAccess(userID, req.Msg.GetRepositoryOwner(), req.Msg.GetRepositoryName(), registryv1alphaconnect.RepositoryCommitServiceListRepositoryCommitsByReferenceProcedure)
+	if permissionErr != nil {
+		return nil, connect.NewError(permissionErr.Code(), permissionErr.Err())
+	}
+
+	// 查询
+	commits, respErr := handler.commitService.ListRepositoryCommitsByReference(repository.RepositoryID, req.Msg.GetReference(), int(req.Msg.GetPageOffset()), int(req.Msg.GetPageSize()), req.Msg.GetReverse())
 	if respErr != nil {
 		return nil, connect.NewError(respErr.Code(), respErr.Err())
 	}
@@ -45,17 +51,17 @@ func (handler *CommitServiceHandler) ListRepositoryCommitsByReference(ctx contex
 }
 
 func (handler *CommitServiceHandler) GetRepositoryCommitByReference(ctx context.Context, req *connect.Request[registryv1alpha.GetRepositoryCommitByReferenceRequest]) (*connect.Response[registryv1alpha.GetRepositoryCommitByReferenceResponse], error) {
-	var commit *model.Commit
-	var respErr e.ResponseError
-
 	// 尝试获取user ID
-	userID, ok := ctx.Value(constant.UserIDKey).(string)
-	if ok {
-		commit, respErr = handler.commitService.GetRepositoryCommitByReferenceWithUserID(userID, req.Msg.GetRepositoryOwner(), req.Msg.GetRepositoryName(), req.Msg.GetReference())
-	} else {
-		commit, respErr = handler.commitService.GetRepositoryCommitByReference(req.Msg.GetRepositoryOwner(), req.Msg.GetRepositoryName(), req.Msg.GetReference())
+	userID, _ := ctx.Value(constant.UserIDKey).(string)
+
+	// 验证用户权限
+	repository, permissionErr := handler.validator.CheckRepositoryCanAccess(userID, req.Msg.GetRepositoryOwner(), req.Msg.GetRepositoryName(), registryv1alphaconnect.RepositoryCommitServiceListRepositoryCommitsByReferenceProcedure)
+	if permissionErr != nil {
+		return nil, connect.NewError(permissionErr.Code(), permissionErr.Err())
 	}
 
+	// 查询
+	commit, respErr := handler.commitService.GetRepositoryCommitByReference(repository.RepositoryID, req.Msg.GetReference())
 	if respErr != nil {
 		return nil, connect.NewError(respErr.Code(), respErr.Err())
 	}
@@ -67,19 +73,23 @@ func (handler *CommitServiceHandler) GetRepositoryCommitByReference(ctx context.
 }
 
 func (handler *CommitServiceHandler) ListRepositoryDraftCommits(ctx context.Context, req *connect.Request[registryv1alpha.ListRepositoryDraftCommitsRequest]) (*connect.Response[registryv1alpha.ListRepositoryDraftCommitsResponse], error) {
-	var commits model.Commits
-	var respErr e.ResponseError
-
-	// 尝试获取user ID
-	userID, ok := ctx.Value(constant.UserIDKey).(string)
-	if ok {
-		// 带有 user id
-		commits, respErr = handler.commitService.ListRepositoryDraftCommitsWithUserID(userID, req.Msg.GetRepositoryOwner(), req.Msg.GetRepositoryName(), int(req.Msg.GetPageOffset()), int(req.Msg.GetPageSize()), req.Msg.GetReverse())
-	} else {
-		// 不带 user id
-		commits, respErr = handler.commitService.ListRepositoryDraftCommits(req.Msg.GetRepositoryOwner(), req.Msg.GetRepositoryName(), int(req.Msg.GetPageOffset()), int(req.Msg.GetPageSize()), req.Msg.GetReverse())
+	// 验证参数
+	argErr := handler.validator.CheckPageSize(req.Msg.GetPageSize())
+	if argErr != nil {
+		return nil, connect.NewError(argErr.Code(), argErr.Err())
 	}
 
+	// 尝试获取user ID
+	userID, _ := ctx.Value(constant.UserIDKey).(string)
+
+	// 验证用户权限
+	repository, permissionErr := handler.validator.CheckRepositoryCanAccess(userID, req.Msg.GetRepositoryOwner(), req.Msg.GetRepositoryName(), registryv1alphaconnect.RepositoryCommitServiceListRepositoryCommitsByReferenceProcedure)
+	if permissionErr != nil {
+		return nil, connect.NewError(permissionErr.Code(), permissionErr.Err())
+	}
+
+	// 查询
+	commits, respErr := handler.commitService.ListRepositoryDraftCommits(repository.RepositoryID, int(req.Msg.GetPageOffset()), int(req.Msg.GetPageSize()), req.Msg.GetReverse())
 	if respErr != nil {
 		return nil, connect.NewError(respErr.Code(), respErr.Err())
 	}

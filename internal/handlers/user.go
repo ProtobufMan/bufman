@@ -21,20 +21,33 @@ import (
 	"context"
 	registryv1alpha "github.com/ProtobufMan/bufman/internal/gen/registry/v1alpha"
 	"github.com/ProtobufMan/bufman/internal/services"
+	"github.com/ProtobufMan/bufman/internal/validity"
 	"github.com/bufbuild/connect-go"
 )
 
 type UserServiceHandler struct {
 	userService services.UserService
+	validator   validity.Validator
 }
 
 func NewUserServiceHandler() *UserServiceHandler {
 	return &UserServiceHandler{
 		userService: services.NewUserService(),
+		validator:   validity.NewValidator(),
 	}
 }
 
 func (handler *UserServiceHandler) CreateUser(ctx context.Context, req *connect.Request[registryv1alpha.CreateUserRequest]) (*connect.Response[registryv1alpha.CreateUserResponse], error) {
+	// 验证参数
+	argErr := handler.validator.CheckUserName(req.Msg.GetUsername())
+	if argErr != nil {
+		return nil, connect.NewError(argErr.Code(), argErr.Err())
+	}
+	argErr = handler.validator.CheckPassword(req.Msg.GetPassword())
+	if argErr != nil {
+		return nil, connect.NewError(argErr.Code(), argErr.Err())
+	}
+
 	user, err := handler.userService.CreateUser(req.Msg.GetUsername(), req.Msg.GetPassword()) // 创建用户
 	if err != nil {
 		return nil, connect.NewError(err.Code(), err.Err())
@@ -71,6 +84,12 @@ func (handler *UserServiceHandler) GetUserByUsername(ctx context.Context, req *c
 }
 
 func (handler *UserServiceHandler) ListUsers(ctx context.Context, req *connect.Request[registryv1alpha.ListUsersRequest]) (*connect.Response[registryv1alpha.ListUsersResponse], error) {
+	// 验证参数
+	argErr := handler.validator.CheckPageSize(req.Msg.GetPageSize())
+	if argErr != nil {
+		return nil, connect.NewError(argErr.Code(), argErr.Err())
+	}
+
 	users, err := handler.userService.ListUsers(int(req.Msg.GetPageOffset()), int(req.Msg.GetPageSize()), req.Msg.GetReverse()) // 创建用户
 	if err != nil {
 		return nil, connect.NewError(err.Code(), err.Err())

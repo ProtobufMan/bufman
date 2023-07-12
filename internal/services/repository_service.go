@@ -14,14 +14,14 @@ import (
 
 type RepositoryService interface {
 	GetRepository(repositoryID string) (*model.Repository, e.ResponseError)
-	GetRepositoryByFullName(fullName string) (*model.Repository, e.ResponseError)
+	GetRepositoryByUserNameAndRepositoryName(userName, repositoryName string) (*model.Repository, e.ResponseError)
 	GetRepositoryCounts(repositoryID string) (*model.RepositoryCounts, e.ResponseError)
 	ListRepositories(offset, limit int, reverse bool) (model.Repositories, e.ResponseError)
 	ListUserRepositories(userID string, offset, limit int, reverse bool) (model.Repositories, e.ResponseError)
 	ListRepositoriesUserCanAccess(userID string, offset, limit int, reverse bool) (model.Repositories, e.ResponseError)
-	CreateRepositoryByFullName(userID string, fullName string, visibility registryv1alpha.Visibility) (*model.Repository, e.ResponseError)
+	CreateRepositoryByUserNameAndRepositoryName(userID, userName, repositoryName string, visibility registryv1alpha.Visibility) (*model.Repository, e.ResponseError)
 	DeleteRepository(userID, repositoryID string) e.ResponseError
-	DeleteRepositoryByFullName(userID, fullName string) e.ResponseError
+	DeleteRepositoryByUserNameAndRepositoryName(userID, userName, repositoryName string) e.ResponseError
 	DeprecateRepositoryByName(userID, ownerName, repositoryName, deprecateMsg string) (*model.Repository, e.ResponseError)
 	UndeprecateRepositoryByName(userID, ownerName, repositoryName string) (*model.Repository, e.ResponseError)
 	UpdateRepositorySettingsByName(userID, ownerName, repositoryName string, visibility registryv1alpha.Visibility, description string) e.ResponseError
@@ -56,12 +56,8 @@ func (repositoryService *RepositoryServiceImpl) GetRepository(repositoryID strin
 	return repository, nil
 }
 
-func (repositoryService *RepositoryServiceImpl) GetRepositoryByFullName(fullName string) (*model.Repository, e.ResponseError) {
+func (repositoryService *RepositoryServiceImpl) GetRepositoryByUserNameAndRepositoryName(userName, repositoryName string) (*model.Repository, e.ResponseError) {
 	// 查询
-	userName, repositoryName, ok := SplitFullName(fullName)
-	if !ok {
-		return nil, e.NewNotFoundError("repository")
-	}
 	repository, err := repositoryService.repositoryMapper.FindByUserNameAndRepositoryName(userName, repositoryName)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -112,12 +108,7 @@ func (repositoryService *RepositoryServiceImpl) ListRepositoriesUserCanAccess(us
 	return repositories, nil
 }
 
-func (repositoryService *RepositoryServiceImpl) CreateRepositoryByFullName(userID string, fullName string, visibility registryv1alpha.Visibility) (*model.Repository, e.ResponseError) {
-	userName, repositoryName, ok := SplitFullName(fullName)
-	if !ok {
-		return nil, e.NewInvalidArgumentError("full name")
-	}
-
+func (repositoryService *RepositoryServiceImpl) CreateRepositoryByUserNameAndRepositoryName(userID, userName, repositoryName string, visibility registryv1alpha.Visibility) (*model.Repository, e.ResponseError) {
 	// 查询用户
 	user, err := repositoryService.userMapper.FindByUserName(userName)
 	if err != nil {
@@ -176,12 +167,7 @@ func (repositoryService *RepositoryServiceImpl) DeleteRepository(userID, reposit
 	return nil
 }
 
-func (repositoryService *RepositoryServiceImpl) DeleteRepositoryByFullName(userID, fullName string) e.ResponseError {
-	userName, repositoryName, ok := SplitFullName(fullName)
-	if !ok {
-		return e.NewInvalidArgumentError("full name")
-	}
-
+func (repositoryService *RepositoryServiceImpl) DeleteRepositoryByUserNameAndRepositoryName(userID, userName, repositoryName string) e.ResponseError {
 	// 查询repository，检查是否可以删除
 	repository, err := repositoryService.repositoryMapper.FindByUserNameAndRepositoryName(userName, repositoryName)
 	if err != nil {

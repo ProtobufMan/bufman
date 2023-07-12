@@ -5,16 +5,19 @@ import (
 	"github.com/ProtobufMan/bufman/internal/constant"
 	registryv1alpha "github.com/ProtobufMan/bufman/internal/gen/registry/v1alpha"
 	"github.com/ProtobufMan/bufman/internal/services"
+	"github.com/ProtobufMan/bufman/internal/validity"
 	"github.com/bufbuild/connect-go"
 )
 
 type RepositoryServiceHandler struct {
 	repositoryService services.RepositoryService
+	validator         validity.Validator
 }
 
 func NewRepositoryServiceHandler() *RepositoryServiceHandler {
 	return &RepositoryServiceHandler{
 		repositoryService: services.NewRepositoryService(),
+		validator:         validity.NewValidator(),
 	}
 }
 
@@ -39,8 +42,14 @@ func (handler *RepositoryServiceHandler) GetRepository(ctx context.Context, req 
 }
 
 func (handler *RepositoryServiceHandler) GetRepositoryByFullName(ctx context.Context, req *connect.Request[registryv1alpha.GetRepositoryByFullNameRequest]) (*connect.Response[registryv1alpha.GetRepositoryByFullNameResponse], error) {
+	// 验证参数
+	userName, repositoryName, argErr := handler.validator.SplitFullName(req.Msg.GetFullName())
+	if argErr != nil {
+		return nil, connect.NewError(argErr.Code(), argErr.Err())
+	}
+
 	// 查询
-	repository, err := handler.repositoryService.GetRepositoryByFullName(req.Msg.GetFullName())
+	repository, err := handler.repositoryService.GetRepositoryByUserNameAndRepositoryName(userName, repositoryName)
 	if err != nil {
 		return nil, connect.NewError(err.Code(), err.Err())
 	}
@@ -59,6 +68,12 @@ func (handler *RepositoryServiceHandler) GetRepositoryByFullName(ctx context.Con
 }
 
 func (handler *RepositoryServiceHandler) ListRepositories(ctx context.Context, req *connect.Request[registryv1alpha.ListRepositoriesRequest]) (*connect.Response[registryv1alpha.ListRepositoriesResponse], error) {
+	// 验证参数
+	argErr := handler.validator.CheckPageSize(req.Msg.GetPageSize())
+	if argErr != nil {
+		return nil, connect.NewError(argErr.Code(), argErr.Err())
+	}
+
 	repositories, err := handler.repositoryService.ListRepositories(int(req.Msg.GetPageOffset()), int(req.Msg.GetPageSize()), req.Msg.Reverse)
 	if err != nil {
 		return nil, connect.NewError(err.Code(), err.Err())
@@ -71,6 +86,12 @@ func (handler *RepositoryServiceHandler) ListRepositories(ctx context.Context, r
 }
 
 func (handler *RepositoryServiceHandler) ListUserRepositories(ctx context.Context, req *connect.Request[registryv1alpha.ListUserRepositoriesRequest]) (*connect.Response[registryv1alpha.ListUserRepositoriesResponse], error) {
+	// 验证参数
+	argErr := handler.validator.CheckPageSize(req.Msg.GetPageSize())
+	if argErr != nil {
+		return nil, connect.NewError(argErr.Code(), argErr.Err())
+	}
+
 	repositories, err := handler.repositoryService.ListUserRepositories(req.Msg.GetUserId(), int(req.Msg.PageOffset), int(req.Msg.GetPageSize()), req.Msg.GetReverse())
 	if err != nil {
 		return nil, connect.NewError(err.Code(), err.Err())
@@ -83,6 +104,12 @@ func (handler *RepositoryServiceHandler) ListUserRepositories(ctx context.Contex
 }
 
 func (handler *RepositoryServiceHandler) ListRepositoriesUserCanAccess(ctx context.Context, req *connect.Request[registryv1alpha.ListRepositoriesUserCanAccessRequest]) (*connect.Response[registryv1alpha.ListRepositoriesUserCanAccessResponse], error) {
+	// 验证参数
+	argErr := handler.validator.CheckPageSize(req.Msg.GetPageSize())
+	if argErr != nil {
+		return nil, connect.NewError(argErr.Code(), argErr.Err())
+	}
+
 	userID := ctx.Value(constant.UserIDKey).(string)
 	repositories, err := handler.repositoryService.ListRepositoriesUserCanAccess(userID, int(req.Msg.GetPageOffset()), int(req.Msg.GetPageSize()), req.Msg.GetReverse())
 	if err != nil {
@@ -96,10 +123,20 @@ func (handler *RepositoryServiceHandler) ListRepositoriesUserCanAccess(ctx conte
 }
 
 func (handler *RepositoryServiceHandler) CreateRepositoryByFullName(ctx context.Context, req *connect.Request[registryv1alpha.CreateRepositoryByFullNameRequest]) (*connect.Response[registryv1alpha.CreateRepositoryByFullNameResponse], error) {
+	// 验证参数
+	userName, repositoryName, argErr := handler.validator.SplitFullName(req.Msg.GetFullName())
+	if argErr != nil {
+		return nil, connect.NewError(argErr.Code(), argErr.Err())
+	}
+	argErr = handler.validator.CheckRepositoryName(repositoryName)
+	if argErr != nil {
+		return nil, connect.NewError(argErr.Code(), argErr.Err())
+	}
+
 	userID := ctx.Value(constant.UserIDKey).(string)
 
 	// 创建
-	repository, err := handler.repositoryService.CreateRepositoryByFullName(userID, req.Msg.GetFullName(), req.Msg.GetVisibility())
+	repository, err := handler.repositoryService.CreateRepositoryByUserNameAndRepositoryName(userID, userName, repositoryName, req.Msg.GetVisibility())
 	if err != nil {
 		return nil, connect.NewError(err.Code(), err.Err())
 	}
@@ -124,10 +161,16 @@ func (handler *RepositoryServiceHandler) DeleteRepository(ctx context.Context, r
 }
 
 func (handler *RepositoryServiceHandler) DeleteRepositoryByFullName(ctx context.Context, req *connect.Request[registryv1alpha.DeleteRepositoryByFullNameRequest]) (*connect.Response[registryv1alpha.DeleteRepositoryByFullNameResponse], error) {
+	// 验证参数
+	userName, repositoryName, argErr := handler.validator.SplitFullName(req.Msg.GetFullName())
+	if argErr != nil {
+		return nil, connect.NewError(argErr.Code(), argErr.Err())
+	}
+
 	userID := ctx.Value(constant.UserIDKey).(string)
 
 	// 删除
-	err := handler.repositoryService.DeleteRepositoryByFullName(userID, req.Msg.GetFullName())
+	err := handler.repositoryService.DeleteRepositoryByUserNameAndRepositoryName(userID, userName, repositoryName)
 	if err != nil {
 		return nil, connect.NewError(err.Code(), err.Err())
 	}
