@@ -20,11 +20,11 @@ type RepositoryService interface {
 	ListUserRepositories(userID string, offset, limit int, reverse bool) (model.Repositories, e.ResponseError)
 	ListRepositoriesUserCanAccess(userID string, offset, limit int, reverse bool) (model.Repositories, e.ResponseError)
 	CreateRepositoryByUserNameAndRepositoryName(userID, userName, repositoryName string, visibility registryv1alpha.Visibility) (*model.Repository, e.ResponseError)
-	DeleteRepository(userID, repositoryID string) e.ResponseError
-	DeleteRepositoryByUserNameAndRepositoryName(userID, userName, repositoryName string) e.ResponseError
-	DeprecateRepositoryByName(userID, ownerName, repositoryName, deprecateMsg string) (*model.Repository, e.ResponseError)
-	UndeprecateRepositoryByName(userID, ownerName, repositoryName string) (*model.Repository, e.ResponseError)
-	UpdateRepositorySettingsByName(userID, ownerName, repositoryName string, visibility registryv1alpha.Visibility, description string) e.ResponseError
+	DeleteRepository(repositoryID string) e.ResponseError
+	DeleteRepositoryByUserNameAndRepositoryName(userName, repositoryName string) e.ResponseError
+	DeprecateRepositoryByName(ownerName, repositoryName, deprecateMsg string) (*model.Repository, e.ResponseError)
+	UndeprecateRepositoryByName(ownerName, repositoryName string) (*model.Repository, e.ResponseError)
+	UpdateRepositorySettingsByName(ownerName, repositoryName string, visibility registryv1alpha.Visibility, description string) e.ResponseError
 }
 
 type RepositoryServiceImpl struct {
@@ -143,23 +143,9 @@ func (repositoryService *RepositoryServiceImpl) CreateRepositoryByUserNameAndRep
 	return repository, nil
 }
 
-func (repositoryService *RepositoryServiceImpl) DeleteRepository(userID, repositoryID string) e.ResponseError {
-	// 查询repository，检查是否可以删除
-	repository, err := repositoryService.repositoryMapper.FindByRepositoryID(repositoryID)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return e.NewNotFoundError("repository")
-		}
-
-		return e.NewInternalError(registryv1alphaconnect.RepositoryServiceDeleteRepositoryProcedure)
-	}
-
-	if repository.UserID != userID {
-		return e.NewPermissionDeniedError(registryv1alphaconnect.RepositoryServiceDeleteRepositoryProcedure)
-	}
-
+func (repositoryService *RepositoryServiceImpl) DeleteRepository(repositoryID string) e.ResponseError {
 	// 删除
-	err = repositoryService.repositoryMapper.DeleteByRepositoryID(repositoryID)
+	err := repositoryService.repositoryMapper.DeleteByRepositoryID(repositoryID)
 	if err != nil {
 		return e.NewInternalError(registryv1alphaconnect.RepositoryServiceDeleteRepositoryProcedure)
 	}
@@ -167,23 +153,8 @@ func (repositoryService *RepositoryServiceImpl) DeleteRepository(userID, reposit
 	return nil
 }
 
-func (repositoryService *RepositoryServiceImpl) DeleteRepositoryByUserNameAndRepositoryName(userID, userName, repositoryName string) e.ResponseError {
-	// 查询repository，检查是否可以删除
-	repository, err := repositoryService.repositoryMapper.FindByUserNameAndRepositoryName(userName, repositoryName)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return e.NewNotFoundError("repository")
-		}
-
-		return e.NewInternalError(registryv1alphaconnect.RepositoryServiceDeleteRepositoryByFullNameProcedure)
-	}
-
-	// 不能删除别人的repo
-	if repository.UserID != userID {
-		return e.NewPermissionDeniedError(registryv1alphaconnect.RepositoryServiceDeleteRepositoryByFullNameProcedure)
-	}
-
-	err = repositoryService.repositoryMapper.DeleteByUserNameAndRepositoryName(userName, repositoryName)
+func (repositoryService *RepositoryServiceImpl) DeleteRepositoryByUserNameAndRepositoryName(userName, repositoryName string) e.ResponseError {
+	err := repositoryService.repositoryMapper.DeleteByUserNameAndRepositoryName(userName, repositoryName)
 	if err != nil {
 		return e.NewInternalError(registryv1alphaconnect.RepositoryServiceDeleteRepositoryByFullNameProcedure)
 	}
@@ -191,28 +162,13 @@ func (repositoryService *RepositoryServiceImpl) DeleteRepositoryByUserNameAndRep
 	return nil
 }
 
-func (repositoryService *RepositoryServiceImpl) DeprecateRepositoryByName(userID, ownerName, repositoryName, deprecateMsg string) (*model.Repository, e.ResponseError) {
-	// 查询repository，检查是否可以修改
-	repository, err := repositoryService.repositoryMapper.FindByUserNameAndRepositoryName(ownerName, repositoryName)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, e.NewNotFoundError("repository")
-		}
-
-		return nil, e.NewInternalError(registryv1alphaconnect.RepositoryServiceDeprecateRepositoryByNameProcedure)
-	}
-
-	// 不能丢弃别人的repo
-	if repository.UserID != userID {
-		return nil, e.NewPermissionDeniedError(registryv1alphaconnect.RepositoryServiceDeprecateRepositoryByNameProcedure)
-	}
-
+func (repositoryService *RepositoryServiceImpl) DeprecateRepositoryByName(ownerName, repositoryName, deprecateMsg string) (*model.Repository, e.ResponseError) {
 	// 修改数据库
 	updatedRepository := &model.Repository{
 		Deprecated:     true,
 		DeprecationMsg: deprecateMsg,
 	}
-	err = repositoryService.repositoryMapper.UpdateByUserNameAndRepositoryName(ownerName, repositoryName, updatedRepository)
+	err := repositoryService.repositoryMapper.UpdateByUserNameAndRepositoryName(ownerName, repositoryName, updatedRepository)
 	if err != nil {
 		return nil, e.NewInternalError(registryv1alphaconnect.RepositoryServiceDeprecateRepositoryByNameProcedure)
 	}
@@ -220,26 +176,12 @@ func (repositoryService *RepositoryServiceImpl) DeprecateRepositoryByName(userID
 	return updatedRepository, nil
 }
 
-func (repositoryService *RepositoryServiceImpl) UndeprecateRepositoryByName(userID, ownerName, repositoryName string) (*model.Repository, e.ResponseError) {
-	// 查询repository，检查是否可以修改
-	repository, err := repositoryService.repositoryMapper.FindByUserNameAndRepositoryName(ownerName, repositoryName)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, e.NewNotFoundError("repository")
-		}
-
-		return nil, e.NewInternalError(registryv1alphaconnect.RepositoryServiceUndeprecateRepositoryByNameProcedure)
-	}
-
-	if repository.UserID != userID {
-		return nil, e.NewPermissionDeniedError(registryv1alphaconnect.RepositoryServiceUndeprecateRepositoryByNameProcedure)
-	}
-
+func (repositoryService *RepositoryServiceImpl) UndeprecateRepositoryByName(ownerName, repositoryName string) (*model.Repository, e.ResponseError) {
 	// 修改数据库
 	updatedRepository := &model.Repository{
 		Deprecated: false,
 	}
-	err = repositoryService.repositoryMapper.UpdateByUserNameAndRepositoryName(ownerName, repositoryName, updatedRepository)
+	err := repositoryService.repositoryMapper.UpdateByUserNameAndRepositoryName(ownerName, repositoryName, updatedRepository)
 	if err != nil {
 		return nil, e.NewInternalError(registryv1alphaconnect.RepositoryServiceUndeprecateRepositoryByNameProcedure)
 	}
@@ -247,27 +189,13 @@ func (repositoryService *RepositoryServiceImpl) UndeprecateRepositoryByName(user
 	return updatedRepository, nil
 }
 
-func (repositoryService *RepositoryServiceImpl) UpdateRepositorySettingsByName(userID, ownerName, repositoryName string, visibility registryv1alpha.Visibility, description string) e.ResponseError {
-	// 查询repository，检查是否可以修改
-	repository, err := repositoryService.repositoryMapper.FindByUserNameAndRepositoryName(ownerName, repositoryName)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return e.NewNotFoundError("repository")
-		}
-
-		return e.NewInternalError(registryv1alphaconnect.RepositoryServiceUpdateRepositorySettingsByNameProcedure)
-	}
-
-	if repository.UserID != userID {
-		return e.NewPermissionDeniedError(registryv1alphaconnect.RepositoryServiceUpdateRepositorySettingsByNameProcedure)
-	}
-
+func (repositoryService *RepositoryServiceImpl) UpdateRepositorySettingsByName(ownerName, repositoryName string, visibility registryv1alpha.Visibility, description string) e.ResponseError {
 	// 修改数据库
 	updatedRepository := &model.Repository{
 		Visibility:  uint8(visibility),
 		Description: description,
 	}
-	err = repositoryService.repositoryMapper.UpdateByUserNameAndRepositoryName(ownerName, repositoryName, updatedRepository)
+	err := repositoryService.repositoryMapper.UpdateByUserNameAndRepositoryName(ownerName, repositoryName, updatedRepository)
 	if err != nil {
 		return e.NewInternalError(registryv1alphaconnect.RepositoryServiceUpdateRepositorySettingsByNameProcedure)
 	}

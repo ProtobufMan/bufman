@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/ProtobufMan/bufman/internal/constant"
 	registryv1alpha "github.com/ProtobufMan/bufman/internal/gen/registry/v1alpha"
+	"github.com/ProtobufMan/bufman/internal/gen/registry/v1alpha/registryv1alphaconnect"
 	"github.com/ProtobufMan/bufman/internal/services"
 	"github.com/ProtobufMan/bufman/internal/validity"
 	"github.com/bufbuild/connect-go"
@@ -150,8 +151,15 @@ func (handler *RepositoryServiceHandler) CreateRepositoryByFullName(ctx context.
 
 func (handler *RepositoryServiceHandler) DeleteRepository(ctx context.Context, req *connect.Request[registryv1alpha.DeleteRepositoryRequest]) (*connect.Response[registryv1alpha.DeleteRepositoryResponse], error) {
 	userID := ctx.Value(constant.UserIDKey).(string)
+
+	// 验证用户权限
+	_, permissionErr := handler.validator.CheckRepositoryCanDeleteByID(userID, req.Msg.GetId(), registryv1alphaconnect.RepositoryServiceDeleteRepositoryProcedure)
+	if permissionErr != nil {
+		return nil, connect.NewError(permissionErr.Code(), permissionErr.Err())
+	}
+
 	// 查询repository，检查是否可以删除
-	err := handler.repositoryService.DeleteRepository(userID, req.Msg.GetId())
+	err := handler.repositoryService.DeleteRepository(req.Msg.GetId())
 	if err != nil {
 		return nil, connect.NewError(err.Code(), err.Err())
 	}
@@ -169,8 +177,14 @@ func (handler *RepositoryServiceHandler) DeleteRepositoryByFullName(ctx context.
 
 	userID := ctx.Value(constant.UserIDKey).(string)
 
+	// 验证用户权限
+	_, permissionErr := handler.validator.CheckRepositoryCanDelete(userID, userName, repositoryName, registryv1alphaconnect.RepositoryServiceDeleteRepositoryByFullNameProcedure)
+	if permissionErr != nil {
+		return nil, connect.NewError(permissionErr.Code(), permissionErr.Err())
+	}
+
 	// 删除
-	err := handler.repositoryService.DeleteRepositoryByUserNameAndRepositoryName(userID, userName, repositoryName)
+	err := handler.repositoryService.DeleteRepositoryByUserNameAndRepositoryName(userName, repositoryName)
 	if err != nil {
 		return nil, connect.NewError(err.Code(), err.Err())
 	}
@@ -182,8 +196,14 @@ func (handler *RepositoryServiceHandler) DeleteRepositoryByFullName(ctx context.
 func (handler *RepositoryServiceHandler) DeprecateRepositoryByName(ctx context.Context, req *connect.Request[registryv1alpha.DeprecateRepositoryByNameRequest]) (*connect.Response[registryv1alpha.DeprecateRepositoryByNameResponse], error) {
 	userID := ctx.Value(constant.UserIDKey).(string)
 
+	// 验证用户权限
+	_, permissionErr := handler.validator.CheckRepositoryCanEdit(userID, req.Msg.GetOwnerName(), req.Msg.GetRepositoryName(), registryv1alphaconnect.RepositoryServiceDeprecateRepositoryByNameProcedure)
+	if permissionErr != nil {
+		return nil, connect.NewError(permissionErr.Code(), permissionErr.Err())
+	}
+
 	// 修改数据库
-	updatedRepository, err := handler.repositoryService.DeprecateRepositoryByName(userID, req.Msg.GetOwnerName(), req.Msg.GetRepositoryName(), req.Msg.GetDeprecationMessage())
+	updatedRepository, err := handler.repositoryService.DeprecateRepositoryByName(req.Msg.GetOwnerName(), req.Msg.GetRepositoryName(), req.Msg.GetDeprecationMessage())
 	if err != nil {
 		return nil, connect.NewError(err.Code(), err.Err())
 	}
@@ -197,8 +217,14 @@ func (handler *RepositoryServiceHandler) DeprecateRepositoryByName(ctx context.C
 func (handler *RepositoryServiceHandler) UndeprecateRepositoryByName(ctx context.Context, req *connect.Request[registryv1alpha.UndeprecateRepositoryByNameRequest]) (*connect.Response[registryv1alpha.UndeprecateRepositoryByNameResponse], error) {
 	userID := ctx.Value(constant.UserIDKey).(string)
 
+	// 验证用户权限
+	_, permissionErr := handler.validator.CheckRepositoryCanEdit(userID, req.Msg.GetOwnerName(), req.Msg.GetRepositoryName(), registryv1alphaconnect.RepositoryServiceUndeprecateRepositoryByNameProcedure)
+	if permissionErr != nil {
+		return nil, connect.NewError(permissionErr.Code(), permissionErr.Err())
+	}
+
 	// 修改数据库
-	updatedRepository, err := handler.repositoryService.UndeprecateRepositoryByName(userID, req.Msg.GetOwnerName(), req.Msg.GetRepositoryName())
+	updatedRepository, err := handler.repositoryService.UndeprecateRepositoryByName(req.Msg.GetOwnerName(), req.Msg.GetRepositoryName())
 	if err != nil {
 		return nil, connect.NewError(err.Code(), err.Err())
 	}
@@ -212,8 +238,14 @@ func (handler *RepositoryServiceHandler) UndeprecateRepositoryByName(ctx context
 func (handler *RepositoryServiceHandler) UpdateRepositorySettingsByName(ctx context.Context, req *connect.Request[registryv1alpha.UpdateRepositorySettingsByNameRequest]) (*connect.Response[registryv1alpha.UpdateRepositorySettingsByNameResponse], error) {
 	userID := ctx.Value(constant.UserIDKey).(string)
 
+	// 验证用户权限
+	_, permissionErr := handler.validator.CheckRepositoryCanEdit(userID, req.Msg.GetOwnerName(), req.Msg.GetRepositoryName(), registryv1alphaconnect.RepositoryServiceUpdateRepositorySettingsByNameProcedure)
+	if permissionErr != nil {
+		return nil, connect.NewError(permissionErr.Code(), permissionErr.Err())
+	}
+
 	// 修改数据库
-	err := handler.repositoryService.UpdateRepositorySettingsByName(userID, req.Msg.GetOwnerName(), req.Msg.GetRepositoryName(), req.Msg.GetVisibility(), req.Msg.GetDescription())
+	err := handler.repositoryService.UpdateRepositorySettingsByName(req.Msg.GetOwnerName(), req.Msg.GetRepositoryName(), req.Msg.GetVisibility(), req.Msg.GetDescription())
 	if err != nil {
 		return nil, connect.NewError(err.Code(), err.Err())
 	}

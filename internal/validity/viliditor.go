@@ -25,6 +25,8 @@ type Validator interface {
 	CheckRepositoryCanAccessByID(userID, repositoryID, procedure string) (*model.Repository, e.ResponseError)
 	CheckRepositoryCanEdit(userID, ownerName, repositoryName, procedure string) (*model.Repository, e.ResponseError) // 检查user是否可以修改repo
 	CheckRepositoryCanEditByID(userID, repositoryID, procedure string) (*model.Repository, e.ResponseError)
+	CheckRepositoryCanDelete(userID, ownerName, repositoryName, procedure string) (*model.Repository, e.ResponseError) // 检查用户是否可以删除repo
+	CheckRepositoryCanDeleteByID(userID, repositoryID, procedure string) (*model.Repository, e.ResponseError)
 }
 
 func NewValidator() Validator {
@@ -179,6 +181,42 @@ func (validator *ValidatorImpl) CheckRepositoryCanEdit(userID, ownerName, reposi
 }
 
 func (validator *ValidatorImpl) CheckRepositoryCanEditByID(userID, repositoryID, procedure string) (*model.Repository, e.ResponseError) {
+	repository, err := validator.repositoryMapper.FindByRepositoryID(repositoryID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, e.NewNotFoundError("repository")
+		}
+
+		return nil, e.NewInternalError(procedure)
+	}
+
+	// 只有所属用户才能修改
+	if repository.UserID != userID {
+		return nil, e.NewPermissionDeniedError(procedure)
+	}
+
+	return repository, nil
+}
+
+func (validator *ValidatorImpl) CheckRepositoryCanDelete(userID, ownerName, repositoryName, procedure string) (*model.Repository, e.ResponseError) {
+	repository, err := validator.repositoryMapper.FindByUserNameAndRepositoryName(ownerName, repositoryName)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, e.NewNotFoundError("repository")
+		}
+
+		return nil, e.NewInternalError(procedure)
+	}
+
+	// 只有所属用户才能修改
+	if repository.UserID != userID {
+		return nil, e.NewPermissionDeniedError(procedure)
+	}
+
+	return repository, nil
+}
+
+func (validator *ValidatorImpl) CheckRepositoryCanDeleteByID(userID, repositoryID, procedure string) (*model.Repository, e.ResponseError) {
 	repository, err := validator.repositoryMapper.FindByRepositoryID(repositoryID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
