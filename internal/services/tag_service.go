@@ -3,7 +3,6 @@ package services
 import (
 	"errors"
 	"github.com/ProtobufMan/bufman/internal/e"
-	registryv1alpha "github.com/ProtobufMan/bufman/internal/gen/registry/v1alpha"
 	"github.com/ProtobufMan/bufman/internal/gen/registry/v1alpha/registryv1alphaconnect"
 	"github.com/ProtobufMan/bufman/internal/mapper"
 	"github.com/ProtobufMan/bufman/internal/model"
@@ -13,9 +12,8 @@ import (
 )
 
 type TagService interface {
-	CreateRepositoryTag(userID, repositoryID, TagName, commitName string) (*model.Tag, e.ResponseError)
+	CreateRepositoryTag(repositoryID, TagName, commitName string) (*model.Tag, e.ResponseError)
 	ListRepositoryTags(repositoryID string, offset, limit int, reverse bool) (model.Tags, e.ResponseError)
-	ListRepositoryTagsWithUserID(userID, repositoryID string, offset, limit int, reverse bool) (model.Tags, e.ResponseError)
 }
 
 func NewTagService() TagService {
@@ -34,19 +32,7 @@ type TagServiceImpl struct {
 	validator        validity.Validator
 }
 
-func (tagService *TagServiceImpl) CreateRepositoryTag(userID, repositoryID, TagName, commitName string) (*model.Tag, e.ResponseError) {
-	// 查询用户是否是repo的owner
-	repository, err := tagService.repositoryMapper.FindByRepositoryID(repositoryID)
-	if err != nil {
-		if err != nil {
-			return nil, e.NewNotFoundError("repository")
-		}
-	}
-
-	if repository.UserID != userID {
-		return nil, e.NewPermissionDeniedError(registryv1alphaconnect.RepositoryTagServiceCreateRepositoryTagProcedure)
-	}
-
+func (tagService *TagServiceImpl) CreateRepositoryTag(repositoryID, TagName, commitName string) (*model.Tag, e.ResponseError) {
 	// 查询commitName
 	commit, err := tagService.commitMapper.FindByRepositoryIDAndCommitName(repositoryID, commitName)
 	if err != nil {
@@ -56,8 +42,8 @@ func (tagService *TagServiceImpl) CreateRepositoryTag(userID, repositoryID, TagN
 	}
 
 	tag := &model.Tag{
-		UserID:       userID,
-		UserName:     repository.UserName,
+		UserID:       commit.UserID,
+		UserName:     commit.UserName,
 		RepositoryID: repositoryID,
 		CommitID:     commit.CommitID,
 		CommitName:   commitName,
@@ -73,37 +59,6 @@ func (tagService *TagServiceImpl) CreateRepositoryTag(userID, repositoryID, TagN
 }
 
 func (tagService *TagServiceImpl) ListRepositoryTags(repositoryID string, offset, limit int, reverse bool) (model.Tags, e.ResponseError) {
-	// 查询用户是否是repo的owner
-	repository, err := tagService.repositoryMapper.FindByRepositoryID(repositoryID)
-	if err != nil {
-		if err != nil {
-			return nil, e.NewNotFoundError("repository")
-		}
-	}
-	if repository.Visibility != uint8(registryv1alpha.Visibility_VISIBILITY_PUBLIC) {
-		return nil, e.NewPermissionDeniedError(registryv1alphaconnect.RepositoryTagServiceListRepositoryTagsProcedure)
-	}
-
-	tags, err := tagService.tagMapper.FindPageByRepositoryID(repositoryID, limit, offset, reverse)
-	if err != nil {
-		return nil, e.NewInternalError(registryv1alphaconnect.RepositoryTagServiceListRepositoryTagsProcedure)
-	}
-
-	return tags, nil
-}
-
-func (tagService *TagServiceImpl) ListRepositoryTagsWithUserID(userID, repositoryID string, offset, limit int, reverse bool) (model.Tags, e.ResponseError) {
-	// 查询用户是否是repo的owner
-	repository, err := tagService.repositoryMapper.FindByRepositoryID(repositoryID)
-	if err != nil {
-		if err != nil {
-			return nil, e.NewNotFoundError("repository")
-		}
-	}
-	if repository.Visibility != uint8(registryv1alpha.Visibility_VISIBILITY_PUBLIC) && repository.UserID != userID {
-		return nil, e.NewPermissionDeniedError(registryv1alphaconnect.RepositoryTagServiceListRepositoryTagsProcedure)
-	}
-
 	tags, err := tagService.tagMapper.FindPageByRepositoryID(repositoryID, limit, offset, reverse)
 	if err != nil {
 		return nil, e.NewInternalError(registryv1alphaconnect.RepositoryTagServiceListRepositoryTagsProcedure)

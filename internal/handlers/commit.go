@@ -104,8 +104,14 @@ func (handler *CommitServiceHandler) DeleteRepositoryDraftCommit(ctx context.Con
 	// 获取user ID
 	userID := ctx.Value(constant.UserIDKey).(string)
 
+	// 验证用户权限
+	repository, permissionErr := handler.validator.CheckRepositoryCanEdit(userID, req.Msg.GetRepositoryOwner(), req.Msg.GetRepositoryName(), registryv1alphaconnect.RepositoryCommitServiceListRepositoryCommitsByReferenceProcedure)
+	if permissionErr != nil {
+		return nil, connect.NewError(permissionErr.Code(), permissionErr.Err())
+	}
+
 	// 删除
-	err := handler.commitService.DeleteRepositoryDraftCommit(userID, req.Msg.GetRepositoryOwner(), req.Msg.GetRepositoryName(), req.Msg.GetDraftName())
+	err := handler.commitService.DeleteRepositoryDraftCommit(repository.RepositoryID, req.Msg.GetDraftName())
 	if err != nil {
 		return nil, connect.NewError(err.Code(), err.Err())
 	}

@@ -22,6 +22,9 @@ type Validator interface {
 	CheckPageSize(pageSize uint32) e.ResponseError                                                                     // 检查page size合法性
 	SplitFullName(fullName string) (userName, repositoryName string, respErr e.ResponseError)                          // 分割full name
 	CheckRepositoryCanAccess(userID, ownerName, repositoryName, procedure string) (*model.Repository, e.ResponseError) // 检查user id用户是否可以访问repo
+	CheckRepositoryCanAccessByID(userID, repositoryID, procedure string) (*model.Repository, e.ResponseError)
+	CheckRepositoryCanEdit(userID, ownerName, repositoryName, procedure string) (*model.Repository, e.ResponseError) // 检查user是否可以修改repo
+	CheckRepositoryCanEditByID(userID, repositoryID, procedure string) (*model.Repository, e.ResponseError)
 }
 
 func NewValidator() Validator {
@@ -134,6 +137,59 @@ func (validator *ValidatorImpl) CheckRepositoryCanAccess(userID, ownerName, repo
 	}
 
 	if registryv1alpha.Visibility(repository.Visibility) != registryv1alpha.Visibility_VISIBILITY_PUBLIC && repository.UserID != userID {
+		return nil, e.NewPermissionDeniedError(procedure)
+	}
+
+	return repository, nil
+}
+
+func (validator *ValidatorImpl) CheckRepositoryCanAccessByID(userID, repositoryID, procedure string) (*model.Repository, e.ResponseError) {
+	repository, err := validator.repositoryMapper.FindByRepositoryID(repositoryID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, e.NewNotFoundError("repository")
+		}
+
+		return nil, e.NewInternalError(procedure)
+	}
+
+	if registryv1alpha.Visibility(repository.Visibility) != registryv1alpha.Visibility_VISIBILITY_PUBLIC && repository.UserID != userID {
+		return nil, e.NewPermissionDeniedError(procedure)
+	}
+
+	return repository, nil
+}
+
+func (validator *ValidatorImpl) CheckRepositoryCanEdit(userID, ownerName, repositoryName, procedure string) (*model.Repository, e.ResponseError) {
+	repository, err := validator.repositoryMapper.FindByUserNameAndRepositoryName(ownerName, repositoryName)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, e.NewNotFoundError("repository")
+		}
+
+		return nil, e.NewInternalError(procedure)
+	}
+
+	// 只有所属用户才能修改
+	if repository.UserID != userID {
+		return nil, e.NewPermissionDeniedError(procedure)
+	}
+
+	return repository, nil
+}
+
+func (validator *ValidatorImpl) CheckRepositoryCanEditByID(userID, repositoryID, procedure string) (*model.Repository, e.ResponseError) {
+	repository, err := validator.repositoryMapper.FindByRepositoryID(repositoryID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, e.NewNotFoundError("repository")
+		}
+
+		return nil, e.NewInternalError(procedure)
+	}
+
+	// 只有所属用户才能修改
+	if repository.UserID != userID {
 		return nil, e.NewPermissionDeniedError(procedure)
 	}
 

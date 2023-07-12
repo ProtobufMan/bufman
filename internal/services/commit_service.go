@@ -15,7 +15,7 @@ type CommitService interface {
 	ListRepositoryCommitsByReference(repositoryID, reference string, offset, limit int, reverse bool) (model.Commits, e.ResponseError)
 	GetRepositoryCommitByReference(repositoryID, reference string) (*model.Commit, e.ResponseError)
 	ListRepositoryDraftCommits(repositoryID string, offset, limit int, reverse bool) (model.Commits, e.ResponseError)
-	DeleteRepositoryDraftCommit(userID, ownerName, repositoryName, draftName string) e.ResponseError
+	DeleteRepositoryDraftCommit(repositoryID, draftName string) e.ResponseError
 }
 
 type CommitServiceImpl struct {
@@ -46,23 +46,9 @@ func (commitService *CommitServiceImpl) ListRepositoryDraftCommits(repositoryID 
 	return commitService.doListRepositoryDraftCommit(repositoryID, offset, limit, reverse)
 }
 
-func (commitService *CommitServiceImpl) DeleteRepositoryDraftCommit(userID, ownerName, repositoryName, draftName string) e.ResponseError {
-	repository, err := commitService.repositoryMapper.FindByUserNameAndRepositoryName(ownerName, repositoryName)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return e.NewNotFoundError("repository")
-		}
-
-		return e.NewInternalError(registryv1alphaconnect.RepositoryCommitServiceDeleteRepositoryDraftCommitProcedure)
-	}
-
-	// 不可以删除别人的draft
-	if repository.UserID != userID {
-		return e.NewPermissionDeniedError(registryv1alphaconnect.RepositoryCommitServiceDeleteRepositoryDraftCommitProcedure)
-	}
-
+func (commitService *CommitServiceImpl) DeleteRepositoryDraftCommit(repositoryID, draftName string) e.ResponseError {
 	// 删除
-	err = commitService.commitMapper.DeleteByRepositoryIDAndDraftName(repository.RepositoryID, draftName)
+	err := commitService.commitMapper.DeleteByRepositoryIDAndDraftName(repositoryID, draftName)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return e.NewNotFoundError("draft")

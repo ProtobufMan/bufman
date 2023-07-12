@@ -3,9 +3,8 @@ package handlers
 import (
 	"context"
 	"github.com/ProtobufMan/bufman/internal/constant"
-	"github.com/ProtobufMan/bufman/internal/e"
 	registryv1alpha "github.com/ProtobufMan/bufman/internal/gen/registry/v1alpha"
-	"github.com/ProtobufMan/bufman/internal/model"
+	"github.com/ProtobufMan/bufman/internal/gen/registry/v1alpha/registryv1alphaconnect"
 	"github.com/ProtobufMan/bufman/internal/services"
 	"github.com/ProtobufMan/bufman/internal/validity"
 	"github.com/bufbuild/connect-go"
@@ -33,7 +32,13 @@ func (handler *TagServiceHandler) CreateRepositoryTag(ctx context.Context, req *
 	// 获取用户ID
 	userID := ctx.Value(constant.UserIDKey).(string)
 
-	tag, err := handler.tagService.CreateRepositoryTag(userID, req.Msg.GetRepositoryId(), req.Msg.GetName(), req.Msg.GetCommitName())
+	// 验证用户权限
+	_, permissionErr := handler.validator.CheckRepositoryCanEditByID(userID, req.Msg.GetRepositoryId(), registryv1alphaconnect.RepositoryTagServiceCreateRepositoryTagProcedure)
+	if permissionErr != nil {
+		return nil, connect.NewError(permissionErr.Code(), permissionErr.Err())
+	}
+
+	tag, err := handler.tagService.CreateRepositoryTag(req.Msg.GetRepositoryId(), req.Msg.GetName(), req.Msg.GetCommitName())
 	if err != nil {
 		return nil, connect.NewError(err.Code(), err.Err())
 	}
@@ -51,16 +56,17 @@ func (handler *TagServiceHandler) ListRepositoryTags(ctx context.Context, req *c
 		return nil, connect.NewError(argErr.Code(), argErr.Err())
 	}
 
-	var tags model.Tags
-	var respErr e.ResponseError
-
 	// 尝试获取user ID
-	userID, ok := ctx.Value(constant.UserIDKey).(string)
-	if ok {
-		tags, respErr = handler.tagService.ListRepositoryTagsWithUserID(userID, req.Msg.GetRepositoryId(), int(req.Msg.GetPageOffset()), int(req.Msg.GetPageSize()), req.Msg.GetReverse())
-	} else {
-		tags, respErr = handler.tagService.ListRepositoryTags(req.Msg.GetRepositoryId(), int(req.Msg.GetPageOffset()), int(req.Msg.GetPageSize()), req.Msg.GetReverse())
+	userID, _ := ctx.Value(constant.UserIDKey).(string)
+
+	// 验证用户权限
+	_, permissionErr := handler.validator.CheckRepositoryCanAccessByID(userID, req.Msg.GetRepositoryId(), registryv1alphaconnect.RepositoryTagServiceCreateRepositoryTagProcedure)
+	if permissionErr != nil {
+		return nil, connect.NewError(permissionErr.Code(), permissionErr.Err())
 	}
+
+	tags, respErr := handler.tagService.ListRepositoryTags(req.Msg.GetRepositoryId(), int(req.Msg.GetPageOffset()), int(req.Msg.GetPageSize()), req.Msg.GetReverse())
+
 	if respErr != nil {
 		return nil, connect.NewError(respErr.Code(), respErr.Err())
 	}
