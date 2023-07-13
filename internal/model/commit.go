@@ -74,6 +74,23 @@ func (commit *Commit) ToProtoLocalModulePin() *modulev1alpha.LocalModulePin {
 	return modulePin
 }
 
+func (commit *Commit) ToProtoModulePin() *modulev1alpha.ModulePin {
+	if commit == nil {
+		return (&Commit{}).ToProtoModulePin()
+	}
+
+	modulePin := &modulev1alpha.ModulePin{
+		Remote:         "",
+		Owner:          commit.UserName,
+		Repository:     commit.RepositoryName,
+		Commit:         commit.CommitName,
+		CreateTime:     timestamppb.New(commit.CreatedTime),
+		ManifestDigest: manifest.DigestTypeShake256.String() + ":" + commit.ManifestDigest,
+	}
+
+	return modulePin
+}
+
 func (commit *Commit) ToProtoRepositoryCommit() *registryv1alpha.RepositoryCommit {
 	if commit == nil {
 		return (&Commit{}).ToProtoRepositoryCommit()
@@ -108,4 +125,13 @@ func (commits *Commits) ToProtoRepositoryCommits() []*registryv1alpha.Repository
 	}
 
 	return repositoryCommits
+}
+
+func (commits *Commits) ToProtoModulePins() []*modulev1alpha.ModulePin {
+	modulePins := make([]*modulev1alpha.ModulePin, len(*commits))
+	for i := 0; i < len(*commits); i++ {
+		modulePins[i] = (*commits)[i].ToProtoModulePin()
+	}
+
+	return modulePins
 }

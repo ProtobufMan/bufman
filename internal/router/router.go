@@ -79,6 +79,14 @@ func InitRouter() *gin.Engine {
 	)
 	registerHandler(router, tagServicePath, tagServiceHandler)
 
+	// ResolveService
+	resolveServicePath, resolveServiceHandler := registryv1alphaconnect.NewResolveServiceHandler(handlers.NewResolveServiceHandler(),
+		interceptors.WithOptionalAuthInterceptor(
+			registryv1alphaconnect.ResolveServiceGetModulePinsProcedure,
+		),
+	)
+	registerHandler(router, resolveServicePath, resolveServiceHandler)
+
 	return router
 }
 

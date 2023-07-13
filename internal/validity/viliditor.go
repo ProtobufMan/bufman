@@ -132,14 +132,14 @@ func (validator *ValidatorImpl) CheckRepositoryCanAccess(userID, ownerName, repo
 	repository, err := validator.repositoryMapper.FindByUserNameAndRepositoryName(ownerName, repositoryName)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, e.NewNotFoundError("repository")
+			return nil, e.NewNotFoundError(fmt.Sprintf("repository [name=%s/%s]", ownerName, repositoryName))
 		}
 
 		return nil, e.NewInternalError(procedure)
 	}
 
 	if registryv1alpha.Visibility(repository.Visibility) != registryv1alpha.Visibility_VISIBILITY_PUBLIC && repository.UserID != userID {
-		return nil, e.NewPermissionDeniedError(procedure)
+		return nil, e.NewPermissionDeniedError(fmt.Sprintf("repository [name=%s/%s]", ownerName, repositoryName))
 	}
 
 	return repository, nil
@@ -149,14 +149,14 @@ func (validator *ValidatorImpl) CheckRepositoryCanAccessByID(userID, repositoryI
 	repository, err := validator.repositoryMapper.FindByRepositoryID(repositoryID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, e.NewNotFoundError("repository")
+			return nil, e.NewNotFoundError(fmt.Sprintf("repository [id=%s]", repositoryID))
 		}
 
 		return nil, e.NewInternalError(procedure)
 	}
 
 	if registryv1alpha.Visibility(repository.Visibility) != registryv1alpha.Visibility_VISIBILITY_PUBLIC && repository.UserID != userID {
-		return nil, e.NewPermissionDeniedError(procedure)
+		return nil, e.NewPermissionDeniedError(fmt.Sprintf("repository [id=%s]", repositoryID))
 	}
 
 	return repository, nil
@@ -166,7 +166,7 @@ func (validator *ValidatorImpl) CheckRepositoryCanEdit(userID, ownerName, reposi
 	repository, err := validator.repositoryMapper.FindByUserNameAndRepositoryName(ownerName, repositoryName)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, e.NewNotFoundError("repository")
+			return nil, e.NewNotFoundError(fmt.Sprintf("repository [name=%s/%s]", ownerName, repositoryName))
 		}
 
 		return nil, e.NewInternalError(procedure)
@@ -174,7 +174,7 @@ func (validator *ValidatorImpl) CheckRepositoryCanEdit(userID, ownerName, reposi
 
 	// 只有所属用户才能修改
 	if repository.UserID != userID {
-		return nil, e.NewPermissionDeniedError(procedure)
+		return nil, e.NewPermissionDeniedError(fmt.Sprintf("repository [name=%s/%s]", ownerName, repositoryName))
 	}
 
 	return repository, nil
@@ -184,7 +184,7 @@ func (validator *ValidatorImpl) CheckRepositoryCanEditByID(userID, repositoryID,
 	repository, err := validator.repositoryMapper.FindByRepositoryID(repositoryID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, e.NewNotFoundError("repository")
+			return nil, e.NewNotFoundError(fmt.Sprintf("repository [id=%s]", repositoryID))
 		}
 
 		return nil, e.NewInternalError(procedure)
@@ -192,7 +192,7 @@ func (validator *ValidatorImpl) CheckRepositoryCanEditByID(userID, repositoryID,
 
 	// 只有所属用户才能修改
 	if repository.UserID != userID {
-		return nil, e.NewPermissionDeniedError(procedure)
+		return nil, e.NewPermissionDeniedError(fmt.Sprintf("repository [id=%s]", repositoryID))
 	}
 
 	return repository, nil
@@ -202,7 +202,7 @@ func (validator *ValidatorImpl) CheckRepositoryCanDelete(userID, ownerName, repo
 	repository, err := validator.repositoryMapper.FindByUserNameAndRepositoryName(ownerName, repositoryName)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, e.NewNotFoundError("repository")
+			return nil, e.NewNotFoundError(fmt.Sprintf("repository [name=%s/%s]", ownerName, repositoryName))
 		}
 
 		return nil, e.NewInternalError(procedure)
@@ -210,7 +210,7 @@ func (validator *ValidatorImpl) CheckRepositoryCanDelete(userID, ownerName, repo
 
 	// 只有所属用户才能修改
 	if repository.UserID != userID {
-		return nil, e.NewPermissionDeniedError(procedure)
+		return nil, e.NewPermissionDeniedError(fmt.Sprintf("repository [name=%s/%s]", ownerName, repositoryName))
 	}
 
 	return repository, nil
@@ -220,7 +220,7 @@ func (validator *ValidatorImpl) CheckRepositoryCanDeleteByID(userID, repositoryI
 	repository, err := validator.repositoryMapper.FindByRepositoryID(repositoryID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, e.NewNotFoundError("repository")
+			return nil, e.NewNotFoundError(fmt.Sprintf("repository [id=%s]", repositoryID))
 		}
 
 		return nil, e.NewInternalError(procedure)
@@ -228,7 +228,7 @@ func (validator *ValidatorImpl) CheckRepositoryCanDeleteByID(userID, repositoryI
 
 	// 只有所属用户才能修改
 	if repository.UserID != userID {
-		return nil, e.NewPermissionDeniedError(procedure)
+		return nil, e.NewPermissionDeniedError(fmt.Sprintf("repository [id=%s]", repositoryID))
 	}
 
 	return repository, nil
