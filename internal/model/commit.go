@@ -18,10 +18,11 @@
 package model
 
 import (
+	"github.com/ProtobufMan/bufman-cli/private/pkg/manifest"
+	"github.com/ProtobufMan/bufman/internal/config"
 	"github.com/ProtobufMan/bufman/internal/constant"
 	modulev1alpha "github.com/ProtobufMan/bufman/internal/gen/module/v1alpha"
 	registryv1alpha "github.com/ProtobufMan/bufman/internal/gen/registry/v1alpha"
-	"github.com/ProtobufMan/bufman/internal/util/manifest"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"time"
 )
@@ -62,7 +63,7 @@ func (commit *Commit) ToProtoLocalModulePin() *modulev1alpha.LocalModulePin {
 		Repository:     commit.RepositoryName,
 		Commit:         commit.CommitName,
 		CreateTime:     timestamppb.New(commit.CreatedTime),
-		ManifestDigest: manifest.DigestTypeShake256.String() + ":" + commit.ManifestDigest,
+		ManifestDigest: string(manifest.DigestTypeShake256) + ":" + commit.ManifestDigest,
 	}
 
 	if commit.DraftName == "" {
@@ -82,12 +83,12 @@ func (commit *Commit) ToProtoModulePin() *modulev1alpha.ModulePin {
 	}
 
 	modulePin := &modulev1alpha.ModulePin{
-		Remote:         "",
+		Remote:         config.Properties.BufMan.ServerHost,
 		Owner:          commit.UserName,
 		Repository:     commit.RepositoryName,
 		Commit:         commit.CommitName,
 		CreateTime:     timestamppb.New(commit.CreatedTime),
-		ManifestDigest: manifest.DigestTypeShake256.String() + ":" + commit.ManifestDigest,
+		ManifestDigest: string(manifest.DigestTypeShake256) + ":" + commit.ManifestDigest,
 	}
 
 	return modulePin
@@ -104,7 +105,7 @@ func (commit *Commit) ToProtoRepositoryCommit() *registryv1alpha.RepositoryCommi
 		Name:             commit.CommitName,
 		CommitSequenceId: commit.SequenceID,
 		Author:           commit.UserName,
-		ManifestDigest:   manifest.DigestTypeShake256.String() + ":" + commit.ManifestDigest,
+		ManifestDigest:   string(manifest.DigestTypeShake256) + ":" + commit.ManifestDigest,
 	}
 
 	if commit.DraftName != "" {

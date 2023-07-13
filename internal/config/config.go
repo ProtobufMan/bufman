@@ -1,9 +1,6 @@
 package config
 
 import (
-	"github.com/ProtobufMan/bufman/internal/dal"
-	"github.com/ProtobufMan/bufman/internal/model"
-	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"os"
 )
@@ -17,10 +14,10 @@ const (
 )
 
 type Config struct {
-	IDLManager IDLManager
+	BufMan BufMan
 }
 
-type IDLManager struct {
+type BufMan struct {
 	ServerHost string
 	MysqlDsn   string
 }
@@ -32,39 +29,6 @@ var (
 
 func LoadConfig() {
 	Properties = &Config{}
-	Properties.IDLManager.MysqlDsn = os.Getenv(mysqlDSNKey)
-	Properties.IDLManager.ServerHost = os.Getenv(serverHostKey)
-
-	loadDatabaseConfig(Properties.IDLManager.MysqlDsn)
-}
-
-// load database for idl-manager
-func loadDatabaseConfig(dsn string) {
-	var db *gorm.DB
-	var err error
-	if dsn == "" {
-		panic("MySQL DSN is empty")
-	} else {
-		db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{TranslateError: true})
-	}
-	if err != nil {
-		panic(err)
-	} else {
-		DataBase = db
-		// init table
-		initErr := DataBase.AutoMigrate(
-			&model.Repository{},
-			&model.Commit{},
-			&model.Tag{},
-			&model.User{},
-			&model.Token{},
-			&model.FileManifest{},
-			&model.FileBlob{},
-		)
-		if initErr != nil {
-			panic(initErr)
-		}
-	}
-
-	dal.SetDefault(db)
+	Properties.BufMan.MysqlDsn = os.Getenv(mysqlDSNKey)
+	Properties.BufMan.ServerHost = os.Getenv(serverHostKey)
 }

@@ -142,6 +142,35 @@ func (c *CommitMapperImpl) FindByRepositoryIDAndReference(repositoryID string, r
 	return commit, nil
 }
 
+func (c *CommitMapperImpl) FindByRepositoryNameAndReference(repositoryID string, reference string) (*model.Commit, error) {
+	var commit *model.Commit
+	var err error
+	if reference == "" || reference == constant.DefaultBranch {
+		commit, err = c.FindLastByRepositoryID(repositoryID)
+	} else if len(reference) == constant.CommitLength {
+		// 查询commit
+		commit, err = c.FindByRepositoryIDAndCommitName(repositoryID, reference)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// 查询tag
+	commit, err = c.FindByRepositoryIDAndTagName(repositoryID, reference)
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, err
+	}
+	if err != nil {
+		// 查询draft
+		commit, err = c.FindByRepositoryIDAndDraftName(repositoryID, reference)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return commit, nil
+}
+
 func (c *CommitMapperImpl) FindPageByRepositoryID(repositoryID string, offset, limit int, reverse bool) (model.Commits, error) {
 	stmt := dal.Commit.Where(dal.Commit.RepositoryID.Eq(repositoryID), dal.Commit.DraftName.Eq("")).Offset(offset).Limit(limit)
 	if reverse {

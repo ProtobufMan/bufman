@@ -3,12 +3,19 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
+	"github.com/ProtobufMan/bufman-cli/private/bufpkg/bufmodule"
+	"github.com/ProtobufMan/bufman-cli/private/bufpkg/bufmodule/bufmoduleprotocompile"
+	"github.com/ProtobufMan/bufman-cli/private/bufpkg/bufmodule/bufmoduleref"
+	"github.com/ProtobufMan/bufman-cli/private/pkg/manifest"
+	"github.com/ProtobufMan/bufman-cli/private/pkg/thread"
+	"github.com/ProtobufMan/bufman/internal/config"
 	"github.com/ProtobufMan/bufman/internal/e"
 	"github.com/ProtobufMan/bufman/internal/gen/registry/v1alpha/registryv1alphaconnect"
 	"github.com/ProtobufMan/bufman/internal/mapper"
 	"github.com/ProtobufMan/bufman/internal/model"
 	"github.com/ProtobufMan/bufman/internal/util"
-	"github.com/ProtobufMan/bufman/internal/util/manifest"
+	"github.com/bufbuild/protocompile"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -17,6 +24,8 @@ type PushService interface {
 	PushManifestAndBlobs(userID, ownerName, repositoryName string, fileManifest *manifest.Manifest, fileBlobs *manifest.BlobSet) (*model.Commit, e.ResponseError)
 	PushManifestAndBlobsWithTags(userID, ownerName, repositoryName string, fileManifest *manifest.Manifest, fileBlobs *manifest.BlobSet, tagNames []string) (*model.Commit, e.ResponseError)
 	PushManifestAndBlobsWithDraft(userID, ownerName, repositoryName string, fileManifest *manifest.Manifest, fileBlobs *manifest.BlobSet, draftName string) (*model.Commit, e.ResponseError)
+	GetDependencies(dependencyReferences []bufmoduleref.ModuleReference) (model.Commits, e.ResponseError)
+	TryCompile(ctx context.Context, fileManifest *manifest.Manifest, blobSet *manifest.BlobSet, dependentManifests []*manifest.Manifest, dependentBlobSets []*manifest.BlobSet) e.ResponseError
 }
 
 type PushServiceImpl struct {
@@ -33,6 +42,69 @@ func NewPushService() PushService {
 		commitMapper:     &mapper.CommitMapperImpl{},
 		storageHelper:    util.NewStorageHelper(),
 	}
+}
+
+func (pushService *PushServiceImpl) TryCompile(ctx context.Context, fileManifest *manifest.Manifest, blobSet *manifest.BlobSet, dependentManifests []*manifest.Manifest, dependentBlobSets []*manifest.BlobSet) e.ResponseError {
+	// 检查编译
+	module, err := bufmodule.NewModuleForManifestAndBlobSet(ctx, fileManifest, blobSet)
+	if err != nil {
+		return e.NewInternalError(err.Error())
+	}
+	dependentModules := make([]bufmodule.Module, 0, len(dependentManifests))
+	for i := 0; i < len(dependentManifests); i++ {
+		dependentModule, err := bufmodule.NewModuleForManifestAndBlobSet(ctx, dependentManifests[i], dependentBlobSets[i])
+		if err != nil {
+			return e.NewInternalError(err.Error())
+		}
+		dependentModules = append(dependentModules, dependentModule)
+	}
+	moduleFileSet := bufmodule.NewModuleFileSet(module, dependentModules)
+	parserAccessorHandler := bufmoduleprotocompile.NewParserAccessorHandler(ctx, moduleFileSet)
+	compiler := protocompile.Compiler{
+		MaxParallelism: thread.Parallelism(),
+		SourceInfoMode: protocompile.SourceInfoStandard,
+		Resolver:       &protocompile.SourceResolver{Accessor: parserAccessorHandler.Open},
+	}
+
+	// fileDescriptors are in the same order as paths per the documentation
+	_, err = compiler.Compile(ctx, fileManifest.Paths()...)
+	if err != nil {
+		return e.NewInternalError(err.Error())
+	}
+
+	return nil
+}
+
+func (pushService *PushServiceImpl) GetDependencies(dependencyReferences []bufmoduleref.ModuleReference) (model.Commits, e.ResponseError) {
+	var err error
+	dependentCommits := make([]*model.Commit, 0, len(dependencyReferences)) // 配置文件中声明的依赖
+	repoMap := map[string]*model.Repository{}
+	for i := 0; i < len(dependencyReferences); i++ {
+		dependencyReference := dependencyReferences[i]
+		if dependencyReference.Remote() == config.Properties.BufMan.ServerHost {
+			repo, ok := repoMap[dependencyReference.IdentityString()]
+			if !ok {
+				// 查询repo
+				repo, err = pushService.repositoryMapper.FindByUserNameAndRepositoryName(dependencyReference.Owner(), dependencyReference.Repository())
+				if err != nil {
+					return nil, e.NewInternalError(fmt.Sprintf("find repository(%s)", err.Error()))
+				}
+				repoMap[dependencyReference.IdentityString()] = repo
+			} else {
+				return nil, e.NewInternalError(fmt.Sprintf("%s occur twice", dependencyReference.IdentityString()))
+			}
+
+			// 查询reference
+			commit, err := pushService.commitMapper.FindByRepositoryIDAndReference(repo.RepositoryID, dependencyReference.Reference())
+			if err != nil {
+				return nil, e.NewInternalError(fmt.Sprintf("find reference(%s)", err.Error()))
+			}
+			dependentCommits = append(dependentCommits, commit)
+		}
+	}
+
+	// 验证通过
+	return dependentCommits, nil
 }
 
 func (pushService *PushServiceImpl) PushManifestAndBlobs(userID, ownerName, repositoryName string, fileManifest *manifest.Manifest, fileBlobs *manifest.BlobSet) (*model.Commit, e.ResponseError) {
@@ -157,9 +229,13 @@ func (pushService *PushServiceImpl) toCommit(userID, ownerName, repositoryName s
 
 		return nil
 	})
+	fileManifestBlob, err := fileManifest.Blob()
+	if err != nil {
+		return nil, e.NewInternalError(err.Error())
+	}
 	modelFileManifest := &model.FileManifest{
 		ID:       0,
-		Digest:   fileManifest.Digest().Hex(),
+		Digest:   fileManifestBlob.Digest().Hex(),
 		CommitID: commitID,
 	}
 
@@ -170,7 +246,7 @@ func (pushService *PushServiceImpl) toCommit(userID, ownerName, repositoryName s
 		RepositoryName: repositoryName,
 		CommitID:       commitID,
 		CommitName:     util.GenerateCommitName(user.UserName, repositoryName),
-		ManifestDigest: fileManifest.Digest().Hex(),
+		ManifestDigest: fileManifestBlob.Digest().Hex(),
 		FileManifest:   modelFileManifest,
 		FileBlobs:      modelBlobs,
 	}
@@ -213,7 +289,7 @@ func (pushService *PushServiceImpl) saveFileManifestAndBlobs(fileManifest *manif
 	if err != nil {
 		return e.NewInternalError(registryv1alphaconnect.PushServicePushManifestAndBlobsProcedure)
 	}
-	err = pushService.storageHelper.Store(fileManifest.Digest().Hex(), readCloser)
+	err = pushService.storageHelper.Store(blob.Digest().Hex(), readCloser)
 	if err != nil {
 		return e.NewInternalError(registryv1alphaconnect.PushServicePushManifestAndBlobsProcedure)
 	}

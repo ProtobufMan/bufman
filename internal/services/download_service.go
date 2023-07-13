@@ -4,17 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/ProtobufMan/bufman-cli/private/pkg/manifest"
 	"github.com/ProtobufMan/bufman/internal/e"
-	modulev1alpha "github.com/ProtobufMan/bufman/internal/gen/module/v1alpha"
 	"github.com/ProtobufMan/bufman/internal/gen/registry/v1alpha/registryv1alphaconnect"
 	"github.com/ProtobufMan/bufman/internal/mapper"
 	"github.com/ProtobufMan/bufman/internal/util"
-	"github.com/ProtobufMan/bufman/internal/util/manifest"
 	"gorm.io/gorm"
 )
 
 type DownloadService interface {
-	DownloadManifestAndBlobs(registerID string, reference string) (*modulev1alpha.Blob, []*modulev1alpha.Blob, e.ResponseError)
+	DownloadManifestAndBlobs(registerID string, reference string) (*manifest.Manifest, *manifest.BlobSet, e.ResponseError)
 }
 
 type DownloadServiceImpl struct {
@@ -31,7 +30,7 @@ func NewDownloadService() DownloadService {
 	}
 }
 
-func (downloadService *DownloadServiceImpl) DownloadManifestAndBlobs(registerID string, reference string) (*modulev1alpha.Blob, []*modulev1alpha.Blob, e.ResponseError) {
+func (downloadService *DownloadServiceImpl) DownloadManifestAndBlobs(registerID string, reference string) (*manifest.Manifest, *manifest.BlobSet, e.ResponseError) {
 	// 查询reference对应的commit
 	commit, err := downloadService.commitMapper.FindByRepositoryIDAndReference(registerID, reference)
 	if err != nil {
@@ -88,10 +87,5 @@ func (downloadService *DownloadServiceImpl) DownloadManifestAndBlobs(registerID 
 		return nil, nil, e.NewInternalError(registryv1alphaconnect.DownloadServiceDownloadManifestAndBlobsProcedure)
 	}
 
-	protoManifest, protoBlobs, err := manifest.ToProtoManifestAndBlobs(context.Background(), fileManifest, blobSet)
-	if err != nil {
-		return nil, nil, e.NewInternalError(registryv1alphaconnect.DownloadServiceDownloadManifestAndBlobsProcedure)
-	}
-
-	return protoManifest, protoBlobs, nil
+	return fileManifest, blobSet, nil
 }

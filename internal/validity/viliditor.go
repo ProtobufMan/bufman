@@ -1,14 +1,22 @@
 package validity
 
 import (
+	"bytes"
+	"context"
 	"errors"
 	"fmt"
+	"github.com/ProtobufMan/bufman-cli/private/bufpkg/bufconfig"
+	"github.com/ProtobufMan/bufman-cli/private/bufpkg/buflock"
+	"github.com/ProtobufMan/bufman-cli/private/bufpkg/bufmodule"
+	"github.com/ProtobufMan/bufman-cli/private/pkg/manifest"
 	"github.com/ProtobufMan/bufman/internal/constant"
 	"github.com/ProtobufMan/bufman/internal/e"
+	modulev1alpha "github.com/ProtobufMan/bufman/internal/gen/module/v1alpha"
 	registryv1alpha "github.com/ProtobufMan/bufman/internal/gen/registry/v1alpha"
 	"github.com/ProtobufMan/bufman/internal/mapper"
 	"github.com/ProtobufMan/bufman/internal/model"
 	"gorm.io/gorm"
+	"io"
 	"regexp"
 	"strings"
 )
@@ -27,16 +35,19 @@ type Validator interface {
 	CheckRepositoryCanEditByID(userID, repositoryID, procedure string) (*model.Repository, e.ResponseError)
 	CheckRepositoryCanDelete(userID, ownerName, repositoryName, procedure string) (*model.Repository, e.ResponseError) // 检查用户是否可以删除repo
 	CheckRepositoryCanDeleteByID(userID, repositoryID, procedure string) (*model.Repository, e.ResponseError)
+	CheckManifestAndBlobs(ctx context.Context, protoManifest *modulev1alpha.Blob, protoBlobs []*modulev1alpha.Blob) (*manifest.Manifest, *manifest.BlobSet, *bufconfig.Config, e.ResponseError)
 }
 
 func NewValidator() Validator {
 	return &ValidatorImpl{
 		repositoryMapper: &mapper.RepositoryMapperImpl{},
+		commitMapper:     &mapper.CommitMapperImpl{},
 	}
 }
 
 type ValidatorImpl struct {
 	repositoryMapper mapper.RepositoryMapper
+	commitMapper     mapper.CommitMapper
 }
 
 func (validator *ValidatorImpl) CheckUserName(username string) e.ResponseError {
@@ -232,4 +243,96 @@ func (validator *ValidatorImpl) CheckRepositoryCanDeleteByID(userID, repositoryI
 	}
 
 	return repository, nil
+}
+
+func (validator *ValidatorImpl) CheckManifestAndBlobs(ctx context.Context, protoManifest *modulev1alpha.Blob, protoBlobs []*modulev1alpha.Blob) (*manifest.Manifest, *manifest.BlobSet, *bufconfig.Config, e.ResponseError) {
+	// 读取文件清单
+	reader := bytes.NewReader(protoManifest.Content)
+	fileManifest, err := manifest.NewFromReader(reader)
+	if err != nil {
+		return nil, nil, nil, e.NewInvalidArgumentError(err.Error())
+	}
+	if fileManifest.Empty() {
+		// 不允许上次空的commit
+		return nil, nil, nil, e.NewInvalidArgumentError("no files")
+	}
+
+	// 读取文件列表
+	blobs := make([]manifest.Blob, 0, len(protoBlobs))
+	for i := 0; i < len(protoBlobs); i++ {
+		reader = bytes.NewReader(protoBlobs[i].Content)
+		blob, err := manifest.NewMemoryBlobFromReader(reader)
+		if err != nil {
+			return nil, nil, nil, e.NewInvalidArgumentError(err.Error())
+		}
+		blobs = append(blobs, blob)
+	}
+
+	blobSet, err := manifest.NewBlobSet(ctx, blobs)
+	if err != nil {
+		return nil, nil, nil, e.NewInvalidArgumentError(err.Error())
+	}
+
+	// 检查文件清单和blobs
+	var configFileExist bool
+	var configFileData []byte
+	externalPaths := []string{
+		buflock.ExternalConfigFilePath,
+		bufmodule.LicenseFilePath,
+	}
+	externalPaths = append(externalPaths, bufconfig.AllConfigFilePaths...)
+	err = fileManifest.Range(func(path string, digest manifest.Digest) error {
+		blob, ok := blobSet.BlobFor(digest.String())
+		if !ok {
+			// 文件清单中有的文件，在file blobs中没有
+			return errors.New("check manifest and file blobs failed")
+		}
+
+		// 如果遇到配置文件，就记录下来
+		for _, configFilePath := range bufconfig.AllConfigFilePaths {
+			if path == configFilePath {
+				reader, err := blob.Open(ctx)
+				if err != nil {
+					return err
+				}
+				configFileData, err = io.ReadAll(reader)
+				if err != nil {
+					return err
+				}
+				configFileExist = true
+			}
+		}
+
+		// 仅仅允许上传.proto、readme、license、配置文件
+		unexpected := true
+		if !strings.HasSuffix(path, ".proto") {
+			for _, externalPath := range externalPaths {
+				if path == externalPath {
+					unexpected = false
+					break
+				}
+			}
+		}
+		if unexpected {
+			return errors.New("only allow update .proto、readme、license、bufman config file")
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, nil, nil, e.NewInvalidArgumentError(err.Error())
+	}
+	if !configFileExist {
+		// 不存在配置文件
+		return nil, nil, nil, e.NewInvalidArgumentError("no config file")
+	}
+
+	// 生成Config，并验证其中的依赖关系
+	bufConfig, err := bufconfig.GetConfigForData(ctx, configFileData)
+	if err != nil {
+		// 无法解析配置文件
+		return nil, nil, nil, e.NewInvalidArgumentError(err.Error())
+	}
+
+	return fileManifest, blobSet, bufConfig, nil
 }

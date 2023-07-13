@@ -2,6 +2,8 @@ package main
 
 import (
 	"github.com/ProtobufMan/bufman/internal/config"
+	"github.com/ProtobufMan/bufman/internal/dal"
+	"github.com/ProtobufMan/bufman/internal/model"
 	"github.com/ProtobufMan/bufman/internal/router"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
@@ -10,6 +12,10 @@ import (
 
 func main() {
 	config.LoadConfig()
+
+	model.InitDB()
+
+	dal.SetDefault(config.DataBase)
 
 	// init router
 	r := router.InitRouter()
