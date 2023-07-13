@@ -87,6 +87,14 @@ func InitRouter() *gin.Engine {
 	)
 	registerHandler(router, resolveServicePath, resolveServiceHandler)
 
+	// DownloadService
+	downloadServicePath, downloadServiceHandler := registryv1alphaconnect.NewDownloadServiceHandler(handlers.NewDownloadServiceHandler(),
+		interceptors.WithOptionalAuthInterceptor(
+			registryv1alphaconnect.DownloadServiceDownloadManifestAndBlobsProcedure,
+		),
+	)
+	registerHandler(router, downloadServicePath, downloadServiceHandler)
+
 	return router
 }
 

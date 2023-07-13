@@ -18,6 +18,7 @@ import (
 var (
 	Q            = new(Query)
 	Commit       *commit
+	FileBlob     *fileBlob
 	FileManifest *fileManifest
 	Repository   *repository
 	Tag          *tag
@@ -28,6 +29,7 @@ var (
 func SetDefault(db *gorm.DB, opts ...gen.DOOption) {
 	*Q = *Use(db, opts...)
 	Commit = &Q.Commit
+	FileBlob = &Q.FileBlob
 	FileManifest = &Q.FileManifest
 	Repository = &Q.Repository
 	Tag = &Q.Tag
@@ -39,6 +41,7 @@ func Use(db *gorm.DB, opts ...gen.DOOption) *Query {
 	return &Query{
 		db:           db,
 		Commit:       newCommit(db, opts...),
+		FileBlob:     newFileBlob(db, opts...),
 		FileManifest: newFileManifest(db, opts...),
 		Repository:   newRepository(db, opts...),
 		Tag:          newTag(db, opts...),
@@ -51,6 +54,7 @@ type Query struct {
 	db *gorm.DB
 
 	Commit       commit
+	FileBlob     fileBlob
 	FileManifest fileManifest
 	Repository   repository
 	Tag          tag
@@ -64,6 +68,7 @@ func (q *Query) clone(db *gorm.DB) *Query {
 	return &Query{
 		db:           db,
 		Commit:       q.Commit.clone(db),
+		FileBlob:     q.FileBlob.clone(db),
 		FileManifest: q.FileManifest.clone(db),
 		Repository:   q.Repository.clone(db),
 		Tag:          q.Tag.clone(db),
@@ -84,6 +89,7 @@ func (q *Query) ReplaceDB(db *gorm.DB) *Query {
 	return &Query{
 		db:           db,
 		Commit:       q.Commit.replaceDB(db),
+		FileBlob:     q.FileBlob.replaceDB(db),
 		FileManifest: q.FileManifest.replaceDB(db),
 		Repository:   q.Repository.replaceDB(db),
 		Tag:          q.Tag.replaceDB(db),
@@ -94,6 +100,7 @@ func (q *Query) ReplaceDB(db *gorm.DB) *Query {
 
 type queryCtx struct {
 	Commit       ICommitDo
+	FileBlob     IFileBlobDo
 	FileManifest IFileManifestDo
 	Repository   IRepositoryDo
 	Tag          ITagDo
@@ -104,6 +111,7 @@ type queryCtx struct {
 func (q *Query) WithContext(ctx context.Context) *queryCtx {
 	return &queryCtx{
 		Commit:       q.Commit.WithContext(ctx),
+		FileBlob:     q.FileBlob.WithContext(ctx),
 		FileManifest: q.FileManifest.WithContext(ctx),
 		Repository:   q.Repository.WithContext(ctx),
 		Tag:          q.Tag.WithContext(ctx),

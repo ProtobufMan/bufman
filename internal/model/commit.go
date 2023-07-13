@@ -41,7 +41,9 @@ type Commit struct {
 	SequenceID int64
 
 	// 文件清单
-	FileManifests []*FileManifest `gorm:"foreignKey:CommitID;references:CommitID"`
+	FileManifest *FileManifest `gorm:"foreignKey:CommitID;references:CommitID"`
+	// 文件blobs
+	FileBlobs FileBlobs `gorm:"foreignKey:CommitID;references:CommitID"`
 	// 关联的tag
 	Tags Tags `gorm:"foreignKey:RepositoryID;references:RepositoryID"`
 }

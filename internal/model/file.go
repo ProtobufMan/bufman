@@ -17,17 +17,24 @@
 
 package model
 
-// FileManifest 文件清单，记录每一次提交的所有文件
+// FileManifest 保存文件清单，记录每一次提交的所有文件
 type FileManifest struct {
 	ID       int64  `gorm:"primaryKey;autoIncrement"`
-	Digest   string `gorm:"index"` // 文件哈希
-	CommitID string `gorm:"type:varchar(64)"`
-	FileName string
-
-	//FileIdentity *FileIdentity `gorm:"foreignKey:Digest;references:Digest"`
+	Digest   string // 文件清单哈希
+	CommitID string `gorm:"type:varchar(64), unique"`
 }
 
 type FileManifests []*FileManifest
+
+// FileBlob 保存文件blob
+type FileBlob struct {
+	ID       int64  `gorm:"primaryKey;autoIncrement"`
+	Digest   string // 文件哈希
+	CommitID string `gorm:"type:varchar(64);index"`
+	FileName string
+}
+
+type FileBlobs []*FileBlob
 
 //// FileIdentity 唯一文件表，根据哈希值记录文件实际存储地址
 //type FileIdentity struct {

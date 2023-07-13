@@ -10,9 +10,9 @@ import (
 )
 
 type StorageHelper interface {
-	Store(fileName string, readCloser io.ReadCloser) error // 存储内容
-	Read(fileName string) (io.Reader, error)               // 读取内容
-	GetFilePath(fileName string) string                    // 获取文件实际存储地址
+	Store(digest string, readCloser io.ReadCloser) error // 存储内容
+	Read(digest string) (io.Reader, error)               // 读取内容
+	GetFilePath(digest string) string                    // 获取文件实际存储地址
 }
 
 type StorageHelperImpl struct {
@@ -28,20 +28,20 @@ func NewStorageHelper() StorageHelper {
 	return storageHelperImpl
 }
 
-func (helper *StorageHelperImpl) Store(fileName string, readCloser io.ReadCloser) error {
+func (helper *StorageHelperImpl) Store(digest string, readCloser io.ReadCloser) error {
 	helper.mu.Lock()
 	defer helper.mu.Unlock()
 
-	if _, ok := helper.muDict[fileName]; !ok {
-		helper.muDict[fileName] = &sync.RWMutex{}
+	if _, ok := helper.muDict[digest]; !ok {
+		helper.muDict[digest] = &sync.RWMutex{}
 	}
 
 	// 上写锁
-	helper.muDict[fileName].Lock()
-	defer helper.muDict[fileName].Unlock()
+	helper.muDict[digest].Lock()
+	defer helper.muDict[digest].Unlock()
 
 	// 打开文件
-	filePath := helper.GetFilePath(fileName)
+	filePath := helper.GetFilePath(digest)
 	file, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_EXCL, 0666)
 	if os.IsExist(err) {
 		// 已经存在，直接返回

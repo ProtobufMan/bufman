@@ -38,10 +38,16 @@ func newCommit(db *gorm.DB, opts ...gen.DOOption) commit {
 	_commit.CreatedTime = field.NewTime(tableName, "created_time")
 	_commit.ManifestDigest = field.NewString(tableName, "manifest_digest")
 	_commit.SequenceID = field.NewInt64(tableName, "sequence_id")
-	_commit.FileManifests = commitHasManyFileManifests{
+	_commit.FileManifest = commitHasOneFileManifest{
 		db: db.Session(&gorm.Session{}),
 
-		RelationField: field.NewRelation("FileManifests", "model.FileManifest"),
+		RelationField: field.NewRelation("FileManifest", "model.FileManifest"),
+	}
+
+	_commit.FileBlobs = commitHasManyFileBlobs{
+		db: db.Session(&gorm.Session{}),
+
+		RelationField: field.NewRelation("FileBlobs", "model.FileBlobs"),
 	}
 
 	_commit.Tags = commitHasManyTags{
@@ -70,7 +76,9 @@ type commit struct {
 	CreatedTime    field.Time
 	ManifestDigest field.String
 	SequenceID     field.Int64
-	FileManifests  commitHasManyFileManifests
+	FileManifest   commitHasOneFileManifest
+
+	FileBlobs commitHasManyFileBlobs
 
 	Tags commitHasManyTags
 
@@ -116,7 +124,7 @@ func (c *commit) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (c *commit) fillFieldMap() {
-	c.fieldMap = make(map[string]field.Expr, 13)
+	c.fieldMap = make(map[string]field.Expr, 14)
 	c.fieldMap["id"] = c.ID
 	c.fieldMap["user_id"] = c.UserID
 	c.fieldMap["user_name"] = c.UserName
@@ -141,13 +149,13 @@ func (c commit) replaceDB(db *gorm.DB) commit {
 	return c
 }
 
-type commitHasManyFileManifests struct {
+type commitHasOneFileManifest struct {
 	db *gorm.DB
 
 	field.RelationField
 }
 
-func (a commitHasManyFileManifests) Where(conds ...field.Expr) *commitHasManyFileManifests {
+func (a commitHasOneFileManifest) Where(conds ...field.Expr) *commitHasOneFileManifest {
 	if len(conds) == 0 {
 		return &a
 	}
@@ -160,27 +168,27 @@ func (a commitHasManyFileManifests) Where(conds ...field.Expr) *commitHasManyFil
 	return &a
 }
 
-func (a commitHasManyFileManifests) WithContext(ctx context.Context) *commitHasManyFileManifests {
+func (a commitHasOneFileManifest) WithContext(ctx context.Context) *commitHasOneFileManifest {
 	a.db = a.db.WithContext(ctx)
 	return &a
 }
 
-func (a commitHasManyFileManifests) Session(session *gorm.Session) *commitHasManyFileManifests {
+func (a commitHasOneFileManifest) Session(session *gorm.Session) *commitHasOneFileManifest {
 	a.db = a.db.Session(session)
 	return &a
 }
 
-func (a commitHasManyFileManifests) Model(m *model.Commit) *commitHasManyFileManifestsTx {
-	return &commitHasManyFileManifestsTx{a.db.Model(m).Association(a.Name())}
+func (a commitHasOneFileManifest) Model(m *model.Commit) *commitHasOneFileManifestTx {
+	return &commitHasOneFileManifestTx{a.db.Model(m).Association(a.Name())}
 }
 
-type commitHasManyFileManifestsTx struct{ tx *gorm.Association }
+type commitHasOneFileManifestTx struct{ tx *gorm.Association }
 
-func (a commitHasManyFileManifestsTx) Find() (result []*model.FileManifest, err error) {
+func (a commitHasOneFileManifestTx) Find() (result *model.FileManifest, err error) {
 	return result, a.tx.Find(&result)
 }
 
-func (a commitHasManyFileManifestsTx) Append(values ...*model.FileManifest) (err error) {
+func (a commitHasOneFileManifestTx) Append(values ...*model.FileManifest) (err error) {
 	targetValues := make([]interface{}, len(values))
 	for i, v := range values {
 		targetValues[i] = v
@@ -188,7 +196,7 @@ func (a commitHasManyFileManifestsTx) Append(values ...*model.FileManifest) (err
 	return a.tx.Append(targetValues...)
 }
 
-func (a commitHasManyFileManifestsTx) Replace(values ...*model.FileManifest) (err error) {
+func (a commitHasOneFileManifestTx) Replace(values ...*model.FileManifest) (err error) {
 	targetValues := make([]interface{}, len(values))
 	for i, v := range values {
 		targetValues[i] = v
@@ -196,7 +204,7 @@ func (a commitHasManyFileManifestsTx) Replace(values ...*model.FileManifest) (er
 	return a.tx.Replace(targetValues...)
 }
 
-func (a commitHasManyFileManifestsTx) Delete(values ...*model.FileManifest) (err error) {
+func (a commitHasOneFileManifestTx) Delete(values ...*model.FileManifest) (err error) {
 	targetValues := make([]interface{}, len(values))
 	for i, v := range values {
 		targetValues[i] = v
@@ -204,11 +212,82 @@ func (a commitHasManyFileManifestsTx) Delete(values ...*model.FileManifest) (err
 	return a.tx.Delete(targetValues...)
 }
 
-func (a commitHasManyFileManifestsTx) Clear() error {
+func (a commitHasOneFileManifestTx) Clear() error {
 	return a.tx.Clear()
 }
 
-func (a commitHasManyFileManifestsTx) Count() int64 {
+func (a commitHasOneFileManifestTx) Count() int64 {
+	return a.tx.Count()
+}
+
+type commitHasManyFileBlobs struct {
+	db *gorm.DB
+
+	field.RelationField
+}
+
+func (a commitHasManyFileBlobs) Where(conds ...field.Expr) *commitHasManyFileBlobs {
+	if len(conds) == 0 {
+		return &a
+	}
+
+	exprs := make([]clause.Expression, 0, len(conds))
+	for _, cond := range conds {
+		exprs = append(exprs, cond.BeCond().(clause.Expression))
+	}
+	a.db = a.db.Clauses(clause.Where{Exprs: exprs})
+	return &a
+}
+
+func (a commitHasManyFileBlobs) WithContext(ctx context.Context) *commitHasManyFileBlobs {
+	a.db = a.db.WithContext(ctx)
+	return &a
+}
+
+func (a commitHasManyFileBlobs) Session(session *gorm.Session) *commitHasManyFileBlobs {
+	a.db = a.db.Session(session)
+	return &a
+}
+
+func (a commitHasManyFileBlobs) Model(m *model.Commit) *commitHasManyFileBlobsTx {
+	return &commitHasManyFileBlobsTx{a.db.Model(m).Association(a.Name())}
+}
+
+type commitHasManyFileBlobsTx struct{ tx *gorm.Association }
+
+func (a commitHasManyFileBlobsTx) Find() (result []*model.FileBlobs, err error) {
+	return result, a.tx.Find(&result)
+}
+
+func (a commitHasManyFileBlobsTx) Append(values ...*model.FileBlobs) (err error) {
+	targetValues := make([]interface{}, len(values))
+	for i, v := range values {
+		targetValues[i] = v
+	}
+	return a.tx.Append(targetValues...)
+}
+
+func (a commitHasManyFileBlobsTx) Replace(values ...*model.FileBlobs) (err error) {
+	targetValues := make([]interface{}, len(values))
+	for i, v := range values {
+		targetValues[i] = v
+	}
+	return a.tx.Replace(targetValues...)
+}
+
+func (a commitHasManyFileBlobsTx) Delete(values ...*model.FileBlobs) (err error) {
+	targetValues := make([]interface{}, len(values))
+	for i, v := range values {
+		targetValues[i] = v
+	}
+	return a.tx.Delete(targetValues...)
+}
+
+func (a commitHasManyFileBlobsTx) Clear() error {
+	return a.tx.Clear()
+}
+
+func (a commitHasManyFileBlobsTx) Count() int64 {
 	return a.tx.Count()
 }
 

@@ -59,6 +59,7 @@ func loadDatabaseConfig(dsn string) {
 			&model.User{},
 			&model.Token{},
 			&model.FileManifest{},
+			&model.FileBlob{},
 		)
 		if initErr != nil {
 			panic(initErr)

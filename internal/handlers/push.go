@@ -57,6 +57,11 @@ func (handler *PushServiceHandler) PushManifestAndBlobs(ctx context.Context, req
 		responseError := e.NewInvalidArgumentError("manifest")
 		return nil, connect.NewError(responseError.Code(), responseError.Err())
 	}
+	if fileManifest.Empty() {
+		// 不允许上次空的commit
+		emptyErr := e.NewInvalidArgumentError("no files")
+		return nil, connect.NewError(emptyErr.Code(), emptyErr.Err())
+	}
 
 	// 读取文件列表
 	fileBlobs, err := manifest.NewBlobSetFromProto(ctx, req.Msg.GetBlobs())

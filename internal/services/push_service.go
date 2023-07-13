@@ -42,7 +42,7 @@ func (pushService *PushServiceImpl) PushManifestAndBlobs(userID, ownerName, repo
 	}
 
 	// 写入文件
-	err = pushService.saveFileBlobs(fileManifest, fileBlobs)
+	err = pushService.saveFileManifestAndBlobs(fileManifest, fileBlobs)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +83,7 @@ func (pushService *PushServiceImpl) PushManifestAndBlobsWithTags(userID, ownerNa
 	commit.Tags = tags
 
 	// 写入文件
-	err = pushService.saveFileBlobs(fileManifest, fileBlobs)
+	err = pushService.saveFileManifestAndBlobs(fileManifest, fileBlobs)
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +111,7 @@ func (pushService *PushServiceImpl) PushManifestAndBlobsWithDraft(userID, ownerN
 	commit.DraftName = draftName
 
 	// 写入文件
-	err = pushService.saveFileBlobs(fileManifest, fileBlobs)
+	err = pushService.saveFileManifestAndBlobs(fileManifest, fileBlobs)
 	if err != nil {
 		return nil, err
 	}
@@ -146,10 +146,10 @@ func (pushService *PushServiceImpl) toCommit(userID, ownerName, repositoryName s
 
 	commitID := uuid.NewString()
 
-	// 生成文件清单file manifests
-	modelFileManifests := make([]*model.FileManifest, 0, len(fileManifest.Paths()))
+	// 生成file blobs
+	modelBlobs := make([]*model.FileBlob, 0, len(fileManifest.Paths()))
 	_ = fileManifest.Range(func(path string, digest manifest.Digest) error {
-		modelFileManifests = append(modelFileManifests, &model.FileManifest{
+		modelBlobs = append(modelBlobs, &model.FileBlob{
 			Digest:   digest.Hex(),
 			CommitID: commitID,
 			FileName: path,
@@ -157,6 +157,11 @@ func (pushService *PushServiceImpl) toCommit(userID, ownerName, repositoryName s
 
 		return nil
 	})
+	modelFileManifest := &model.FileManifest{
+		ID:       0,
+		Digest:   fileManifest.Digest().Hex(),
+		CommitID: commitID,
+	}
 
 	commit := &model.Commit{
 		UserID:         user.UserID,
@@ -166,13 +171,15 @@ func (pushService *PushServiceImpl) toCommit(userID, ownerName, repositoryName s
 		CommitID:       commitID,
 		CommitName:     util.GenerateCommitName(user.UserName, repositoryName),
 		ManifestDigest: fileManifest.Digest().Hex(),
-		FileManifests:  modelFileManifests,
+		FileManifest:   modelFileManifest,
+		FileBlobs:      modelBlobs,
 	}
 
 	return commit, nil
 }
 
-func (pushService *PushServiceImpl) saveFileBlobs(fileManifest *manifest.Manifest, fileBlobs *manifest.BlobSet) e.ResponseError {
+func (pushService *PushServiceImpl) saveFileManifestAndBlobs(fileManifest *manifest.Manifest, fileBlobs *manifest.BlobSet) e.ResponseError {
+	// 保存file blobs
 	err := fileManifest.Range(func(path string, digest manifest.Digest) error {
 		blob, ok := fileBlobs.BlobFor(digest.Hex())
 		if !ok {
@@ -192,10 +199,24 @@ func (pushService *PushServiceImpl) saveFileBlobs(fileManifest *manifest.Manifes
 
 		return nil
 	})
-
 	respErr, ok := err.(e.ResponseError)
 	if !ok {
 		return e.NewInternalError(registryv1alphaconnect.PushServicePushManifestAndBlobsProcedure)
 	}
+
+	// 保存file manifest
+	blob, err := fileManifest.Blob()
+	if err != nil {
+		return e.NewInternalError(registryv1alphaconnect.PushServicePushManifestAndBlobsProcedure)
+	}
+	readCloser, err := blob.Open(context.Background())
+	if err != nil {
+		return e.NewInternalError(registryv1alphaconnect.PushServicePushManifestAndBlobsProcedure)
+	}
+	err = pushService.storageHelper.Store(fileManifest.Digest().Hex(), readCloser)
+	if err != nil {
+		return e.NewInternalError(registryv1alphaconnect.PushServicePushManifestAndBlobsProcedure)
+	}
+
 	return respErr
 }

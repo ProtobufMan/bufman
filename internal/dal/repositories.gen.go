@@ -42,10 +42,15 @@ func newRepository(db *gorm.DB, opts ...gen.DOOption) repository {
 		db: db.Session(&gorm.Session{}),
 
 		RelationField: field.NewRelation("DraftCommits", "model.Commit"),
-		FileManifests: struct {
+		FileManifest: struct {
 			field.RelationField
 		}{
-			RelationField: field.NewRelation("DraftCommits.FileManifests", "model.FileManifest"),
+			RelationField: field.NewRelation("DraftCommits.FileManifest", "model.FileManifest"),
+		},
+		FileBlobs: struct {
+			field.RelationField
+		}{
+			RelationField: field.NewRelation("DraftCommits.FileBlobs", "model.FileBlobs"),
 		},
 		Tags: struct {
 			field.RelationField
@@ -156,7 +161,10 @@ type repositoryHasManyDraftCommits struct {
 
 	field.RelationField
 
-	FileManifests struct {
+	FileManifest struct {
+		field.RelationField
+	}
+	FileBlobs struct {
 		field.RelationField
 	}
 	Tags struct {

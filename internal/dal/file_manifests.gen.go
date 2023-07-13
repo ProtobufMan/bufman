@@ -30,7 +30,6 @@ func newFileManifest(db *gorm.DB, opts ...gen.DOOption) fileManifest {
 	_fileManifest.ID = field.NewInt64(tableName, "id")
 	_fileManifest.Digest = field.NewString(tableName, "digest")
 	_fileManifest.CommitID = field.NewString(tableName, "commit_id")
-	_fileManifest.FileName = field.NewString(tableName, "file_name")
 
 	_fileManifest.fillFieldMap()
 
@@ -44,7 +43,6 @@ type fileManifest struct {
 	ID       field.Int64
 	Digest   field.String
 	CommitID field.String
-	FileName field.String
 
 	fieldMap map[string]field.Expr
 }
@@ -64,7 +62,6 @@ func (f *fileManifest) updateTableName(table string) *fileManifest {
 	f.ID = field.NewInt64(table, "id")
 	f.Digest = field.NewString(table, "digest")
 	f.CommitID = field.NewString(table, "commit_id")
-	f.FileName = field.NewString(table, "file_name")
 
 	f.fillFieldMap()
 
@@ -81,11 +78,10 @@ func (f *fileManifest) GetFieldByName(fieldName string) (field.OrderExpr, bool) 
 }
 
 func (f *fileManifest) fillFieldMap() {
-	f.fieldMap = make(map[string]field.Expr, 4)
+	f.fieldMap = make(map[string]field.Expr, 3)
 	f.fieldMap["id"] = f.ID
 	f.fieldMap["digest"] = f.Digest
 	f.fieldMap["commit_id"] = f.CommitID
-	f.fieldMap["file_name"] = f.FileName
 }
 
 func (f fileManifest) clone(db *gorm.DB) fileManifest {
