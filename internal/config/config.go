@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/ProtobufMan/bufman/internal/constant"
 	"gorm.io/gorm"
 	"os"
 	"time"
@@ -40,4 +41,8 @@ func LoadConfig() {
 	}
 	Properties.BufMan.MysqlDsn = os.Getenv(mysqlDSNKey)
 	Properties.BufMan.ServerHost = os.Getenv(serverHostKey)
+
+	if err := os.MkdirAll(constant.FileSavaDir, 0666); err != nil {
+		panic(err)
+	}
 }

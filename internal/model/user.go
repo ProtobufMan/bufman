@@ -31,6 +31,10 @@ type User struct {
 	Password    string    `gorm:"type:varchar(64);not null"`
 	CreatedTime time.Time `gorm:"autoCreateTime"`
 	UpdateTime  time.Time `gorm:"autoUpdateTime"`
+	Deactivated bool      // 无效
+	Url         string
+	Description string // 描述信息
+	UserType    int32  `gorm:"default:1"`
 }
 
 func (user *User) TableName() string {
@@ -43,10 +47,14 @@ func (user *User) ToProtoUser() *registryv1alpha1.User {
 	}
 
 	return &registryv1alpha1.User{
-		Id:         user.UserID,
-		CreateTime: timestamppb.New(user.CreatedTime),
-		UpdateTime: timestamppb.New(user.UpdateTime),
-		Username:   user.UserName,
+		Id:          user.UserID,
+		CreateTime:  timestamppb.New(user.CreatedTime),
+		UpdateTime:  timestamppb.New(user.UpdateTime),
+		Username:    user.UserName,
+		Deactivated: user.Deactivated,
+		Description: user.Description,
+		Url:         user.Url,
+		UserType:    registryv1alpha1.UserType(user.UserType),
 	}
 }
 

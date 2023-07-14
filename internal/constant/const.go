@@ -4,7 +4,7 @@ const (
 	AuthHeader    = "Authorization"
 	AuthPrefix    = "Bearer"
 	TokenLength   = 16
-	CommitLength  = 64
+	CommitLength  = 32
 	UserIDKey     = "user_id"
 	DefaultBranch = "main"
 	FileSavaDir   = "blobs"

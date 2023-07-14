@@ -78,6 +78,6 @@ type InvalidArgumentError struct {
 func NewInvalidArgumentError(object string) *InvalidArgumentError {
 	msg := fmt.Sprintf("%s is invalid", object)
 	return &InvalidArgumentError{
-		NewBaseResponseError(msg, connect.CodeAlreadyExists),
+		NewBaseResponseError(msg, connect.CodeInvalidArgument),
 	}
 }

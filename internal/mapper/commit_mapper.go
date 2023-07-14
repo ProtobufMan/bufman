@@ -39,7 +39,7 @@ func (c *CommitMapperImpl) Create(commit *model.Commit) error {
 		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 			return err
 		}
-		if lastCommit.ManifestDigest == commit.ManifestDigest {
+		if lastCommit != nil && lastCommit.ManifestDigest == commit.ManifestDigest {
 			return ErrLastCommitDuplicated
 		}
 

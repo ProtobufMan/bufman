@@ -18,6 +18,7 @@ import (
 	"github.com/bufbuild/protocompile"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+	"strings"
 )
 
 type PushService interface {
@@ -67,12 +68,27 @@ func (pushService *PushServiceImpl) TryCompile(ctx context.Context, fileManifest
 	}
 
 	// fileDescriptors are in the same order as paths per the documentation
-	_, err = compiler.Compile(ctx, fileManifest.Paths()...)
+	protoPaths := getProtoPaths(fileManifest)
+	_, err = compiler.Compile(ctx, protoPaths...)
 	if err != nil {
 		return e.NewInternalError(err.Error())
 	}
 
 	return nil
+}
+
+func getProtoPaths(fileManifest *manifest.Manifest) []string {
+
+	var protoPaths []string
+	_ = fileManifest.Range(func(path string, digest manifest.Digest) error {
+		if strings.HasSuffix(path, ".proto") {
+			protoPaths = append(protoPaths, path)
+		}
+
+		return nil
+	})
+
+	return protoPaths
 }
 
 func (pushService *PushServiceImpl) GetDependencies(dependencyReferences []bufmoduleref.ModuleReference) (model.Commits, e.ResponseError) {
@@ -257,7 +273,7 @@ func (pushService *PushServiceImpl) toCommit(userID, ownerName, repositoryName s
 func (pushService *PushServiceImpl) saveFileManifestAndBlobs(fileManifest *manifest.Manifest, fileBlobs *manifest.BlobSet) e.ResponseError {
 	// 保存file blobs
 	err := fileManifest.Range(func(path string, digest manifest.Digest) error {
-		blob, ok := fileBlobs.BlobFor(digest.Hex())
+		blob, ok := fileBlobs.BlobFor(digest.String())
 		if !ok {
 			return e.NewInvalidArgumentError("file blobs")
 		}
@@ -275,8 +291,7 @@ func (pushService *PushServiceImpl) saveFileManifestAndBlobs(fileManifest *manif
 
 		return nil
 	})
-	respErr, ok := err.(e.ResponseError)
-	if !ok {
+	if err != nil {
 		return e.NewInternalError(registryv1alpha1connect.PushServicePushManifestAndBlobsProcedure)
 	}
 
@@ -294,5 +309,5 @@ func (pushService *PushServiceImpl) saveFileManifestAndBlobs(fileManifest *manif
 		return e.NewInternalError(registryv1alpha1connect.PushServicePushManifestAndBlobsProcedure)
 	}
 
-	return respErr
+	return nil
 }

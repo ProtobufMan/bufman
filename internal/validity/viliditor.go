@@ -300,21 +300,23 @@ func (validator *ValidatorImpl) CheckManifestAndBlobs(ctx context.Context, proto
 					return err
 				}
 				configFileExist = true
+				break
 			}
 		}
 
 		// 仅仅允许上传.proto、readme、license、配置文件
-		unexpected := true
 		if !strings.HasSuffix(path, ".proto") {
+			unexpected := true
 			for _, externalPath := range externalPaths {
 				if path == externalPath {
 					unexpected = false
 					break
 				}
 			}
-		}
-		if unexpected {
-			return errors.New("only allow update .proto、readme、license、bufman config file")
+
+			if unexpected {
+				return errors.New("only allow update .proto、readme、license、bufman config file")
+			}
 		}
 
 		return nil
