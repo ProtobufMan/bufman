@@ -32,6 +32,9 @@ func (commitService *CommitServiceImpl) ListRepositoryCommitsByReference(reposit
 	// 查询commits
 	commits, err := commitService.commitMapper.FindPageByRepositoryIDAndReference(repositoryID, reference, offset, limit, reverse)
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, e.NewNotFoundError("commits not found")
+		}
 		return nil, e.NewInternalError(registryv1alpha1connect.RepositoryCommitServiceListRepositoryCommitsByReferenceProcedure)
 	}
 

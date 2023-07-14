@@ -1,5 +1,14 @@
 package constant
 
+/*
+!! Warning
+!! Warning
+!! Warning
+!! Warning
+
+Constant can not be changed!!!
+*/
+
 const (
 	AuthHeader    = "Authorization"
 	AuthPrefix    = "Bearer"

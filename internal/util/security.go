@@ -27,7 +27,7 @@ func GenerateToken(username, note string) string {
 	now := strconv.FormatInt(time.Now().UnixNano(), 10)
 	sha.Write([]byte(now))
 
-	return hex.EncodeToString(sha.Sum(nil)[:constant.TokenLength])
+	return hex.EncodeToString(sha.Sum(nil)[:constant.TokenLength/2])
 }
 
 func GenerateCommitName(userName, RepositoryName string) string {
@@ -39,5 +39,5 @@ func GenerateCommitName(userName, RepositoryName string) string {
 	sha.Write([]byte(now))
 	bytes := sha.Sum(nil)
 
-	return hex.EncodeToString(bytes[:constant.CommitLength])
+	return hex.EncodeToString(bytes[:constant.CommitLength/2])
 }
