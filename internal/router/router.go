@@ -1,7 +1,7 @@
 package router
 
 import (
-	"github.com/ProtobufMan/bufman/internal/gen/registry/v1alpha/registryv1alphaconnect"
+	"github.com/ProtobufMan/bufman/internal/gen/bufman/registry/v1alpha/registryv1alphaconnect"
 	"github.com/ProtobufMan/bufman/internal/handlers"
 	"github.com/ProtobufMan/bufman/internal/interceptors"
 	"github.com/gin-gonic/gin"

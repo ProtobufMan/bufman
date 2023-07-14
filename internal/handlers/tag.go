@@ -3,8 +3,8 @@ package handlers
 import (
 	"context"
 	"github.com/ProtobufMan/bufman/internal/constant"
-	registryv1alpha "github.com/ProtobufMan/bufman/internal/gen/registry/v1alpha"
-	"github.com/ProtobufMan/bufman/internal/gen/registry/v1alpha/registryv1alphaconnect"
+	registryv1alpha "github.com/ProtobufMan/bufman/internal/gen/bufman/registry/v1alpha"
+	"github.com/ProtobufMan/bufman/internal/gen/bufman/registry/v1alpha/registryv1alphaconnect"
 	"github.com/ProtobufMan/bufman/internal/services"
 	"github.com/ProtobufMan/bufman/internal/validity"
 	"github.com/bufbuild/connect-go"

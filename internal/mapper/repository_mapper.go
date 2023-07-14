@@ -2,7 +2,7 @@ package mapper
 
 import (
 	"github.com/ProtobufMan/bufman/internal/dal"
-	registryv1alpha "github.com/ProtobufMan/bufman/internal/gen/registry/v1alpha"
+	registryv1alpha "github.com/ProtobufMan/bufman/internal/gen/bufman/registry/v1alpha"
 	"github.com/ProtobufMan/bufman/internal/model"
 	"time"
 )

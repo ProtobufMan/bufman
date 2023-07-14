@@ -3,8 +3,8 @@ package services
 import (
 	"errors"
 	"github.com/ProtobufMan/bufman/internal/e"
-	registryv1alpha "github.com/ProtobufMan/bufman/internal/gen/registry/v1alpha"
-	"github.com/ProtobufMan/bufman/internal/gen/registry/v1alpha/registryv1alphaconnect"
+	registryv1alpha "github.com/ProtobufMan/bufman/internal/gen/bufman/registry/v1alpha"
+	"github.com/ProtobufMan/bufman/internal/gen/bufman/registry/v1alpha/registryv1alphaconnect"
 	"github.com/ProtobufMan/bufman/internal/mapper"
 	"github.com/ProtobufMan/bufman/internal/model"
 	"github.com/google/uuid"

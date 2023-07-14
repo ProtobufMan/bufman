@@ -5,7 +5,7 @@ import (
 	"github.com/ProtobufMan/bufman-cli/private/pkg/manifest"
 	"github.com/ProtobufMan/bufman/internal/constant"
 	"github.com/ProtobufMan/bufman/internal/e"
-	registryv1alpha "github.com/ProtobufMan/bufman/internal/gen/registry/v1alpha"
+	registryv1alpha "github.com/ProtobufMan/bufman/internal/gen/bufman/registry/v1alpha"
 	"github.com/ProtobufMan/bufman/internal/model"
 	"github.com/ProtobufMan/bufman/internal/services"
 	"github.com/ProtobufMan/bufman/internal/validity"

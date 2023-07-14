@@ -3,7 +3,7 @@ package handlers
 import (
 	"context"
 	"github.com/ProtobufMan/bufman/internal/constant"
-	registryv1alpha "github.com/ProtobufMan/bufman/internal/gen/registry/v1alpha"
+	registryv1alpha "github.com/ProtobufMan/bufman/internal/gen/bufman/registry/v1alpha"
 	"github.com/ProtobufMan/bufman/internal/services"
 	"github.com/bufbuild/connect-go"
 )

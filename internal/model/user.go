@@ -18,7 +18,7 @@
 package model
 
 import (
-	registryv1alpha "github.com/ProtobufMan/bufman/internal/gen/registry/v1alpha"
+	registryv1alpha "github.com/ProtobufMan/bufman/internal/gen/bufman/registry/v1alpha"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"time"
 )

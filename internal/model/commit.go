@@ -21,8 +21,8 @@ import (
 	"github.com/ProtobufMan/bufman-cli/private/pkg/manifest"
 	"github.com/ProtobufMan/bufman/internal/config"
 	"github.com/ProtobufMan/bufman/internal/constant"
-	modulev1alpha "github.com/ProtobufMan/bufman/internal/gen/module/v1alpha"
-	registryv1alpha "github.com/ProtobufMan/bufman/internal/gen/registry/v1alpha"
+	modulev1alpha "github.com/ProtobufMan/bufman/internal/gen/bufman/module/v1alpha"
+	registryv1alpha "github.com/ProtobufMan/bufman/internal/gen/bufman/registry/v1alpha"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"time"
 )

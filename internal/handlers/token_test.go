@@ -2,8 +2,8 @@ package handlers
 
 import (
 	"context"
-	registryv1alpha "github.com/ProtobufMan/bufman/internal/gen/registry/v1alpha"
-	"github.com/ProtobufMan/bufman/internal/gen/registry/v1alpha/registryv1alphaconnect"
+	registryv1alpha "github.com/ProtobufMan/bufman/internal/gen/bufman/registry/v1alpha"
+	"github.com/ProtobufMan/bufman/internal/gen/bufman/registry/v1alpha/registryv1alphaconnect"
 	"github.com/ProtobufMan/bufman/internal/interceptors"
 	"github.com/bufbuild/connect-go"
 	"google.golang.org/protobuf/types/known/timestamppb"
