@@ -3,6 +3,7 @@ package config
 import (
 	"gorm.io/gorm"
 	"os"
+	"time"
 )
 
 /*
@@ -20,6 +21,9 @@ type Config struct {
 type BufMan struct {
 	ServerHost string
 	MysqlDsn   string
+
+	PageTokenExpireTime time.Duration
+	PageTokenSecret     string
 }
 
 var (
@@ -28,7 +32,12 @@ var (
 )
 
 func LoadConfig() {
-	Properties = &Config{}
+	Properties = &Config{
+		BufMan: BufMan{
+			PageTokenExpireTime: time.Minute * 10, // 默认过期时间为10分钟
+			PageTokenSecret:     "123456",
+		},
+	}
 	Properties.BufMan.MysqlDsn = os.Getenv(mysqlDSNKey)
 	Properties.BufMan.ServerHost = os.Getenv(serverHostKey)
 }
