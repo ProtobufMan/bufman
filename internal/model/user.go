@@ -18,7 +18,7 @@
 package model
 
 import (
-	registryv1alpha "github.com/ProtobufMan/bufman/internal/gen/bufman/registry/v1alpha"
+	registryv1alpha1 "github.com/ProtobufMan/bufman-cli/private/gen/proto/go/bufman/alpha/registry/v1alpha1"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"time"
 )
@@ -37,12 +37,12 @@ func (user *User) TableName() string {
 	return "users"
 }
 
-func (user *User) ToProtoUser() *registryv1alpha.User {
+func (user *User) ToProtoUser() *registryv1alpha1.User {
 	if user == nil {
 		return (&User{}).ToProtoUser()
 	}
 
-	return &registryv1alpha.User{
+	return &registryv1alpha1.User{
 		Id:         user.UserID,
 		CreateTime: timestamppb.New(user.CreatedTime),
 		UpdateTime: timestamppb.New(user.UpdateTime),
@@ -52,8 +52,8 @@ func (user *User) ToProtoUser() *registryv1alpha.User {
 
 type Users []*User
 
-func (users *Users) ToProtoUsers() []*registryv1alpha.User {
-	protoUsers := make([]*registryv1alpha.User, 0, len(*users))
+func (users *Users) ToProtoUsers() []*registryv1alpha1.User {
+	protoUsers := make([]*registryv1alpha1.User, 0, len(*users))
 	for i := 0; i < len(*users); i++ {
 		protoUsers = append(protoUsers, (*users)[i].ToProtoUser())
 	}

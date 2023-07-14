@@ -18,7 +18,7 @@
 package model
 
 import (
-	registryv1alpha "github.com/ProtobufMan/bufman/internal/gen/bufman/registry/v1alpha"
+	registryv1alpha1 "github.com/ProtobufMan/bufman-cli/private/gen/proto/go/bufman/alpha/registry/v1alpha1"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"time"
 )
@@ -40,12 +40,12 @@ func (tag *Tag) TableName() string {
 	return "tags"
 }
 
-func (tag *Tag) ToProtoRepositoryTag() *registryv1alpha.RepositoryTag {
+func (tag *Tag) ToProtoRepositoryTag() *registryv1alpha1.RepositoryTag {
 	if tag == nil {
 		return (&Tag{}).ToProtoRepositoryTag()
 	}
 
-	return &registryv1alpha.RepositoryTag{
+	return &registryv1alpha1.RepositoryTag{
 		Id:         tag.TagID,
 		CreateTime: timestamppb.New(tag.CreatedTime),
 		Name:       tag.TagName,
@@ -56,8 +56,8 @@ func (tag *Tag) ToProtoRepositoryTag() *registryv1alpha.RepositoryTag {
 
 type Tags []*Tag
 
-func (tags *Tags) ToProtoRepositoryTags() []*registryv1alpha.RepositoryTag {
-	repositoryTags := make([]*registryv1alpha.RepositoryTag, len(*tags))
+func (tags *Tags) ToProtoRepositoryTags() []*registryv1alpha1.RepositoryTag {
+	repositoryTags := make([]*registryv1alpha1.RepositoryTag, len(*tags))
 	for i := 0; i < len(*tags); i++ {
 		repositoryTags[i] = (*tags)[i].ToProtoRepositoryTag()
 	}

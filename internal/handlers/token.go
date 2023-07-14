@@ -2,9 +2,11 @@ package handlers
 
 import (
 	"context"
+	registryv1alpha1 "github.com/ProtobufMan/bufman-cli/private/gen/proto/go/bufman/alpha/registry/v1alpha1"
 	"github.com/ProtobufMan/bufman/internal/constant"
-	registryv1alpha "github.com/ProtobufMan/bufman/internal/gen/bufman/registry/v1alpha"
+	"github.com/ProtobufMan/bufman/internal/e"
 	"github.com/ProtobufMan/bufman/internal/services"
+	"github.com/ProtobufMan/bufman/internal/util"
 	"github.com/ProtobufMan/bufman/internal/validity"
 	"github.com/bufbuild/connect-go"
 )
@@ -21,20 +23,20 @@ func NewTokenServiceHandler() *TokenServiceHandler {
 	}
 }
 
-func (handler *TokenServiceHandler) CreateToken(ctx context.Context, req *connect.Request[registryv1alpha.CreateTokenRequest]) (*connect.Response[registryv1alpha.CreateTokenResponse], error) {
+func (handler *TokenServiceHandler) CreateToken(ctx context.Context, req *connect.Request[registryv1alpha1.CreateTokenRequest]) (*connect.Response[registryv1alpha1.CreateTokenResponse], error) {
 	token, err := handler.tokenService.CreateToken(req.Msg.GetUsername(), req.Msg.GetPassword(), req.Msg.GetExpireTime().AsTime(), req.Msg.GetNote())
 	if err != nil {
 		return nil, connect.NewError(err.Code(), err.Err())
 	}
 
 	// success
-	resp := connect.NewResponse(&registryv1alpha.CreateTokenResponse{
+	resp := connect.NewResponse(&registryv1alpha1.CreateTokenResponse{
 		Token: token.TokenName,
 	})
 	return resp, nil
 }
 
-func (handler *TokenServiceHandler) GetToken(ctx context.Context, req *connect.Request[registryv1alpha.GetTokenRequest]) (*connect.Response[registryv1alpha.GetTokenResponse], error) {
+func (handler *TokenServiceHandler) GetToken(ctx context.Context, req *connect.Request[registryv1alpha1.GetTokenRequest]) (*connect.Response[registryv1alpha1.GetTokenResponse], error) {
 	userID := ctx.Value(constant.UserIDKey).(string)
 
 	// 查询token
@@ -43,34 +45,47 @@ func (handler *TokenServiceHandler) GetToken(ctx context.Context, req *connect.R
 		return nil, connect.NewError(err.Code(), err.Err())
 	}
 
-	resp := connect.NewResponse(&registryv1alpha.GetTokenResponse{
+	resp := connect.NewResponse(&registryv1alpha1.GetTokenResponse{
 		Token: token.ToProtoToken(),
 	})
 	return resp, nil
 }
 
-func (handler *TokenServiceHandler) ListTokens(ctx context.Context, req *connect.Request[registryv1alpha.ListTokensRequest]) (*connect.Response[registryv1alpha.ListTokensResponse], error) {
+func (handler *TokenServiceHandler) ListTokens(ctx context.Context, req *connect.Request[registryv1alpha1.ListTokensRequest]) (*connect.Response[registryv1alpha1.ListTokensResponse], error) {
 	// 验证参数
 	argErr := handler.validator.CheckPageSize(req.Msg.GetPageSize())
 	if argErr != nil {
 		return nil, connect.NewError(argErr.Code(), argErr.Err())
 	}
 
+	// 解析page token
+	pageTokenChaim, err := util.ParsePageToken(req.Msg.GetPageToken())
+	if err != nil {
+		return nil, e.NewInvalidArgumentError("page token")
+	}
+
 	userID := ctx.Value(constant.UserIDKey).(string)
 
 	// 查询token
-	tokens, err := handler.tokenService.ListTokens(userID, int(req.Msg.GetPageOffset()), int(req.Msg.GetPageSize()), req.Msg.GetReverse())
+	tokens, listErr := handler.tokenService.ListTokens(userID, pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), req.Msg.GetReverse())
 	if err != nil {
-		return nil, connect.NewError(err.Code(), err.Err())
+		return nil, connect.NewError(listErr.Code(), listErr)
 	}
 
-	resp := connect.NewResponse(&registryv1alpha.ListTokensResponse{
-		Tokens: tokens.ToProtoTokens(),
+	// 生成下一页token
+	nextPageToken, err := util.GenerateNextPageToken(pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), len(tokens))
+	if err != nil {
+		return nil, e.NewInternalError("generate next page token")
+	}
+
+	resp := connect.NewResponse(&registryv1alpha1.ListTokensResponse{
+		Tokens:        tokens.ToProtoTokens(),
+		NextPageToken: nextPageToken,
 	})
 	return resp, nil
 }
 
-func (handler *TokenServiceHandler) DeleteToken(ctx context.Context, req *connect.Request[registryv1alpha.DeleteTokenRequest]) (*connect.Response[registryv1alpha.DeleteTokenResponse], error) {
+func (handler *TokenServiceHandler) DeleteToken(ctx context.Context, req *connect.Request[registryv1alpha1.DeleteTokenRequest]) (*connect.Response[registryv1alpha1.DeleteTokenResponse], error) {
 	userID := ctx.Value(constant.UserIDKey).(string)
 
 	// 删除token
@@ -79,6 +94,6 @@ func (handler *TokenServiceHandler) DeleteToken(ctx context.Context, req *connec
 		return nil, connect.NewError(err.Code(), err.Err())
 	}
 
-	resp := connect.NewResponse(&registryv1alpha.DeleteTokenResponse{})
+	resp := connect.NewResponse(&registryv1alpha1.DeleteTokenResponse{})
 	return resp, nil
 }

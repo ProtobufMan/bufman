@@ -8,11 +8,11 @@ import (
 	"github.com/ProtobufMan/bufman-cli/private/bufpkg/bufconfig"
 	"github.com/ProtobufMan/bufman-cli/private/bufpkg/buflock"
 	"github.com/ProtobufMan/bufman-cli/private/bufpkg/bufmodule"
+	modulev1alpha1 "github.com/ProtobufMan/bufman-cli/private/gen/proto/go/bufman/alpha/module/v1alpha1"
+	registryv1alpha1 "github.com/ProtobufMan/bufman-cli/private/gen/proto/go/bufman/alpha/registry/v1alpha1"
 	"github.com/ProtobufMan/bufman-cli/private/pkg/manifest"
 	"github.com/ProtobufMan/bufman/internal/constant"
 	"github.com/ProtobufMan/bufman/internal/e"
-	modulev1alpha "github.com/ProtobufMan/bufman/internal/gen/bufman/module/v1alpha"
-	registryv1alpha "github.com/ProtobufMan/bufman/internal/gen/bufman/registry/v1alpha"
 	"github.com/ProtobufMan/bufman/internal/mapper"
 	"github.com/ProtobufMan/bufman/internal/model"
 	"gorm.io/gorm"
@@ -35,7 +35,7 @@ type Validator interface {
 	CheckRepositoryCanEditByID(userID, repositoryID, procedure string) (*model.Repository, e.ResponseError)
 	CheckRepositoryCanDelete(userID, ownerName, repositoryName, procedure string) (*model.Repository, e.ResponseError) // 检查用户是否可以删除repo
 	CheckRepositoryCanDeleteByID(userID, repositoryID, procedure string) (*model.Repository, e.ResponseError)
-	CheckManifestAndBlobs(ctx context.Context, protoManifest *modulev1alpha.Blob, protoBlobs []*modulev1alpha.Blob) (*manifest.Manifest, *manifest.BlobSet, *bufconfig.Config, e.ResponseError)
+	CheckManifestAndBlobs(ctx context.Context, protoManifest *modulev1alpha1.Blob, protoBlobs []*modulev1alpha1.Blob) (*manifest.Manifest, *manifest.BlobSet, *bufconfig.Config, e.ResponseError)
 }
 
 func NewValidator() Validator {
@@ -149,7 +149,7 @@ func (validator *ValidatorImpl) CheckRepositoryCanAccess(userID, ownerName, repo
 		return nil, e.NewInternalError(procedure)
 	}
 
-	if registryv1alpha.Visibility(repository.Visibility) != registryv1alpha.Visibility_VISIBILITY_PUBLIC && repository.UserID != userID {
+	if registryv1alpha1.Visibility(repository.Visibility) != registryv1alpha1.Visibility_VISIBILITY_PUBLIC && repository.UserID != userID {
 		return nil, e.NewPermissionDeniedError(fmt.Sprintf("repository [name=%s/%s]", ownerName, repositoryName))
 	}
 
@@ -166,7 +166,7 @@ func (validator *ValidatorImpl) CheckRepositoryCanAccessByID(userID, repositoryI
 		return nil, e.NewInternalError(procedure)
 	}
 
-	if registryv1alpha.Visibility(repository.Visibility) != registryv1alpha.Visibility_VISIBILITY_PUBLIC && repository.UserID != userID {
+	if registryv1alpha1.Visibility(repository.Visibility) != registryv1alpha1.Visibility_VISIBILITY_PUBLIC && repository.UserID != userID {
 		return nil, e.NewPermissionDeniedError(fmt.Sprintf("repository [id=%s]", repositoryID))
 	}
 
@@ -245,7 +245,7 @@ func (validator *ValidatorImpl) CheckRepositoryCanDeleteByID(userID, repositoryI
 	return repository, nil
 }
 
-func (validator *ValidatorImpl) CheckManifestAndBlobs(ctx context.Context, protoManifest *modulev1alpha.Blob, protoBlobs []*modulev1alpha.Blob) (*manifest.Manifest, *manifest.BlobSet, *bufconfig.Config, e.ResponseError) {
+func (validator *ValidatorImpl) CheckManifestAndBlobs(ctx context.Context, protoManifest *modulev1alpha1.Blob, protoBlobs []*modulev1alpha1.Blob) (*manifest.Manifest, *manifest.BlobSet, *bufconfig.Config, e.ResponseError) {
 	// 读取文件清单
 	reader := bytes.NewReader(protoManifest.Content)
 	fileManifest, err := manifest.NewFromReader(reader)

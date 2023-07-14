@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/ProtobufMan/bufman-cli/private/gen/proto/connect/bufman/alpha/registry/v1alpha1/registryv1alpha1connect"
 	"github.com/ProtobufMan/bufman-cli/private/pkg/manifest"
 	"github.com/ProtobufMan/bufman/internal/e"
-	"github.com/ProtobufMan/bufman/internal/gen/bufman/registry/v1alpha/registryv1alphaconnect"
 	"github.com/ProtobufMan/bufman/internal/mapper"
 	"github.com/ProtobufMan/bufman/internal/util"
 	"gorm.io/gorm"
@@ -38,31 +38,31 @@ func (downloadService *DownloadServiceImpl) DownloadManifestAndBlobs(registerID 
 			return nil, nil, e.NewNotFoundError(fmt.Sprintf("reference %s", reference))
 		}
 
-		return nil, nil, e.NewInternalError(registryv1alphaconnect.DownloadServiceDownloadManifestAndBlobsProcedure)
+		return nil, nil, e.NewInternalError(registryv1alpha1connect.DownloadServiceDownloadManifestAndBlobsProcedure)
 	}
 
 	// 查询文件清单
 	modelFileManifest, err := downloadService.fileMapper.FindManifestByCommitID(commit.CommitID)
 	if err != nil {
 		if err != nil {
-			return nil, nil, e.NewInternalError(registryv1alphaconnect.DownloadServiceDownloadManifestAndBlobsProcedure)
+			return nil, nil, e.NewInternalError(registryv1alpha1connect.DownloadServiceDownloadManifestAndBlobsProcedure)
 		}
 	}
 
 	// 接着查询blobs
 	fileBlobs, err := downloadService.fileMapper.FindAllBlobsByCommitID(commit.CommitID)
 	if err != nil {
-		return nil, nil, e.NewInternalError(registryv1alphaconnect.DownloadServiceDownloadManifestAndBlobsProcedure)
+		return nil, nil, e.NewInternalError(registryv1alpha1connect.DownloadServiceDownloadManifestAndBlobsProcedure)
 	}
 
 	// 读取文件清单
 	reader, err := downloadService.storageHelper.Read(modelFileManifest.Digest)
 	if err != nil {
-		return nil, nil, e.NewInternalError(registryv1alphaconnect.DownloadServiceDownloadManifestAndBlobsProcedure)
+		return nil, nil, e.NewInternalError(registryv1alpha1connect.DownloadServiceDownloadManifestAndBlobsProcedure)
 	}
 	fileManifest, err := manifest.NewFromReader(reader)
 	if err != nil {
-		return nil, nil, e.NewInternalError(registryv1alphaconnect.DownloadServiceDownloadManifestAndBlobsProcedure)
+		return nil, nil, e.NewInternalError(registryv1alpha1connect.DownloadServiceDownloadManifestAndBlobsProcedure)
 	}
 
 	// 读取文件blobs
@@ -71,20 +71,20 @@ func (downloadService *DownloadServiceImpl) DownloadManifestAndBlobs(registerID 
 		// 读取文件
 		reader, err := downloadService.storageHelper.Read(fileBlobs[i].Digest)
 		if err != nil {
-			return nil, nil, e.NewInternalError(registryv1alphaconnect.DownloadServiceDownloadManifestAndBlobsProcedure)
+			return nil, nil, e.NewInternalError(registryv1alpha1connect.DownloadServiceDownloadManifestAndBlobsProcedure)
 		}
 
 		// 生成blob
 		blob, err := manifest.NewMemoryBlobFromReader(reader)
 		if err != nil {
-			return nil, nil, e.NewInternalError(registryv1alphaconnect.DownloadServiceDownloadManifestAndBlobsProcedure)
+			return nil, nil, e.NewInternalError(registryv1alpha1connect.DownloadServiceDownloadManifestAndBlobsProcedure)
 		}
 		blobs = append(blobs, blob)
 	}
 
 	blobSet, err := manifest.NewBlobSet(context.Background(), blobs)
 	if err != nil {
-		return nil, nil, e.NewInternalError(registryv1alphaconnect.DownloadServiceDownloadManifestAndBlobsProcedure)
+		return nil, nil, e.NewInternalError(registryv1alpha1connect.DownloadServiceDownloadManifestAndBlobsProcedure)
 	}
 
 	return fileManifest, blobSet, nil

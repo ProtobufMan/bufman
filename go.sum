@@ -1,5 +1,7 @@
 github.com/ProtobufMan/bufman-cli v0.0.0-20230713024720-413849b3a0b4 h1:lWZwHRvE8a0qipfdmaQXZsR/kDJkmO1kTot3XlKzMbM=
 github.com/ProtobufMan/bufman-cli v0.0.0-20230713024720-413849b3a0b4/go.mod h1:89kqgr/aByBU6ZdGsnZnGgYjc6OV9JIM1PNkiU6DVLQ=
+github.com/ProtobufMan/bufman-cli v0.0.0-20230714074157-0d6abb1426f2 h1:7GW/+B1ezfc1B1PQAXIQISi677dLTO4WA7uEAkO2HFM=
+github.com/ProtobufMan/bufman-cli v0.0.0-20230714074157-0d6abb1426f2/go.mod h1:89kqgr/aByBU6ZdGsnZnGgYjc6OV9JIM1PNkiU6DVLQ=
 github.com/bufbuild/connect-go v1.9.0 h1:JIgAeNuFpo+SUPfU19Yt5TcWlznsN5Bv10/gI/6Pjoc=
 github.com/bufbuild/connect-go v1.9.0/go.mod h1:CAIePUgkDR5pAFaylSMtNK45ANQjp9JvpluG20rhpV8=
 github.com/bufbuild/protocompile v0.5.1 h1:mixz5lJX4Hiz4FpqFREJHIXLfaLBntfaJv1h+/jS+Qg=
@@ -15,6 +17,8 @@ github.com/cpuguy83/go-md2man/v2 v2.0.2/go.mod h1:tgQtvFlXSQOSOSIRvRPT7W67SCa46t
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
+github.com/dgrijalva/jwt-go v3.2.0+incompatible h1:7qlOGliEKZXTDg6OTjfoBKDXWrumCAMpl/TFQ4/5kLM=
+github.com/dgrijalva/jwt-go v3.2.0+incompatible/go.mod h1:E3ru+11k8xSBh+hMPgOLZmtrrCbhqsmaPHjLKYnJCaQ=
 github.com/gabriel-vasile/mimetype v1.4.2 h1:w5qFW6JKBz9Y393Y4q372O9A7cUSequkh1Q7OhCmWKU=
 github.com/gabriel-vasile/mimetype v1.4.2/go.mod h1:zApsH/mKG4w07erKIaJPFiX0Tsq9BFQgN3qGY5GnNgA=
 github.com/gin-contrib/sse v0.1.0 h1:Y/yl/+YNO8GZSjAhjMsSuLt29uWRFHdHYUb5lYOV9qE=

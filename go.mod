@@ -3,7 +3,7 @@ module github.com/ProtobufMan/bufman
 go 1.19
 
 require (
-	github.com/ProtobufMan/bufman-cli v0.0.0-20230713024720-413849b3a0b4
+	github.com/ProtobufMan/bufman-cli v0.0.0-20230714074157-0d6abb1426f2
 	github.com/bufbuild/connect-go v1.9.0
 	github.com/bufbuild/protocompile v0.5.1
 	github.com/gin-gonic/gin v1.9.1
@@ -20,6 +20,7 @@ require (
 	github.com/bytedance/sonic v1.9.1 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20221115062448-fe3a3abad311 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
 	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/go-logr/logr v1.2.4 // indirect

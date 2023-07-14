@@ -2,8 +2,8 @@ package handlers
 
 import (
 	"context"
-	registryv1alpha "github.com/ProtobufMan/bufman/internal/gen/bufman/registry/v1alpha"
-	"github.com/ProtobufMan/bufman/internal/gen/bufman/registry/v1alpha/registryv1alphaconnect"
+	"github.com/ProtobufMan/bufman-cli/private/gen/proto/connect/bufman/alpha/registry/v1alpha1/registryv1alpha1connect"
+	registryv1alpha1 "github.com/ProtobufMan/bufman-cli/private/gen/proto/go/bufman/alpha/registry/v1alpha1"
 	"github.com/ProtobufMan/bufman/internal/interceptors"
 	"github.com/bufbuild/connect-go"
 	"net/http"
@@ -13,16 +13,16 @@ import (
 var (
 	testRepositoryName     = "testRepo"
 	testRepositoryFullName = testUsername + "/" + testRepositoryName
-	testRepository         *registryv1alpha.Repository
+	testRepository         *registryv1alpha1.Repository
 )
 
 func TestCreateRepositoryByFullName(t *testing.T) {
 	defer TestDeleteToken(t)
 
 	client := newTestRepositoryClient(t)
-	req := connect.NewRequest(&registryv1alpha.CreateRepositoryByFullNameRequest{
+	req := connect.NewRequest(&registryv1alpha1.CreateRepositoryByFullNameRequest{
 		FullName:   testRepositoryFullName,
-		Visibility: registryv1alpha.Visibility_VISIBILITY_PUBLIC,
+		Visibility: registryv1alpha1.Visibility_VISIBILITY_PUBLIC,
 	})
 	resp, err := client.CreateRepositoryByFullName(context.Background(), req)
 	if err != nil && connect.CodeOf(err) != connect.CodeAlreadyExists {
@@ -44,7 +44,7 @@ func TestGetRepositoryByFullName(t *testing.T) {
 
 	client := newTestRepositoryClient(t)
 
-	req := connect.NewRequest(&registryv1alpha.GetRepositoryByFullNameRequest{
+	req := connect.NewRequest(&registryv1alpha1.GetRepositoryByFullNameRequest{
 		FullName: testRepositoryFullName,
 	})
 	resp, err := client.GetRepositoryByFullName(context.Background(), req)
@@ -64,7 +64,7 @@ func TestGetRepository(t *testing.T) {
 
 	client := newTestRepositoryClient(t)
 
-	req := connect.NewRequest(&registryv1alpha.GetRepositoryRequest{
+	req := connect.NewRequest(&registryv1alpha1.GetRepositoryRequest{
 		Id: testRepository.GetId(),
 	})
 	resp, err := client.GetRepository(context.Background(), req)
@@ -82,10 +82,9 @@ func TestListRepositories(t *testing.T) {
 
 	client := newTestRepositoryClient(t)
 
-	req := connect.NewRequest(&registryv1alpha.ListRepositoriesRequest{
-		PageSize:   10,
-		PageOffset: 0,
-		Reverse:    false,
+	req := connect.NewRequest(&registryv1alpha1.ListRepositoriesRequest{
+		PageSize: 10,
+		Reverse:  false,
 	})
 	_, err := client.ListRepositories(context.Background(), req)
 	if err != nil {
@@ -100,10 +99,10 @@ func TestUpdateRepositorySettingsByName(t *testing.T) {
 	client := newTestRepositoryClient(t)
 
 	desc := "this is a test repo"
-	req := connect.NewRequest(&registryv1alpha.UpdateRepositorySettingsByNameRequest{
+	req := connect.NewRequest(&registryv1alpha1.UpdateRepositorySettingsByNameRequest{
 		OwnerName:      testUsername,
 		RepositoryName: testRepositoryName,
-		Visibility:     registryv1alpha.Visibility_VISIBILITY_PRIVATE,
+		Visibility:     registryv1alpha1.Visibility_VISIBILITY_PRIVATE,
 		Description:    &desc,
 	})
 	_, err := client.UpdateRepositorySettingsByName(context.Background(), req)
@@ -119,7 +118,7 @@ func TestDeleteRepositoryByFullName(t *testing.T) {
 	TestGetRepositoryByFullName(t)
 	client := newTestRepositoryClient(t)
 
-	req := connect.NewRequest(&registryv1alpha.DeleteRepositoryByFullNameRequest{
+	req := connect.NewRequest(&registryv1alpha1.DeleteRepositoryByFullNameRequest{
 		FullName: testRepositoryFullName,
 	})
 	_, err := client.DeleteRepositoryByFullName(context.Background(), req)
@@ -129,10 +128,10 @@ func TestDeleteRepositoryByFullName(t *testing.T) {
 	}
 }
 
-func newTestRepositoryClient(t *testing.T) registryv1alphaconnect.RepositoryServiceClient {
+func newTestRepositoryClient(t *testing.T) registryv1alpha1connect.RepositoryServiceClient {
 	TestCreateToken(t)
-	var client registryv1alphaconnect.RepositoryServiceClient
-	client = registryv1alphaconnect.NewRepositoryServiceClient(http.DefaultClient, "http://localhost:39099", interceptors.WithAuthHeaderInterceptor(testToken))
+	var client registryv1alpha1connect.RepositoryServiceClient
+	client = registryv1alpha1connect.NewRepositoryServiceClient(http.DefaultClient, "http://localhost:39099", interceptors.WithAuthHeaderInterceptor(testToken))
 
 	return client
 }

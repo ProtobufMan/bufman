@@ -1,8 +1,8 @@
 package mapper
 
 import (
+	registryv1alpha1 "github.com/ProtobufMan/bufman-cli/private/gen/proto/go/bufman/alpha/registry/v1alpha1"
 	"github.com/ProtobufMan/bufman/internal/dal"
-	registryv1alpha "github.com/ProtobufMan/bufman/internal/gen/bufman/registry/v1alpha"
 	"github.com/ProtobufMan/bufman/internal/model"
 	"time"
 )
@@ -61,7 +61,7 @@ func (r *RepositoryMapperImpl) FindPageByUserID(userID string, offset, limit int
 }
 
 func (r *RepositoryMapperImpl) FindAccessiblePageByUserID(userID string, offset, limit int, reverse bool) (model.Repositories, error) {
-	stmt := dal.Repository.Offset(offset).Where(dal.Repository.Visibility.Eq(uint8(registryv1alpha.Visibility_VISIBILITY_PUBLIC))).Or(dal.Repository.UserID.Eq(userID)).Limit(limit)
+	stmt := dal.Repository.Offset(offset).Where(dal.Repository.Visibility.Eq(uint8(registryv1alpha1.Visibility_VISIBILITY_PUBLIC))).Or(dal.Repository.UserID.Eq(userID)).Limit(limit)
 	if reverse {
 		stmt = stmt.Order(dal.Repository.ID.Desc())
 	}

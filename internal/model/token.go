@@ -18,7 +18,7 @@
 package model
 
 import (
-	registryv1alpha "github.com/ProtobufMan/bufman/internal/gen/bufman/registry/v1alpha"
+	registryv1alpha1 "github.com/ProtobufMan/bufman-cli/private/gen/proto/go/bufman/alpha/registry/v1alpha1"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"time"
 )
@@ -37,12 +37,12 @@ func (token *Token) TableName() string {
 	return "tokens"
 }
 
-func (token *Token) ToProtoToken() *registryv1alpha.Token {
+func (token *Token) ToProtoToken() *registryv1alpha1.Token {
 	if token == nil {
 		return (&Token{}).ToProtoToken()
 	}
 
-	return &registryv1alpha.Token{
+	return &registryv1alpha1.Token{
 		Id:         token.TokenID,
 		CreateTime: timestamppb.New(token.CreatedTime),
 		ExpireTime: timestamppb.New(token.ExpireTime),
@@ -52,8 +52,8 @@ func (token *Token) ToProtoToken() *registryv1alpha.Token {
 
 type Tokens []*Token
 
-func (tokens *Tokens) ToProtoTokens() []*registryv1alpha.Token {
-	ts := make([]*registryv1alpha.Token, 0, len(*tokens))
+func (tokens *Tokens) ToProtoTokens() []*registryv1alpha1.Token {
+	ts := make([]*registryv1alpha1.Token, 0, len(*tokens))
 	for i := 0; i < len(*tokens); i++ {
 		ts = append(ts, (*tokens)[i].ToProtoToken())
 	}

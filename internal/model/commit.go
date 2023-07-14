@@ -18,11 +18,11 @@
 package model
 
 import (
+	modulev1alpha1 "github.com/ProtobufMan/bufman-cli/private/gen/proto/go/bufman/alpha/module/v1alpha1"
+	registryv1alpha1 "github.com/ProtobufMan/bufman-cli/private/gen/proto/go/bufman/alpha/registry/v1alpha1"
 	"github.com/ProtobufMan/bufman-cli/private/pkg/manifest"
 	"github.com/ProtobufMan/bufman/internal/config"
 	"github.com/ProtobufMan/bufman/internal/constant"
-	modulev1alpha "github.com/ProtobufMan/bufman/internal/gen/bufman/module/v1alpha"
-	registryv1alpha "github.com/ProtobufMan/bufman/internal/gen/bufman/registry/v1alpha"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"time"
 )
@@ -53,12 +53,12 @@ func (commit *Commit) TableName() string {
 	return "commits"
 }
 
-func (commit *Commit) ToProtoLocalModulePin() *modulev1alpha.LocalModulePin {
+func (commit *Commit) ToProtoLocalModulePin() *registryv1alpha1.LocalModulePin {
 	if commit == nil {
 		return (&Commit{}).ToProtoLocalModulePin()
 	}
 
-	modulePin := &modulev1alpha.LocalModulePin{
+	modulePin := &registryv1alpha1.LocalModulePin{
 		Owner:          commit.UserName,
 		Repository:     commit.RepositoryName,
 		Commit:         commit.CommitName,
@@ -77,12 +77,12 @@ func (commit *Commit) ToProtoLocalModulePin() *modulev1alpha.LocalModulePin {
 	return modulePin
 }
 
-func (commit *Commit) ToProtoModulePin() *modulev1alpha.ModulePin {
+func (commit *Commit) ToProtoModulePin() *modulev1alpha1.ModulePin {
 	if commit == nil {
 		return (&Commit{}).ToProtoModulePin()
 	}
 
-	modulePin := &modulev1alpha.ModulePin{
+	modulePin := &modulev1alpha1.ModulePin{
 		Remote:         config.Properties.BufMan.ServerHost,
 		Owner:          commit.UserName,
 		Repository:     commit.RepositoryName,
@@ -94,12 +94,12 @@ func (commit *Commit) ToProtoModulePin() *modulev1alpha.ModulePin {
 	return modulePin
 }
 
-func (commit *Commit) ToProtoRepositoryCommit() *registryv1alpha.RepositoryCommit {
+func (commit *Commit) ToProtoRepositoryCommit() *registryv1alpha1.RepositoryCommit {
 	if commit == nil {
 		return (&Commit{}).ToProtoRepositoryCommit()
 	}
 
-	repositoryCommit := &registryv1alpha.RepositoryCommit{
+	repositoryCommit := &registryv1alpha1.RepositoryCommit{
 		Id:               commit.CommitID,
 		CreateTime:       timestamppb.New(commit.CreatedTime),
 		Name:             commit.CommitName,
@@ -121,8 +121,8 @@ func (commit *Commit) ToProtoRepositoryCommit() *registryv1alpha.RepositoryCommi
 
 type Commits []*Commit
 
-func (commits *Commits) ToProtoRepositoryCommits() []*registryv1alpha.RepositoryCommit {
-	repositoryCommits := make([]*registryv1alpha.RepositoryCommit, len(*commits))
+func (commits *Commits) ToProtoRepositoryCommits() []*registryv1alpha1.RepositoryCommit {
+	repositoryCommits := make([]*registryv1alpha1.RepositoryCommit, len(*commits))
 	for i := 0; i < len(*commits); i++ {
 		repositoryCommits[i] = (*commits)[i].ToProtoRepositoryCommit()
 	}
@@ -130,8 +130,8 @@ func (commits *Commits) ToProtoRepositoryCommits() []*registryv1alpha.Repository
 	return repositoryCommits
 }
 
-func (commits *Commits) ToProtoModulePins() []*modulev1alpha.ModulePin {
-	modulePins := make([]*modulev1alpha.ModulePin, len(*commits))
+func (commits *Commits) ToProtoModulePins() []*modulev1alpha1.ModulePin {
+	modulePins := make([]*modulev1alpha1.ModulePin, len(*commits))
 	for i := 0; i < len(*commits); i++ {
 		modulePins[i] = (*commits)[i].ToProtoModulePin()
 	}

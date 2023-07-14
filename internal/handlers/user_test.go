@@ -2,25 +2,25 @@ package handlers
 
 import (
 	"context"
-	registryv1alpha "github.com/ProtobufMan/bufman/internal/gen/bufman/registry/v1alpha"
-	"github.com/ProtobufMan/bufman/internal/gen/bufman/registry/v1alpha/registryv1alphaconnect"
+	"github.com/ProtobufMan/bufman-cli/private/gen/proto/connect/bufman/alpha/registry/v1alpha1/registryv1alpha1connect"
+	registryv1alpha1 "github.com/ProtobufMan/bufman-cli/private/gen/proto/go/bufman/alpha/registry/v1alpha1"
 	"github.com/bufbuild/connect-go"
 	"net/http"
 	"testing"
 )
 
 var (
-	userClient   registryv1alphaconnect.UserServiceClient
+	userClient   registryv1alpha1connect.UserServiceClient
 	testUsername = "test1"
 	testPassword = "123456"
 )
 
 func init() {
-	userClient = registryv1alphaconnect.NewUserServiceClient(http.DefaultClient, "http://localhost:39099")
+	userClient = registryv1alpha1connect.NewUserServiceClient(http.DefaultClient, "http://localhost:39099")
 }
 
 func TestCreateUser(t *testing.T) {
-	req := connect.NewRequest(&registryv1alpha.CreateUserRequest{
+	req := connect.NewRequest(&registryv1alpha1.CreateUserRequest{
 		Username: testUsername,
 		Password: testPassword,
 	})
@@ -41,7 +41,7 @@ func TestCreateUser(t *testing.T) {
 }
 
 func TestGetUser(t *testing.T) {
-	req1 := connect.NewRequest(&registryv1alpha.GetUserByUsernameRequest{
+	req1 := connect.NewRequest(&registryv1alpha1.GetUserByUsernameRequest{
 		Username: testUsername,
 	})
 
@@ -53,7 +53,7 @@ func TestGetUser(t *testing.T) {
 	t.Logf("%#v", resp1.Msg.String())
 
 	userID := resp1.Msg.GetUser().GetId()
-	req2 := connect.NewRequest(&registryv1alpha.GetUserRequest{
+	req2 := connect.NewRequest(&registryv1alpha1.GetUserRequest{
 		Id: userID,
 	})
 	resp2, err := userClient.GetUser(context.Background(), req2)
@@ -66,10 +66,9 @@ func TestGetUser(t *testing.T) {
 }
 
 func TestListUsers(t *testing.T) {
-	req := connect.NewRequest(&registryv1alpha.ListUsersRequest{
-		PageSize:   10,
-		PageOffset: 0,
-		Reverse:    false,
+	req := connect.NewRequest(&registryv1alpha1.ListUsersRequest{
+		PageSize: 10,
+		Reverse:  false,
 	})
 
 	resp, err := userClient.ListUsers(context.Background(), req)

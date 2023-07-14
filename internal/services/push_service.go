@@ -7,11 +7,11 @@ import (
 	"github.com/ProtobufMan/bufman-cli/private/bufpkg/bufmodule"
 	"github.com/ProtobufMan/bufman-cli/private/bufpkg/bufmodule/bufmoduleprotocompile"
 	"github.com/ProtobufMan/bufman-cli/private/bufpkg/bufmodule/bufmoduleref"
+	"github.com/ProtobufMan/bufman-cli/private/gen/proto/connect/bufman/alpha/registry/v1alpha1/registryv1alpha1connect"
 	"github.com/ProtobufMan/bufman-cli/private/pkg/manifest"
 	"github.com/ProtobufMan/bufman-cli/private/pkg/thread"
 	"github.com/ProtobufMan/bufman/internal/config"
 	"github.com/ProtobufMan/bufman/internal/e"
-	"github.com/ProtobufMan/bufman/internal/gen/bufman/registry/v1alpha/registryv1alphaconnect"
 	"github.com/ProtobufMan/bufman/internal/mapper"
 	"github.com/ProtobufMan/bufman/internal/model"
 	"github.com/ProtobufMan/bufman/internal/util"
@@ -123,13 +123,13 @@ func (pushService *PushServiceImpl) PushManifestAndBlobs(userID, ownerName, repo
 	createErr := pushService.commitMapper.Create(commit)
 	if createErr != nil {
 		if errors.Is(createErr, gorm.ErrDuplicatedKey) {
-			return nil, e.NewInternalError(registryv1alphaconnect.PushServicePushManifestAndBlobsProcedure)
+			return nil, e.NewInternalError(registryv1alpha1connect.PushServicePushManifestAndBlobsProcedure)
 		}
 		if errors.Is(createErr, mapper.ErrLastCommitDuplicated) {
 			return nil, e.NewAlreadyExistsError("last commit")
 		}
 
-		return nil, e.NewInternalError(registryv1alphaconnect.PushServicePushManifestAndBlobsProcedure)
+		return nil, e.NewInternalError(registryv1alpha1connect.PushServicePushManifestAndBlobsProcedure)
 	}
 
 	return commit, nil
@@ -163,13 +163,13 @@ func (pushService *PushServiceImpl) PushManifestAndBlobsWithTags(userID, ownerNa
 	createErr := pushService.commitMapper.Create(commit)
 	if createErr != nil {
 		if errors.Is(createErr, mapper.ErrTagAndDraftDuplicated) || errors.Is(createErr, gorm.ErrDuplicatedKey) {
-			return nil, e.NewInternalError(registryv1alphaconnect.PushServicePushManifestAndBlobsProcedure)
+			return nil, e.NewInternalError(registryv1alpha1connect.PushServicePushManifestAndBlobsProcedure)
 		}
 		if errors.Is(createErr, mapper.ErrLastCommitDuplicated) {
 			return nil, e.NewAlreadyExistsError("last commit")
 		}
 
-		return nil, e.NewInternalError(registryv1alphaconnect.PushServicePushManifestAndBlobsProcedure)
+		return nil, e.NewInternalError(registryv1alpha1connect.PushServicePushManifestAndBlobsProcedure)
 	}
 
 	return commit, nil
@@ -191,13 +191,13 @@ func (pushService *PushServiceImpl) PushManifestAndBlobsWithDraft(userID, ownerN
 	createErr := pushService.commitMapper.Create(commit)
 	if createErr != nil {
 		if errors.Is(createErr, mapper.ErrTagAndDraftDuplicated) {
-			return nil, e.NewInternalError(registryv1alphaconnect.PushServicePushManifestAndBlobsProcedure)
+			return nil, e.NewInternalError(registryv1alpha1connect.PushServicePushManifestAndBlobsProcedure)
 		}
 		if errors.Is(createErr, mapper.ErrLastCommitDuplicated) {
 			return nil, e.NewAlreadyExistsError("last commit")
 		}
 
-		return nil, e.NewInternalError(registryv1alphaconnect.PushServicePushManifestAndBlobsProcedure)
+		return nil, e.NewInternalError(registryv1alpha1connect.PushServicePushManifestAndBlobsProcedure)
 	}
 
 	return commit, nil
@@ -207,7 +207,7 @@ func (pushService *PushServiceImpl) toCommit(userID, ownerName, repositoryName s
 	// 获取user
 	user, err := pushService.userMapper.FindByUserID(userID)
 	if err != nil || user.UserName != ownerName {
-		return nil, e.NewPermissionDeniedError(registryv1alphaconnect.PushServicePushManifestAndBlobsProcedure)
+		return nil, e.NewPermissionDeniedError(registryv1alpha1connect.PushServicePushManifestAndBlobsProcedure)
 	}
 
 	// 获取repo
@@ -264,34 +264,34 @@ func (pushService *PushServiceImpl) saveFileManifestAndBlobs(fileManifest *manif
 
 		readCloser, err := blob.Open(context.Background())
 		if err != nil {
-			return e.NewInternalError(registryv1alphaconnect.PushServicePushManifestAndBlobsProcedure)
+			return e.NewInternalError(registryv1alpha1connect.PushServicePushManifestAndBlobsProcedure)
 		}
 
 		// 写入文件
 		err = pushService.storageHelper.Store(digest.Hex(), readCloser)
 		if err != nil {
-			return e.NewInternalError(registryv1alphaconnect.PushServicePushManifestAndBlobsProcedure)
+			return e.NewInternalError(registryv1alpha1connect.PushServicePushManifestAndBlobsProcedure)
 		}
 
 		return nil
 	})
 	respErr, ok := err.(e.ResponseError)
 	if !ok {
-		return e.NewInternalError(registryv1alphaconnect.PushServicePushManifestAndBlobsProcedure)
+		return e.NewInternalError(registryv1alpha1connect.PushServicePushManifestAndBlobsProcedure)
 	}
 
 	// 保存file manifest
 	blob, err := fileManifest.Blob()
 	if err != nil {
-		return e.NewInternalError(registryv1alphaconnect.PushServicePushManifestAndBlobsProcedure)
+		return e.NewInternalError(registryv1alpha1connect.PushServicePushManifestAndBlobsProcedure)
 	}
 	readCloser, err := blob.Open(context.Background())
 	if err != nil {
-		return e.NewInternalError(registryv1alphaconnect.PushServicePushManifestAndBlobsProcedure)
+		return e.NewInternalError(registryv1alpha1connect.PushServicePushManifestAndBlobsProcedure)
 	}
 	err = pushService.storageHelper.Store(blob.Digest().Hex(), readCloser)
 	if err != nil {
-		return e.NewInternalError(registryv1alphaconnect.PushServicePushManifestAndBlobsProcedure)
+		return e.NewInternalError(registryv1alpha1connect.PushServicePushManifestAndBlobsProcedure)
 	}
 
 	return respErr

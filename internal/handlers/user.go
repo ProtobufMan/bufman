@@ -19,8 +19,10 @@ package handlers
 
 import (
 	"context"
-	registryv1alpha "github.com/ProtobufMan/bufman/internal/gen/bufman/registry/v1alpha"
+	registryv1alpha1 "github.com/ProtobufMan/bufman-cli/private/gen/proto/go/bufman/alpha/registry/v1alpha1"
+	"github.com/ProtobufMan/bufman/internal/e"
 	"github.com/ProtobufMan/bufman/internal/services"
+	"github.com/ProtobufMan/bufman/internal/util"
 	"github.com/ProtobufMan/bufman/internal/validity"
 	"github.com/bufbuild/connect-go"
 )
@@ -37,7 +39,7 @@ func NewUserServiceHandler() *UserServiceHandler {
 	}
 }
 
-func (handler *UserServiceHandler) CreateUser(ctx context.Context, req *connect.Request[registryv1alpha.CreateUserRequest]) (*connect.Response[registryv1alpha.CreateUserResponse], error) {
+func (handler *UserServiceHandler) CreateUser(ctx context.Context, req *connect.Request[registryv1alpha1.CreateUserRequest]) (*connect.Response[registryv1alpha1.CreateUserResponse], error) {
 	// 验证参数
 	argErr := handler.validator.CheckUserName(req.Msg.GetUsername())
 	if argErr != nil {
@@ -54,50 +56,93 @@ func (handler *UserServiceHandler) CreateUser(ctx context.Context, req *connect.
 	}
 
 	// success
-	resp := connect.NewResponse(&registryv1alpha.CreateUserResponse{
+	resp := connect.NewResponse(&registryv1alpha1.CreateUserResponse{
 		User: user.ToProtoUser(),
 	})
 	return resp, nil
 }
 
-func (handler *UserServiceHandler) GetUser(ctx context.Context, req *connect.Request[registryv1alpha.GetUserRequest]) (*connect.Response[registryv1alpha.GetUserResponse], error) {
+func (handler *UserServiceHandler) GetUser(ctx context.Context, req *connect.Request[registryv1alpha1.GetUserRequest]) (*connect.Response[registryv1alpha1.GetUserResponse], error) {
 	user, err := handler.userService.GetUser(req.Msg.GetId()) // 创建用户
 	if err != nil {
 		return nil, connect.NewError(err.Code(), err.Err())
 	}
 
-	resp := connect.NewResponse(&registryv1alpha.GetUserResponse{
+	resp := connect.NewResponse(&registryv1alpha1.GetUserResponse{
 		User: user.ToProtoUser(),
 	})
 	return resp, nil
 }
-func (handler *UserServiceHandler) GetUserByUsername(ctx context.Context, req *connect.Request[registryv1alpha.GetUserByUsernameRequest]) (*connect.Response[registryv1alpha.GetUserByUsernameResponse], error) {
+func (handler *UserServiceHandler) GetUserByUsername(ctx context.Context, req *connect.Request[registryv1alpha1.GetUserByUsernameRequest]) (*connect.Response[registryv1alpha1.GetUserByUsernameResponse], error) {
 	user, err := handler.userService.GetUserByUsername(req.Msg.GetUsername()) // 创建用户
 	if err != nil {
 		return nil, connect.NewError(err.Code(), err.Err())
 	}
 
-	resp := connect.NewResponse(&registryv1alpha.GetUserByUsernameResponse{
+	resp := connect.NewResponse(&registryv1alpha1.GetUserByUsernameResponse{
 		User: user.ToProtoUser(),
 	})
 	return resp, nil
 }
 
-func (handler *UserServiceHandler) ListUsers(ctx context.Context, req *connect.Request[registryv1alpha.ListUsersRequest]) (*connect.Response[registryv1alpha.ListUsersResponse], error) {
+func (handler *UserServiceHandler) ListUsers(ctx context.Context, req *connect.Request[registryv1alpha1.ListUsersRequest]) (*connect.Response[registryv1alpha1.ListUsersResponse], error) {
 	// 验证参数
 	argErr := handler.validator.CheckPageSize(req.Msg.GetPageSize())
 	if argErr != nil {
 		return nil, connect.NewError(argErr.Code(), argErr.Err())
 	}
 
-	users, err := handler.userService.ListUsers(int(req.Msg.GetPageOffset()), int(req.Msg.GetPageSize()), req.Msg.GetReverse()) // 创建用户
+	// 解析page token
+	pageTokenChaim, err := util.ParsePageToken(req.Msg.GetPageToken())
 	if err != nil {
-		return nil, connect.NewError(err.Code(), err.Err())
+		return nil, e.NewInvalidArgumentError("page token")
 	}
 
-	resp := connect.NewResponse(&registryv1alpha.ListUsersResponse{
-		Users: users.ToProtoUsers(),
+	users, ListErr := handler.userService.ListUsers(pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), req.Msg.GetReverse()) // 创建用户
+	if err != nil {
+		return nil, connect.NewError(ListErr.Code(), ListErr)
+	}
+
+	// 生成下一页token
+	nextPageToken, err := util.GenerateNextPageToken(pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), len(users))
+	if err != nil {
+		return nil, e.NewInternalError("generate next page token")
+	}
+
+	resp := connect.NewResponse(&registryv1alpha1.ListUsersResponse{
+		Users:         users.ToProtoUsers(),
+		NextPageToken: nextPageToken,
 	})
 
 	return resp, nil
+}
+
+func (handler *UserServiceHandler) ListOrganizationUsers(ctx context.Context, req *connect.Request[registryv1alpha1.ListOrganizationUsersRequest]) (*connect.Response[registryv1alpha1.ListOrganizationUsersResponse], error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (handler *UserServiceHandler) DeleteUser(ctx context.Context, req *connect.Request[registryv1alpha1.DeleteUserRequest]) (*connect.Response[registryv1alpha1.DeleteUserResponse], error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (handler *UserServiceHandler) DeactivateUser(ctx context.Context, req *connect.Request[registryv1alpha1.DeactivateUserRequest]) (*connect.Response[registryv1alpha1.DeactivateUserResponse], error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (handler *UserServiceHandler) UpdateUserServerRole(ctx context.Context, req *connect.Request[registryv1alpha1.UpdateUserServerRoleRequest]) (*connect.Response[registryv1alpha1.UpdateUserServerRoleResponse], error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (handler *UserServiceHandler) CountUsers(ctx context.Context, req *connect.Request[registryv1alpha1.CountUsersRequest]) (*connect.Response[registryv1alpha1.CountUsersResponse], error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (handler *UserServiceHandler) UpdateUserSettings(ctx context.Context, req *connect.Request[registryv1alpha1.UpdateUserSettingsRequest]) (*connect.Response[registryv1alpha1.UpdateUserSettingsResponse], error) {
+	//TODO implement me
+	panic("implement me")
 }

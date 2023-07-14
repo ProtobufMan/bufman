@@ -2,8 +2,8 @@ package services
 
 import (
 	"errors"
+	"github.com/ProtobufMan/bufman-cli/private/gen/proto/connect/bufman/alpha/registry/v1alpha1/registryv1alpha1connect"
 	"github.com/ProtobufMan/bufman/internal/e"
-	"github.com/ProtobufMan/bufman/internal/gen/bufman/registry/v1alpha/registryv1alphaconnect"
 	"github.com/ProtobufMan/bufman/internal/mapper"
 	"github.com/ProtobufMan/bufman/internal/model"
 	"gorm.io/gorm"
@@ -32,7 +32,7 @@ func (commitService *CommitServiceImpl) ListRepositoryCommitsByReference(reposit
 	// 查询commits
 	commits, err := commitService.commitMapper.FindPageByRepositoryIDAndReference(repositoryID, reference, offset, limit, reverse)
 	if err != nil {
-		return nil, e.NewInternalError(registryv1alphaconnect.RepositoryCommitServiceListRepositoryCommitsByReferenceProcedure)
+		return nil, e.NewInternalError(registryv1alpha1connect.RepositoryCommitServiceListRepositoryCommitsByReferenceProcedure)
 	}
 
 	return commits, nil
@@ -46,7 +46,7 @@ func (commitService *CommitServiceImpl) GetRepositoryCommitByReference(repositor
 			return nil, e.NewNotFoundError("commit")
 		}
 
-		return nil, e.NewInternalError(registryv1alphaconnect.RepositoryCommitServiceGetRepositoryCommitByReferenceProcedure)
+		return nil, e.NewInternalError(registryv1alpha1connect.RepositoryCommitServiceGetRepositoryCommitByReferenceProcedure)
 	}
 
 	return commit, nil
@@ -58,7 +58,7 @@ func (commitService *CommitServiceImpl) ListRepositoryDraftCommits(repositoryID 
 	// 查询draft
 	commits, err = commitService.commitMapper.FindDraftPageByRepositoryID(repositoryID, offset, limit, reverse)
 	if err != nil {
-		return nil, e.NewInternalError(registryv1alphaconnect.RepositoryCommitServiceListRepositoryDraftCommitsProcedure)
+		return nil, e.NewInternalError(registryv1alpha1connect.RepositoryCommitServiceListRepositoryDraftCommitsProcedure)
 	}
 
 	return commits, nil
@@ -72,7 +72,7 @@ func (commitService *CommitServiceImpl) DeleteRepositoryDraftCommit(repositoryID
 			return e.NewNotFoundError("draft")
 		}
 
-		return e.NewInternalError(registryv1alphaconnect.RepositoryCommitServiceDeleteRepositoryDraftCommitProcedure)
+		return e.NewInternalError(registryv1alpha1connect.RepositoryCommitServiceDeleteRepositoryDraftCommitProcedure)
 	}
 
 	return nil

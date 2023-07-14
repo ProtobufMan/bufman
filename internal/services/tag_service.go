@@ -2,8 +2,8 @@ package services
 
 import (
 	"errors"
+	"github.com/ProtobufMan/bufman-cli/private/gen/proto/connect/bufman/alpha/registry/v1alpha1/registryv1alpha1connect"
 	"github.com/ProtobufMan/bufman/internal/e"
-	"github.com/ProtobufMan/bufman/internal/gen/bufman/registry/v1alpha/registryv1alphaconnect"
 	"github.com/ProtobufMan/bufman/internal/mapper"
 	"github.com/ProtobufMan/bufman/internal/model"
 	"github.com/ProtobufMan/bufman/internal/validity"
@@ -52,7 +52,7 @@ func (tagService *TagServiceImpl) CreateRepositoryTag(repositoryID, TagName, com
 	}
 	err = tagService.tagMapper.Create(tag)
 	if err != nil {
-		return nil, e.NewInternalError(registryv1alphaconnect.RepositoryTagServiceCreateRepositoryTagProcedure)
+		return nil, e.NewInternalError(registryv1alpha1connect.RepositoryTagServiceCreateRepositoryTagProcedure)
 	}
 
 	return tag, nil
@@ -61,7 +61,7 @@ func (tagService *TagServiceImpl) CreateRepositoryTag(repositoryID, TagName, com
 func (tagService *TagServiceImpl) ListRepositoryTags(repositoryID string, offset, limit int, reverse bool) (model.Tags, e.ResponseError) {
 	tags, err := tagService.tagMapper.FindPageByRepositoryID(repositoryID, limit, offset, reverse)
 	if err != nil {
-		return nil, e.NewInternalError(registryv1alphaconnect.RepositoryTagServiceListRepositoryTagsProcedure)
+		return nil, e.NewInternalError(registryv1alpha1connect.RepositoryTagServiceListRepositoryTagsProcedure)
 	}
 
 	return tags, nil

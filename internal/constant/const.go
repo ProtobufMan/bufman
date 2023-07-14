@@ -1,7 +1,7 @@
 package constant
 
 const (
-	AuthHeader    = "Authentication"
+	AuthHeader    = "Authorization"
 	AuthPrefix    = "Bearer"
 	TokenLength   = 16
 	CommitLength  = 64

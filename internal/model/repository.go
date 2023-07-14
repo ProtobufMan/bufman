@@ -18,7 +18,7 @@
 package model
 
 import (
-	registryv1alpha "github.com/ProtobufMan/bufman/internal/gen/bufman/registry/v1alpha"
+	registryv1alpha1 "github.com/ProtobufMan/bufman-cli/private/gen/proto/go/bufman/alpha/registry/v1alpha1"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"time"
 )
@@ -47,18 +47,18 @@ func (repository *Repository) TableName() string {
 	return "repositories"
 }
 
-func (repository *Repository) ToProtoRepository() *registryv1alpha.Repository {
+func (repository *Repository) ToProtoRepository() *registryv1alpha1.Repository {
 	if repository == nil {
 		return (&Repository{}).ToProtoRepository()
 	}
 
-	return &registryv1alpha.Repository{
+	return &registryv1alpha1.Repository{
 		Id:                 repository.RepositoryID,
 		CreateTime:         timestamppb.New(repository.CreatedTime),
 		UpdateTime:         timestamppb.New(repository.UpdateTime),
 		Name:               repository.RepositoryName,
-		UserId:             repository.UserID,
-		Visibility:         registryv1alpha.Visibility(repository.Visibility),
+		Owner:              &registryv1alpha1.Repository_UserId{UserId: repository.UserID},
+		Visibility:         registryv1alpha1.Visibility(repository.Visibility),
 		Deprecated:         repository.Deprecated,
 		DeprecationMessage: repository.DeprecationMsg,
 		OwnerName:          repository.UserName,
@@ -68,8 +68,8 @@ func (repository *Repository) ToProtoRepository() *registryv1alpha.Repository {
 
 type Repositories []*Repository
 
-func (repositoryEntities *Repositories) ToProtoRepositories() []*registryv1alpha.Repository {
-	repositories := make([]*registryv1alpha.Repository, 0, len(*repositoryEntities))
+func (repositoryEntities *Repositories) ToProtoRepositories() []*registryv1alpha1.Repository {
+	repositories := make([]*registryv1alpha1.Repository, 0, len(*repositoryEntities))
 
 	for i := 0; i < len(*repositoryEntities); i++ {
 		repositories = append(repositories, (*repositoryEntities)[i].ToProtoRepository())
@@ -83,12 +83,12 @@ type RepositoryCounts struct {
 	DraftsCount int64
 }
 
-func (repositoryCounts *RepositoryCounts) ToProtoRepositoryCounts() *registryv1alpha.RepositoryCounts {
+func (repositoryCounts *RepositoryCounts) ToProtoRepositoryCounts() *registryv1alpha1.RepositoryCounts {
 	if repositoryCounts == nil {
 		return (&RepositoryCounts{}).ToProtoRepositoryCounts()
 	}
 
-	return &registryv1alpha.RepositoryCounts{
+	return &registryv1alpha1.RepositoryCounts{
 		TagsCount:   uint32(repositoryCounts.TagsCount),
 		DraftsCount: uint32(repositoryCounts.DraftsCount),
 	}

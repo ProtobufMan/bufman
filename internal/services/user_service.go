@@ -2,8 +2,8 @@ package services
 
 import (
 	"errors"
+	"github.com/ProtobufMan/bufman-cli/private/gen/proto/connect/bufman/alpha/registry/v1alpha1/registryv1alpha1connect"
 	"github.com/ProtobufMan/bufman/internal/e"
-	"github.com/ProtobufMan/bufman/internal/gen/bufman/registry/v1alpha/registryv1alphaconnect"
 	"github.com/ProtobufMan/bufman/internal/mapper"
 	"github.com/ProtobufMan/bufman/internal/model"
 	"github.com/ProtobufMan/bufman/internal/util"
@@ -42,7 +42,7 @@ func (userService *UserServiceImpl) CreateUser(userName, password string) (*mode
 			return nil, e.NewAlreadyExistsError("user name")
 		}
 
-		return nil, e.NewInternalError(registryv1alphaconnect.UserServiceCreateUserProcedure)
+		return nil, e.NewInternalError(registryv1alpha1connect.UserServiceCreateUserProcedure)
 	}
 
 	return user, nil
@@ -55,7 +55,7 @@ func (userService *UserServiceImpl) GetUser(userID string) (*model.User, e.Respo
 			return nil, e.NewNotFoundError("user")
 		}
 
-		return nil, e.NewInternalError(registryv1alphaconnect.UserServiceGetUserProcedure)
+		return nil, e.NewInternalError(registryv1alpha1connect.UserServiceGetUserProcedure)
 	}
 
 	return user, nil
@@ -68,7 +68,7 @@ func (userService *UserServiceImpl) GetUserByUsername(userName string) (*model.U
 			return nil, e.NewNotFoundError("user")
 		}
 
-		return nil, e.NewInternalError(registryv1alphaconnect.UserServiceGetUserByUsernameProcedure)
+		return nil, e.NewInternalError(registryv1alpha1connect.UserServiceGetUserByUsernameProcedure)
 	}
 
 	return user, nil
@@ -77,7 +77,7 @@ func (userService *UserServiceImpl) GetUserByUsername(userName string) (*model.U
 func (userService *UserServiceImpl) ListUsers(offset int, limit int, reverse bool) (model.Users, e.ResponseError) {
 	users, err := userService.userMapper.FindPage(offset, limit, reverse)
 	if err != nil {
-		return nil, e.NewInternalError(registryv1alphaconnect.UserServiceListUsersProcedure)
+		return nil, e.NewInternalError(registryv1alpha1connect.UserServiceListUsersProcedure)
 	}
 
 	return users, nil

@@ -2,10 +2,10 @@ package handlers
 
 import (
 	"context"
+	registryv1alpha1 "github.com/ProtobufMan/bufman-cli/private/gen/proto/go/bufman/alpha/registry/v1alpha1"
 	"github.com/ProtobufMan/bufman-cli/private/pkg/manifest"
 	"github.com/ProtobufMan/bufman/internal/constant"
 	"github.com/ProtobufMan/bufman/internal/e"
-	registryv1alpha "github.com/ProtobufMan/bufman/internal/gen/bufman/registry/v1alpha"
 	"github.com/ProtobufMan/bufman/internal/model"
 	"github.com/ProtobufMan/bufman/internal/services"
 	"github.com/ProtobufMan/bufman/internal/validity"
@@ -26,7 +26,7 @@ func NewPushServiceHandler() *PushServiceHandler {
 	}
 }
 
-func (handler *PushServiceHandler) PushManifestAndBlobs(ctx context.Context, req *connect.Request[registryv1alpha.PushManifestAndBlobsRequest]) (*connect.Response[registryv1alpha.PushManifestAndBlobsResponse], error) {
+func (handler *PushServiceHandler) PushManifestAndBlobs(ctx context.Context, req *connect.Request[registryv1alpha1.PushManifestAndBlobsRequest]) (*connect.Response[registryv1alpha1.PushManifestAndBlobsResponse], error) {
 	// 验证参数
 
 	// 检查tags名称合法性
@@ -98,8 +98,13 @@ func (handler *PushServiceHandler) PushManifestAndBlobs(ctx context.Context, req
 		return nil, connect.NewError(serviceErr.Code(), serviceErr.Err())
 	}
 
-	resp := connect.NewResponse(&registryv1alpha.PushManifestAndBlobsResponse{
+	resp := connect.NewResponse(&registryv1alpha1.PushManifestAndBlobsResponse{
 		LocalModulePin: commit.ToProtoLocalModulePin(),
 	})
 	return resp, nil
+}
+
+func (handler *PushServiceHandler) Push(ctx context.Context, req *connect.Request[registryv1alpha1.PushRequest]) (*connect.Response[registryv1alpha1.PushResponse], error) {
+	//TODO implement me
+	panic("implement me")
 }

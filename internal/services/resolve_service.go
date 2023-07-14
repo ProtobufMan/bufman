@@ -3,16 +3,16 @@ package services
 import (
 	"errors"
 	"fmt"
+	"github.com/ProtobufMan/bufman-cli/private/gen/proto/connect/bufman/alpha/registry/v1alpha1/registryv1alpha1connect"
+	modulev1alpha1 "github.com/ProtobufMan/bufman-cli/private/gen/proto/go/bufman/alpha/module/v1alpha1"
 	"github.com/ProtobufMan/bufman/internal/e"
-	modulev1alpha "github.com/ProtobufMan/bufman/internal/gen/bufman/module/v1alpha"
-	"github.com/ProtobufMan/bufman/internal/gen/bufman/registry/v1alpha/registryv1alphaconnect"
 	"github.com/ProtobufMan/bufman/internal/mapper"
 	"github.com/ProtobufMan/bufman/internal/model"
 	"gorm.io/gorm"
 )
 
 type ResolveService interface {
-	GetModulePins(repositoryMap map[string]*model.Repository, moduleReferences []*modulev1alpha.ModuleReference) (model.Commits, e.ResponseError)
+	GetModulePins(repositoryMap map[string]*model.Repository, moduleReferences []*modulev1alpha1.ModuleReference) (model.Commits, e.ResponseError)
 }
 
 type ResolveServiceImpl struct {
@@ -27,13 +27,13 @@ func NewResolveService() ResolveService {
 	}
 }
 
-func (resolveService *ResolveServiceImpl) GetModulePins(repositoryMap map[string]*model.Repository, moduleReferences []*modulev1alpha.ModuleReference) (model.Commits, e.ResponseError) {
+func (resolveService *ResolveServiceImpl) GetModulePins(repositoryMap map[string]*model.Repository, moduleReferences []*modulev1alpha1.ModuleReference) (model.Commits, e.ResponseError) {
 	commits := make([]*model.Commit, 0, len(moduleReferences))
 	for _, moduleReference := range moduleReferences {
 		fullName := moduleReference.GetOwner() + "/" + moduleReference.GetRepository()
 		repo, ok := repositoryMap[fullName]
 		if !ok {
-			return nil, e.NewInternalError(registryv1alphaconnect.ResolveServiceGetModulePinsProcedure)
+			return nil, e.NewInternalError(registryv1alpha1connect.ResolveServiceGetModulePinsProcedure)
 		}
 
 		// 查询reference
@@ -43,7 +43,7 @@ func (resolveService *ResolveServiceImpl) GetModulePins(repositoryMap map[string
 				return nil, e.NewNotFoundError(fmt.Sprintf("reference %s", moduleReference.GetReference()))
 			}
 
-			return nil, e.NewInternalError(registryv1alphaconnect.ResolveServiceGetModulePinsProcedure)
+			return nil, e.NewInternalError(registryv1alpha1connect.ResolveServiceGetModulePinsProcedure)
 		}
 
 		commits = append(commits, commit)
