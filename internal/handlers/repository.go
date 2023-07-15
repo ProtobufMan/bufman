@@ -301,8 +301,28 @@ func (handler *RepositoryServiceHandler) ListOrganizationRepositories(ctx contex
 }
 
 func (handler *RepositoryServiceHandler) GetRepositoriesByFullName(ctx context.Context, req *connect.Request[registryv1alpha1.GetRepositoriesByFullNameRequest]) (*connect.Response[registryv1alpha1.GetRepositoriesByFullNameResponse], error) {
-	//TODO implement me
-	panic("implement me")
+
+	retRepos := make([]*registryv1alpha1.Repository, 0, len(req.Msg.FullNames))
+	for _, fullName := range req.Msg.GetFullNames() {
+		// 验证参数
+		userName, repositoryName, argErr := handler.validator.SplitFullName(fullName)
+		if argErr != nil {
+			return nil, connect.NewError(argErr.Code(), argErr.Err())
+		}
+
+		// 查询
+		repository, err := handler.repositoryService.GetRepositoryByUserNameAndRepositoryName(userName, repositoryName)
+		if err != nil {
+			return nil, connect.NewError(err.Code(), err.Err())
+		}
+		retRepos = append(retRepos, repository.ToProtoRepository())
+	}
+
+	resp := connect.NewResponse(&registryv1alpha1.GetRepositoriesByFullNameResponse{
+		Repositories: retRepos,
+	})
+
+	return resp, nil
 }
 
 func (handler *RepositoryServiceHandler) SetRepositoryContributor(ctx context.Context, req *connect.Request[registryv1alpha1.SetRepositoryContributorRequest]) (*connect.Response[registryv1alpha1.SetRepositoryContributorResponse], error) {

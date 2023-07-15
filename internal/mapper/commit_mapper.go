@@ -126,6 +126,10 @@ func (c *CommitMapperImpl) FindByRepositoryIDAndReference(repositoryID string, r
 		}
 	}
 
+	if commit != nil && err == nil {
+		return commit, nil
+	}
+
 	// 查询tag
 	commit, err = c.FindByRepositoryIDAndTagName(repositoryID, reference)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {

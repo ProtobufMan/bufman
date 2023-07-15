@@ -35,12 +35,19 @@ var (
 func LoadConfig() {
 	Properties = &Config{
 		BufMan: BufMan{
+			ServerHost: "localhost:39099",
+
 			PageTokenExpireTime: time.Minute * 10, // 默认过期时间为10分钟
 			PageTokenSecret:     "123456",
 		},
 	}
-	Properties.BufMan.MysqlDsn = os.Getenv(mysqlDSNKey)
-	Properties.BufMan.ServerHost = os.Getenv(serverHostKey)
+
+	if mysqlDSNENV := os.Getenv(mysqlDSNKey); mysqlDSNENV != "" {
+		Properties.BufMan.MysqlDsn = mysqlDSNENV
+	}
+	if serverHostENV := os.Getenv(serverHostKey); serverHostENV != "" {
+		Properties.BufMan.ServerHost = serverHostENV
+	}
 
 	if err := os.MkdirAll(constant.FileSavaDir, 0666); err != nil {
 		panic(err)

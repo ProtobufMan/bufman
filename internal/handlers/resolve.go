@@ -65,9 +65,7 @@ func (handler *ResolveServiceHandler) GetModulePins(ctx context.Context, req *co
 	for _, currentModulePin := range currentModulePins {
 		for _, moduleRef := range moduleReferences {
 			if currentModulePin.IdentityString() == moduleRef.IdentityString() {
-				// 需要更新的依赖，加入到返回结果中
-				protoPin := bufmoduleref.NewProtoModulePinForModulePin(currentModulePin)
-				retPins = append(retPins, protoPin)
+				// 需要更新的依赖，已经加入到了返回的结果中
 				continue
 			}
 		}

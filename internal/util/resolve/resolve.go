@@ -5,9 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ProtobufMan/bufman-cli/private/bufpkg/bufconfig"
-	"github.com/ProtobufMan/bufman-cli/private/bufpkg/buflock"
 	"github.com/ProtobufMan/bufman-cli/private/bufpkg/bufmanifest"
-	"github.com/ProtobufMan/bufman-cli/private/bufpkg/bufmodule"
 	"github.com/ProtobufMan/bufman-cli/private/bufpkg/bufmodule/bufmoduleref"
 	modulev1alpha1 "github.com/ProtobufMan/bufman-cli/private/gen/proto/go/bufman/alpha/module/v1alpha1"
 	"github.com/ProtobufMan/bufman-cli/private/pkg/manifest"
@@ -47,7 +45,8 @@ func NewResolver() Resolver {
 
 func (resolver *ResolverImpl) GetAllDependenciesFromBufConfig(ctx context.Context, bufConfig *bufconfig.Config) (model.Commits, e.ResponseError) {
 	var dependentCommitSet map[string]*model.Commit
-	err := resolver.doGetDependencies(ctx, dependentCommitSet, bufConfig.Build.DependencyModuleReferences, true)
+	var err e.ResponseError
+	dependentCommitSet, err = resolver.doGetDependencies(ctx, dependentCommitSet, bufConfig.Build.DependencyModuleReferences, true)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +61,8 @@ func (resolver *ResolverImpl) GetAllDependenciesFromBufConfig(ctx context.Contex
 
 func (resolver *ResolverImpl) GetDirectDependenciesFromBufConfig(ctx context.Context, bufConfig *bufconfig.Config) (model.Commits, e.ResponseError) {
 	var dependentCommitSet map[string]*model.Commit
-	err := resolver.doGetDependencies(ctx, dependentCommitSet, bufConfig.Build.DependencyModuleReferences, false)
+	var err e.ResponseError
+	dependentCommitSet, err = resolver.doGetDependencies(ctx, dependentCommitSet, bufConfig.Build.DependencyModuleReferences, false)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +77,8 @@ func (resolver *ResolverImpl) GetDirectDependenciesFromBufConfig(ctx context.Con
 
 func (resolver *ResolverImpl) GetAllDependenciesFromModuleRefs(ctx context.Context, moduleReferences []bufmoduleref.ModuleReference) (model.Commits, e.ResponseError) {
 	var dependentCommitSet map[string]*model.Commit
-	err := resolver.doGetDependencies(ctx, dependentCommitSet, moduleReferences, true)
+	var err e.ResponseError
+	dependentCommitSet, err = resolver.doGetDependencies(ctx, dependentCommitSet, moduleReferences, true)
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +93,8 @@ func (resolver *ResolverImpl) GetAllDependenciesFromModuleRefs(ctx context.Conte
 
 func (resolver *ResolverImpl) GetDirectDependenciesFromModuleRefs(ctx context.Context, moduleReferences []bufmoduleref.ModuleReference) (model.Commits, e.ResponseError) {
 	var dependentCommitSet map[string]*model.Commit
-	err := resolver.doGetDependencies(ctx, dependentCommitSet, moduleReferences, false)
+	var err e.ResponseError
+	dependentCommitSet, err = resolver.doGetDependencies(ctx, dependentCommitSet, moduleReferences, false)
 	if err != nil {
 		return nil, err
 	}
@@ -115,17 +117,50 @@ func (resolver *ResolverImpl) GetBufConfigFromCommitID(ctx context.Context, comm
 		return nil, e.NewInternalError("GetDependenciesByCommitID")
 	}
 
-	// 读取
+	// 读取manifest
 	reader, err := resolver.storageHelper.Read(manifestModel.Digest)
 	if err != nil {
 		return nil, nil
 	}
-
-	data, err := io.ReadAll(reader)
+	fileManifest, err := manifest.NewFromReader(reader)
 	if err != nil {
 		return nil, e.NewInternalError("GetDependenciesByCommitID")
 	}
-	bufConfig, err := bufconfig.GetConfigForData(ctx, data)
+
+	// 根据文件manifest查找配置文件
+	var configFileExist bool
+	var configFileData []byte
+	err = fileManifest.Range(func(path string, digest manifest.Digest) error {
+		// 如果遇到配置文件，就记录下来
+		for _, configFilePath := range bufconfig.AllConfigFilePaths {
+			if path == configFilePath {
+				if configFileExist {
+					return errors.New("two config files")
+				}
+
+				reader, err := resolver.storageHelper.Read(digest.Hex())
+				if err != nil {
+					return err
+				}
+				configFileData, err = io.ReadAll(reader)
+				if err != nil {
+					return err
+				}
+				configFileExist = true
+			}
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, e.NewInvalidArgumentError(err.Error())
+	}
+	if !configFileExist {
+		// 不存在配置文件
+		return nil, e.NewInvalidArgumentError("no config file")
+	}
+
+	bufConfig, err := bufconfig.GetConfigForData(ctx, configFileData)
 	if err != nil {
 		return nil, e.NewInternalError("GetDependenciesByCommitID")
 	}
@@ -136,11 +171,7 @@ func (resolver *ResolverImpl) GetBufConfigFromCommitID(ctx context.Context, comm
 func (resolver *ResolverImpl) GetBufConfigFromBlob(ctx context.Context, fileManifest *manifest.Manifest, blobSet *manifest.BlobSet) (*bufconfig.Config, e.ResponseError) {
 	var configFileExist bool
 	var configFileData []byte
-	externalPaths := []string{
-		buflock.ExternalConfigFilePath,
-		bufmodule.LicenseFilePath,
-	}
-	externalPaths = append(externalPaths, bufconfig.AllConfigFilePaths...)
+
 	err := fileManifest.Range(func(path string, digest manifest.Digest) error {
 		blob, ok := blobSet.BlobFor(digest.String())
 		if !ok {
@@ -151,6 +182,9 @@ func (resolver *ResolverImpl) GetBufConfigFromBlob(ctx context.Context, fileMani
 		// 如果遇到配置文件，就记录下来
 		for _, configFilePath := range bufconfig.AllConfigFilePaths {
 			if path == configFilePath {
+				if configFileExist {
+					return errors.New("two config files")
+				}
 				reader, err := blob.Open(ctx)
 				if err != nil {
 					return err
@@ -160,7 +194,6 @@ func (resolver *ResolverImpl) GetBufConfigFromBlob(ctx context.Context, fileMani
 					return err
 				}
 				configFileExist = true
-				break
 			}
 		}
 
@@ -198,7 +231,7 @@ func (resolver *ResolverImpl) GetBufConfigFromProto(ctx context.Context, protoMa
 	return resolver.GetBufConfigFromBlob(ctx, fileManifest, blobSet)
 }
 
-func (resolver *ResolverImpl) doGetDependencies(ctx context.Context, dependentCommitSet map[string]*model.Commit, dependencyReferences []bufmoduleref.ModuleReference, getAll bool) e.ResponseError {
+func (resolver *ResolverImpl) doGetDependencies(ctx context.Context, dependentCommitSet map[string]*model.Commit, dependencyReferences []bufmoduleref.ModuleReference, getAll bool) (map[string]*model.Commit, e.ResponseError) {
 	if dependentCommitSet == nil {
 		dependentCommitSet = map[string]*model.Commit{}
 	}
@@ -210,49 +243,55 @@ func (resolver *ResolverImpl) doGetDependencies(ctx context.Context, dependentCo
 			repo, err := resolver.repositoryMapper.FindByUserNameAndRepositoryName(dependencyReference.Owner(), dependencyReference.Repository())
 			if err != nil {
 				if errors.Is(err, gorm.ErrRecordNotFound) {
-					return e.NewNotFoundError(dependencyReference.IdentityString())
+					return nil, e.NewNotFoundError(dependencyReference.IdentityString())
 				}
-				return e.NewInternalError(fmt.Sprintf("find repository(%s)", err.Error()))
-			}
-
-			dependentCommit, ok := dependentCommitSet[dependencyReference.IdentityString()]
-			if ok && dependentCommit.CommitName == dependencyReference.Reference() {
-				continue
+				return nil, e.NewInternalError(fmt.Sprintf("find repository(%s)", err.Error()))
 			}
 
 			// 查询当前reference，版本号是否一样
 			commit, err := resolver.commitMapper.FindByRepositoryIDAndReference(repo.RepositoryID, dependencyReference.Reference())
 			if err != nil {
 				if errors.Is(err, gorm.ErrRecordNotFound) {
-					return e.NewNotFoundError(fmt.Sprintf("%s:%s", dependencyReference.IdentityString(), dependencyReference.Reference()))
+					return nil, e.NewNotFoundError(fmt.Sprintf("%s:%s", dependencyReference.IdentityString(), dependencyReference.Reference()))
 				}
-				return e.NewInternalError(fmt.Sprintf("find reference(%s)", err.Error()))
+				return nil, e.NewInternalError(fmt.Sprintf("find reference(%s)", err.Error()))
 			}
 
-			if commit.CommitName != dependentCommit.CommitName {
-				// 同一个仓库下的依赖版本号不同，返回错误
-				return e.NewInternalError(fmt.Sprintf("two different version %s and %s for %s", dependentCommit.CommitName, dependencyReference.Reference(), dependencyReference.IdentityString()))
+			dependentCommit, ok := dependentCommitSet[dependencyReference.IdentityString()]
+			if ok && dependentCommit.CommitName == dependencyReference.Reference() {
+				continue
 			}
-			if !ok {
+			if ok {
+				// 之前已经记录过 owner/repository 的commit
+				if commit.CommitName != dependentCommit.CommitName {
+					// 同一个仓库下的依赖版本号不同，返回错误
+					return nil, e.NewInternalError(fmt.Sprintf("two different version %s and %s for %s", dependentCommit.CommitName, dependencyReference.Reference(), dependencyReference.IdentityString()))
+				}
+
+				// 当前依赖已经记录，跳过
+				continue
+			} else {
 				// 如果之前没有记录过，记录依赖commit
 				dependentCommitSet[dependencyReference.IdentityString()] = commit
 
 				if getAll {
 					// 需要获取全部依赖，记录这个依赖下的依赖关系
 					dependentBufConfig, configErr := resolver.GetBufConfigFromCommitID(ctx, commit.CommitID)
-					if err != nil {
-						return configErr
+					if configErr != nil {
+						return nil, configErr
 					}
-					dependentErr := resolver.doGetDependencies(ctx, dependentCommitSet, dependentBufConfig.Build.DependencyModuleReferences, true)
+
+					var dependentErr e.ResponseError
+					dependentCommitSet, dependentErr = resolver.doGetDependencies(ctx, dependentCommitSet, dependentBufConfig.Build.DependencyModuleReferences, true)
 					if dependentErr != nil {
-						return dependentErr
+						return nil, dependentErr
 					}
 				}
 
-			} // else 当前依赖已经记录，跳过
+			}
 		}
 	}
 
 	// 通过
-	return nil
+	return dependentCommitSet, nil
 }
