@@ -7,8 +7,8 @@ import (
 	"github.com/ProtobufMan/bufman/internal/constant"
 	"github.com/ProtobufMan/bufman/internal/e"
 	"github.com/ProtobufMan/bufman/internal/services"
-	"github.com/ProtobufMan/bufman/internal/util"
-	"github.com/ProtobufMan/bufman/internal/validity"
+	"github.com/ProtobufMan/bufman/internal/util/security"
+	"github.com/ProtobufMan/bufman/internal/util/validity"
 	"github.com/bufbuild/connect-go"
 )
 
@@ -78,7 +78,7 @@ func (handler *RepositoryServiceHandler) ListRepositories(ctx context.Context, r
 	}
 
 	// 解析page token
-	pageTokenChaim, err := util.ParsePageToken(req.Msg.GetPageToken())
+	pageTokenChaim, err := security.ParsePageToken(req.Msg.GetPageToken())
 	if err != nil {
 		return nil, e.NewInvalidArgumentError("page token")
 	}
@@ -89,7 +89,7 @@ func (handler *RepositoryServiceHandler) ListRepositories(ctx context.Context, r
 	}
 
 	// 生成下一页token
-	nextPageToken, err := util.GenerateNextPageToken(pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), len(repositories))
+	nextPageToken, err := security.GenerateNextPageToken(pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), len(repositories))
 	if err != nil {
 		return nil, e.NewInternalError("generate next page token")
 	}
@@ -109,7 +109,7 @@ func (handler *RepositoryServiceHandler) ListUserRepositories(ctx context.Contex
 	}
 
 	// 解析page token
-	pageTokenChaim, err := util.ParsePageToken(req.Msg.GetPageToken())
+	pageTokenChaim, err := security.ParsePageToken(req.Msg.GetPageToken())
 	if err != nil {
 		return nil, e.NewInvalidArgumentError("page token")
 	}
@@ -120,7 +120,7 @@ func (handler *RepositoryServiceHandler) ListUserRepositories(ctx context.Contex
 	}
 
 	// 生成下一页token
-	nextPageToken, err := util.GenerateNextPageToken(pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), len(repositories))
+	nextPageToken, err := security.GenerateNextPageToken(pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), len(repositories))
 	if err != nil {
 		return nil, e.NewInternalError("generate next page token")
 	}
@@ -140,7 +140,7 @@ func (handler *RepositoryServiceHandler) ListRepositoriesUserCanAccess(ctx conte
 	}
 
 	// 解析page token
-	pageTokenChaim, err := util.ParsePageToken(req.Msg.GetPageToken())
+	pageTokenChaim, err := security.ParsePageToken(req.Msg.GetPageToken())
 	if err != nil {
 		return nil, e.NewInvalidArgumentError("page token")
 	}
@@ -152,7 +152,7 @@ func (handler *RepositoryServiceHandler) ListRepositoriesUserCanAccess(ctx conte
 	}
 
 	// 生成下一页token
-	nextPageToken, err := util.GenerateNextPageToken(pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), len(repositories))
+	nextPageToken, err := security.GenerateNextPageToken(pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), len(repositories))
 	if err != nil {
 		return nil, e.NewInternalError("generate next page token")
 	}

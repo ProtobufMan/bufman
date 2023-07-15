@@ -6,7 +6,7 @@ import (
 	"github.com/ProtobufMan/bufman/internal/e"
 	"github.com/ProtobufMan/bufman/internal/mapper"
 	"github.com/ProtobufMan/bufman/internal/model"
-	"github.com/ProtobufMan/bufman/internal/util"
+	"github.com/ProtobufMan/bufman/internal/util/security"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -32,7 +32,7 @@ func (userService *UserServiceImpl) CreateUser(userName, password string) (*mode
 	user := &model.User{
 		UserID:   uuid.NewString(),
 		UserName: userName,
-		Password: util.EncryptPlainPassword(userName, password), // 加密明文密码
+		Password: security.EncryptPlainPassword(userName, password), // 加密明文密码
 	}
 
 	err := userService.userMapper.Create(user) // 创建用户

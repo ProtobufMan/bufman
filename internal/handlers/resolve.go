@@ -9,7 +9,7 @@ import (
 	"github.com/ProtobufMan/bufman/internal/e"
 	"github.com/ProtobufMan/bufman/internal/model"
 	"github.com/ProtobufMan/bufman/internal/services"
-	"github.com/ProtobufMan/bufman/internal/validity"
+	"github.com/ProtobufMan/bufman/internal/util/validity"
 	"github.com/bufbuild/connect-go"
 )
 

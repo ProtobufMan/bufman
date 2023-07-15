@@ -3,18 +3,16 @@ package services
 import (
 	"context"
 	"errors"
-	"fmt"
 	"github.com/ProtobufMan/bufman-cli/private/bufpkg/bufmodule"
 	"github.com/ProtobufMan/bufman-cli/private/bufpkg/bufmodule/bufmoduleprotocompile"
-	"github.com/ProtobufMan/bufman-cli/private/bufpkg/bufmodule/bufmoduleref"
 	"github.com/ProtobufMan/bufman-cli/private/gen/proto/connect/bufman/alpha/registry/v1alpha1/registryv1alpha1connect"
 	"github.com/ProtobufMan/bufman-cli/private/pkg/manifest"
 	"github.com/ProtobufMan/bufman-cli/private/pkg/thread"
-	"github.com/ProtobufMan/bufman/internal/config"
 	"github.com/ProtobufMan/bufman/internal/e"
 	"github.com/ProtobufMan/bufman/internal/mapper"
 	"github.com/ProtobufMan/bufman/internal/model"
-	"github.com/ProtobufMan/bufman/internal/util"
+	"github.com/ProtobufMan/bufman/internal/util/security"
+	"github.com/ProtobufMan/bufman/internal/util/storage"
 	"github.com/bufbuild/protocompile"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -25,7 +23,6 @@ type PushService interface {
 	PushManifestAndBlobs(userID, ownerName, repositoryName string, fileManifest *manifest.Manifest, fileBlobs *manifest.BlobSet) (*model.Commit, e.ResponseError)
 	PushManifestAndBlobsWithTags(userID, ownerName, repositoryName string, fileManifest *manifest.Manifest, fileBlobs *manifest.BlobSet, tagNames []string) (*model.Commit, e.ResponseError)
 	PushManifestAndBlobsWithDraft(userID, ownerName, repositoryName string, fileManifest *manifest.Manifest, fileBlobs *manifest.BlobSet, draftName string) (*model.Commit, e.ResponseError)
-	GetDependencies(dependencyReferences []bufmoduleref.ModuleReference) (model.Commits, e.ResponseError)
 	TryCompile(ctx context.Context, fileManifest *manifest.Manifest, blobSet *manifest.BlobSet, dependentManifests []*manifest.Manifest, dependentBlobSets []*manifest.BlobSet) e.ResponseError
 }
 
@@ -33,7 +30,7 @@ type PushServiceImpl struct {
 	userMapper       mapper.UserMapper
 	repositoryMapper mapper.RepositoryMapper
 	commitMapper     mapper.CommitMapper
-	storageHelper    util.StorageHelper
+	storageHelper    storage.StorageHelper
 }
 
 func NewPushService() PushService {
@@ -41,7 +38,7 @@ func NewPushService() PushService {
 		userMapper:       &mapper.UserMapperImpl{},
 		repositoryMapper: &mapper.RepositoryMapperImpl{},
 		commitMapper:     &mapper.CommitMapperImpl{},
-		storageHelper:    util.NewStorageHelper(),
+		storageHelper:    storage.NewStorageHelper(),
 	}
 }
 
@@ -89,38 +86,6 @@ func getProtoPaths(fileManifest *manifest.Manifest) []string {
 	})
 
 	return protoPaths
-}
-
-func (pushService *PushServiceImpl) GetDependencies(dependencyReferences []bufmoduleref.ModuleReference) (model.Commits, e.ResponseError) {
-	var err error
-	dependentCommits := make([]*model.Commit, 0, len(dependencyReferences)) // 配置文件中声明的依赖
-	repoMap := map[string]*model.Repository{}
-	for i := 0; i < len(dependencyReferences); i++ {
-		dependencyReference := dependencyReferences[i]
-		if dependencyReference.Remote() == config.Properties.BufMan.ServerHost {
-			repo, ok := repoMap[dependencyReference.IdentityString()]
-			if !ok {
-				// 查询repo
-				repo, err = pushService.repositoryMapper.FindByUserNameAndRepositoryName(dependencyReference.Owner(), dependencyReference.Repository())
-				if err != nil {
-					return nil, e.NewInternalError(fmt.Sprintf("find repository(%s)", err.Error()))
-				}
-				repoMap[dependencyReference.IdentityString()] = repo
-			} else {
-				return nil, e.NewInternalError(fmt.Sprintf("%s occur twice", dependencyReference.IdentityString()))
-			}
-
-			// 查询reference
-			commit, err := pushService.commitMapper.FindByRepositoryIDAndReference(repo.RepositoryID, dependencyReference.Reference())
-			if err != nil {
-				return nil, e.NewInternalError(fmt.Sprintf("find reference(%s)", err.Error()))
-			}
-			dependentCommits = append(dependentCommits, commit)
-		}
-	}
-
-	// 验证通过
-	return dependentCommits, nil
 }
 
 func (pushService *PushServiceImpl) PushManifestAndBlobs(userID, ownerName, repositoryName string, fileManifest *manifest.Manifest, fileBlobs *manifest.BlobSet) (*model.Commit, e.ResponseError) {
@@ -261,7 +226,7 @@ func (pushService *PushServiceImpl) toCommit(userID, ownerName, repositoryName s
 		RepositoryID:   repository.RepositoryID,
 		RepositoryName: repositoryName,
 		CommitID:       commitID,
-		CommitName:     util.GenerateCommitName(user.UserName, repositoryName),
+		CommitName:     security.GenerateCommitName(user.UserName, repositoryName),
 		ManifestDigest: fileManifestBlob.Digest().Hex(),
 		FileManifest:   modelFileManifest,
 		FileBlobs:      modelBlobs,

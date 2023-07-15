@@ -7,8 +7,8 @@ import (
 	"github.com/ProtobufMan/bufman/internal/constant"
 	"github.com/ProtobufMan/bufman/internal/e"
 	"github.com/ProtobufMan/bufman/internal/services"
-	"github.com/ProtobufMan/bufman/internal/util"
-	"github.com/ProtobufMan/bufman/internal/validity"
+	"github.com/ProtobufMan/bufman/internal/util/security"
+	"github.com/ProtobufMan/bufman/internal/util/validity"
 	"github.com/bufbuild/connect-go"
 )
 
@@ -41,7 +41,7 @@ func (handler *CommitServiceHandler) ListRepositoryCommitsByReference(ctx contex
 	}
 
 	// 解析page token
-	pageTokenChaim, err := util.ParsePageToken(req.Msg.GetPageToken())
+	pageTokenChaim, err := security.ParsePageToken(req.Msg.GetPageToken())
 	if err != nil {
 		return nil, e.NewInvalidArgumentError("page token")
 	}
@@ -53,7 +53,7 @@ func (handler *CommitServiceHandler) ListRepositoryCommitsByReference(ctx contex
 	}
 
 	// 生成下一页token
-	nextPageToken, err := util.GenerateNextPageToken(pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), len(commits))
+	nextPageToken, err := security.GenerateNextPageToken(pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), len(commits))
 	if err != nil {
 		return nil, e.NewInternalError("generate next page token")
 	}
@@ -104,7 +104,7 @@ func (handler *CommitServiceHandler) ListRepositoryDraftCommits(ctx context.Cont
 	}
 
 	// 解析page token
-	pageTokenChaim, err := util.ParsePageToken(req.Msg.GetPageToken())
+	pageTokenChaim, err := security.ParsePageToken(req.Msg.GetPageToken())
 	if err != nil {
 		return nil, e.NewInvalidArgumentError("page token")
 	}
@@ -116,7 +116,7 @@ func (handler *CommitServiceHandler) ListRepositoryDraftCommits(ctx context.Cont
 	}
 
 	// 生成下一页token
-	nextPageToken, err := util.GenerateNextPageToken(pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), len(commits))
+	nextPageToken, err := security.GenerateNextPageToken(pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), len(commits))
 	if err != nil {
 		return nil, e.NewInternalError("generate next page token")
 	}

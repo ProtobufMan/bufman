@@ -8,14 +8,16 @@ import (
 	"github.com/ProtobufMan/bufman/internal/e"
 	"github.com/ProtobufMan/bufman/internal/model"
 	"github.com/ProtobufMan/bufman/internal/services"
-	"github.com/ProtobufMan/bufman/internal/validity"
+	"github.com/ProtobufMan/bufman/internal/util/resolve"
+	"github.com/ProtobufMan/bufman/internal/util/validity"
 	"github.com/bufbuild/connect-go"
 )
 
 type PushServiceHandler struct {
 	pushService     services.PushService
-	validator       validity.Validator
 	downloadService services.DownloadService
+	validator       validity.Validator
+	resolver        resolve.Resolver
 }
 
 func NewPushServiceHandler() *PushServiceHandler {
@@ -23,6 +25,7 @@ func NewPushServiceHandler() *PushServiceHandler {
 		pushService:     services.NewPushService(),
 		downloadService: services.NewDownloadService(),
 		validator:       validity.NewValidator(),
+		resolver:        resolve.NewResolver(),
 	}
 }
 
@@ -53,13 +56,19 @@ func (handler *PushServiceHandler) PushManifestAndBlobs(ctx context.Context, req
 	}
 
 	// 检查上传文件
-	fileManifest, blobSet, bufConfig, checkErr := handler.validator.CheckManifestAndBlobs(ctx, req.Msg.GetManifest(), req.Msg.GetBlobs())
+	fileManifest, blobSet, checkErr := handler.validator.CheckManifestAndBlobs(ctx, req.Msg.GetManifest(), req.Msg.GetBlobs())
 	if checkErr != nil {
 		return nil, connect.NewError(checkErr.Code(), checkErr)
 	}
 
-	// 获取依赖文件
-	dependentCommits, dependenceErr := handler.pushService.GetDependencies(bufConfig.Build.DependencyModuleReferences)
+	// 获取bufConfig
+	bufConfig, configErr := handler.resolver.GetBufConfigFromBlob(ctx, fileManifest, blobSet)
+	if configErr != nil {
+		return nil, connect.NewError(configErr.Code(), configErr)
+	}
+
+	// 获取全部依赖commits
+	dependentCommits, dependenceErr := handler.resolver.GetAllDependenciesFromBufConfig(ctx, bufConfig)
 	if dependenceErr != nil {
 		return nil, connect.NewError(dependenceErr.Code(), dependenceErr)
 	}

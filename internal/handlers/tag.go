@@ -7,8 +7,8 @@ import (
 	"github.com/ProtobufMan/bufman/internal/constant"
 	"github.com/ProtobufMan/bufman/internal/e"
 	"github.com/ProtobufMan/bufman/internal/services"
-	"github.com/ProtobufMan/bufman/internal/util"
-	"github.com/ProtobufMan/bufman/internal/validity"
+	"github.com/ProtobufMan/bufman/internal/util/security"
+	"github.com/ProtobufMan/bufman/internal/util/validity"
 	"github.com/bufbuild/connect-go"
 )
 
@@ -59,7 +59,7 @@ func (handler *TagServiceHandler) ListRepositoryTags(ctx context.Context, req *c
 	}
 
 	// 解析page token
-	pageTokenChaim, err := util.ParsePageToken(req.Msg.GetPageToken())
+	pageTokenChaim, err := security.ParsePageToken(req.Msg.GetPageToken())
 	if err != nil {
 		return nil, e.NewInvalidArgumentError("page token")
 	}
@@ -79,7 +79,7 @@ func (handler *TagServiceHandler) ListRepositoryTags(ctx context.Context, req *c
 	}
 
 	// 生成下一页token
-	nextPageToken, err := util.GenerateNextPageToken(pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), len(tags))
+	nextPageToken, err := security.GenerateNextPageToken(pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), len(tags))
 	if err != nil {
 		return nil, e.NewInternalError("generate next page token")
 	}

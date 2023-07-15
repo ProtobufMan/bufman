@@ -8,7 +8,7 @@ import (
 	"github.com/ProtobufMan/bufman-cli/private/pkg/manifest"
 	"github.com/ProtobufMan/bufman/internal/e"
 	"github.com/ProtobufMan/bufman/internal/mapper"
-	"github.com/ProtobufMan/bufman/internal/util"
+	"github.com/ProtobufMan/bufman/internal/util/storage"
 	"gorm.io/gorm"
 )
 
@@ -19,14 +19,14 @@ type DownloadService interface {
 type DownloadServiceImpl struct {
 	commitMapper  mapper.CommitMapper
 	fileMapper    mapper.FileMapper
-	storageHelper util.StorageHelper
+	storageHelper storage.StorageHelper
 }
 
 func NewDownloadService() DownloadService {
 	return &DownloadServiceImpl{
 		commitMapper:  &mapper.CommitMapperImpl{},
 		fileMapper:    &mapper.FileMapperImpl{},
-		storageHelper: util.NewStorageHelper(),
+		storageHelper: storage.NewStorageHelper(),
 	}
 }
 

@@ -6,7 +6,7 @@ import (
 	"github.com/ProtobufMan/bufman/internal/e"
 	"github.com/ProtobufMan/bufman/internal/mapper"
 	"github.com/ProtobufMan/bufman/internal/model"
-	"github.com/ProtobufMan/bufman/internal/util"
+	"github.com/ProtobufMan/bufman/internal/util/security"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"time"
@@ -40,7 +40,7 @@ func (tokenService *TokenServiceImpl) CreateToken(userName, password string, exp
 
 		return nil, e.NewInternalError(registryv1alpha1connect.TokenServiceCreateTokenProcedure)
 	}
-	if util.EncryptPlainPassword(userName, password) != user.Password {
+	if security.EncryptPlainPassword(userName, password) != user.Password {
 		// 密码不正确
 		return nil, e.NewPermissionDeniedError(registryv1alpha1connect.TokenServiceCreateTokenProcedure)
 	}
@@ -49,7 +49,7 @@ func (tokenService *TokenServiceImpl) CreateToken(userName, password string, exp
 		ID:         0,
 		UserID:     user.UserID,
 		TokenID:    uuid.NewString(),
-		TokenName:  util.GenerateToken(userName, note),
+		TokenName:  security.GenerateToken(userName, note),
 		ExpireTime: expireTime,
 		Note:       note,
 	}

@@ -1,4 +1,4 @@
-package util
+package security
 
 import (
 	"github.com/ProtobufMan/bufman/internal/config"

@@ -22,8 +22,8 @@ import (
 	registryv1alpha1 "github.com/ProtobufMan/bufman-cli/private/gen/proto/go/bufman/alpha/registry/v1alpha1"
 	"github.com/ProtobufMan/bufman/internal/e"
 	"github.com/ProtobufMan/bufman/internal/services"
-	"github.com/ProtobufMan/bufman/internal/util"
-	"github.com/ProtobufMan/bufman/internal/validity"
+	"github.com/ProtobufMan/bufman/internal/util/security"
+	"github.com/ProtobufMan/bufman/internal/util/validity"
 	"github.com/bufbuild/connect-go"
 )
 
@@ -93,7 +93,7 @@ func (handler *UserServiceHandler) ListUsers(ctx context.Context, req *connect.R
 	}
 
 	// 解析page token
-	pageTokenChaim, err := util.ParsePageToken(req.Msg.GetPageToken())
+	pageTokenChaim, err := security.ParsePageToken(req.Msg.GetPageToken())
 	if err != nil {
 		return nil, e.NewInvalidArgumentError("page token")
 	}
@@ -104,7 +104,7 @@ func (handler *UserServiceHandler) ListUsers(ctx context.Context, req *connect.R
 	}
 
 	// 生成下一页token
-	nextPageToken, err := util.GenerateNextPageToken(pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), len(users))
+	nextPageToken, err := security.GenerateNextPageToken(pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), len(users))
 	if err != nil {
 		return nil, e.NewInternalError("generate next page token")
 	}
