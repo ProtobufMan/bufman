@@ -8,6 +8,7 @@ import (
 	"github.com/ProtobufMan/bufman-cli/private/bufpkg/buflock"
 	"github.com/ProtobufMan/bufman-cli/private/bufpkg/bufmanifest"
 	"github.com/ProtobufMan/bufman-cli/private/bufpkg/bufmodule"
+	"github.com/ProtobufMan/bufman-cli/private/bufpkg/bufmodule/bufmoduleref"
 	modulev1alpha1 "github.com/ProtobufMan/bufman-cli/private/gen/proto/go/bufman/alpha/module/v1alpha1"
 	"github.com/ProtobufMan/bufman-cli/private/pkg/manifest"
 	"github.com/ProtobufMan/bufman/internal/config"
@@ -22,8 +23,10 @@ import (
 type Resolver interface {
 	GetBufConfigFromBlob(ctx context.Context, fileManifest *manifest.Manifest, blobSet *manifest.BlobSet) (*bufconfig.Config, e.ResponseError)
 	GetBufConfigFromProto(ctx context.Context, protoManifest *modulev1alpha1.Blob, protoBlobs []*modulev1alpha1.Blob) (*bufconfig.Config, e.ResponseError)
-	GetAllDependenciesFromBufConfig(ctx context.Context, bufConfig *bufconfig.Config) (model.Commits, e.ResponseError)    // 获取全部依赖
-	GetDirectDependenciesFromBufConfig(ctx context.Context, bufConfig *bufconfig.Config) (model.Commits, e.ResponseError) // 获取直接依赖
+	GetAllDependenciesFromBufConfig(ctx context.Context, bufConfig *bufconfig.Config) (model.Commits, e.ResponseError)                         // 获取全部依赖
+	GetDirectDependenciesFromBufConfig(ctx context.Context, bufConfig *bufconfig.Config) (model.Commits, e.ResponseError)                      // 获取直接依赖
+	GetAllDependenciesFromModuleRefs(ctx context.Context, moduleReferences []bufmoduleref.ModuleReference) (model.Commits, e.ResponseError)    // 获取全部依赖
+	GetDirectDependenciesFromModuleRefs(ctx context.Context, moduleReferences []bufmoduleref.ModuleReference) (model.Commits, e.ResponseError) // 获取直接依赖
 }
 
 type ResolverImpl struct {
@@ -44,7 +47,7 @@ func NewResolver() Resolver {
 
 func (resolver *ResolverImpl) GetAllDependenciesFromBufConfig(ctx context.Context, bufConfig *bufconfig.Config) (model.Commits, e.ResponseError) {
 	var dependentCommitSet map[string]*model.Commit
-	err := resolver.doGetDependenciesFromBufConfig(ctx, dependentCommitSet, bufConfig, true)
+	err := resolver.doGetDependencies(ctx, dependentCommitSet, bufConfig.Build.DependencyModuleReferences, true)
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +62,37 @@ func (resolver *ResolverImpl) GetAllDependenciesFromBufConfig(ctx context.Contex
 
 func (resolver *ResolverImpl) GetDirectDependenciesFromBufConfig(ctx context.Context, bufConfig *bufconfig.Config) (model.Commits, e.ResponseError) {
 	var dependentCommitSet map[string]*model.Commit
-	err := resolver.doGetDependenciesFromBufConfig(ctx, dependentCommitSet, bufConfig, false)
+	err := resolver.doGetDependencies(ctx, dependentCommitSet, bufConfig.Build.DependencyModuleReferences, false)
+	if err != nil {
+		return nil, err
+	}
+
+	commits := make([]*model.Commit, 0, len(dependentCommitSet))
+	for _, commit := range dependentCommitSet {
+		commits = append(commits, commit)
+	}
+
+	return commits, nil
+}
+
+func (resolver *ResolverImpl) GetAllDependenciesFromModuleRefs(ctx context.Context, moduleReferences []bufmoduleref.ModuleReference) (model.Commits, e.ResponseError) {
+	var dependentCommitSet map[string]*model.Commit
+	err := resolver.doGetDependencies(ctx, dependentCommitSet, moduleReferences, true)
+	if err != nil {
+		return nil, err
+	}
+
+	commits := make([]*model.Commit, 0, len(dependentCommitSet))
+	for _, commit := range dependentCommitSet {
+		commits = append(commits, commit)
+	}
+
+	return commits, nil
+}
+
+func (resolver *ResolverImpl) GetDirectDependenciesFromModuleRefs(ctx context.Context, moduleReferences []bufmoduleref.ModuleReference) (model.Commits, e.ResponseError) {
+	var dependentCommitSet map[string]*model.Commit
+	err := resolver.doGetDependencies(ctx, dependentCommitSet, moduleReferences, false)
 	if err != nil {
 		return nil, err
 	}
@@ -165,11 +198,10 @@ func (resolver *ResolverImpl) GetBufConfigFromProto(ctx context.Context, protoMa
 	return resolver.GetBufConfigFromBlob(ctx, fileManifest, blobSet)
 }
 
-func (resolver *ResolverImpl) doGetDependenciesFromBufConfig(ctx context.Context, dependentCommitSet map[string]*model.Commit, bufConfig *bufconfig.Config, getAll bool) e.ResponseError {
+func (resolver *ResolverImpl) doGetDependencies(ctx context.Context, dependentCommitSet map[string]*model.Commit, dependencyReferences []bufmoduleref.ModuleReference, getAll bool) e.ResponseError {
 	if dependentCommitSet == nil {
 		dependentCommitSet = map[string]*model.Commit{}
 	}
-	dependencyReferences := bufConfig.Build.DependencyModuleReferences
 
 	for i := 0; i < len(dependencyReferences); i++ {
 		dependencyReference := dependencyReferences[i]
@@ -211,7 +243,7 @@ func (resolver *ResolverImpl) doGetDependenciesFromBufConfig(ctx context.Context
 					if err != nil {
 						return configErr
 					}
-					dependentErr := resolver.doGetDependenciesFromBufConfig(ctx, dependentCommitSet, dependentBufConfig, true)
+					dependentErr := resolver.doGetDependencies(ctx, dependentCommitSet, dependentBufConfig.Build.DependencyModuleReferences, true)
 					if dependentErr != nil {
 						return dependentErr
 					}

@@ -3,25 +3,26 @@ package handlers
 import (
 	"context"
 	"fmt"
+	"github.com/ProtobufMan/bufman-cli/private/bufpkg/bufmodule/bufmoduleref"
 	"github.com/ProtobufMan/bufman-cli/private/gen/proto/connect/bufman/alpha/registry/v1alpha1/registryv1alpha1connect"
 	registryv1alpha1 "github.com/ProtobufMan/bufman-cli/private/gen/proto/go/bufman/alpha/registry/v1alpha1"
 	"github.com/ProtobufMan/bufman/internal/constant"
 	"github.com/ProtobufMan/bufman/internal/e"
 	"github.com/ProtobufMan/bufman/internal/model"
-	"github.com/ProtobufMan/bufman/internal/services"
+	"github.com/ProtobufMan/bufman/internal/util/resolve"
 	"github.com/ProtobufMan/bufman/internal/util/validity"
 	"github.com/bufbuild/connect-go"
 )
 
 type ResolveServiceHandler struct {
-	resolveService services.ResolveService
-	validator      validity.Validator
+	validator validity.Validator
+	resolver  resolve.Resolver
 }
 
 func NewResolveServiceHandler() *ResolveServiceHandler {
 	return &ResolveServiceHandler{
-		resolveService: services.NewResolveService(),
-		validator:      validity.NewValidator(),
+		validator: validity.NewValidator(),
+		resolver:  resolve.NewResolver(),
 	}
 }
 
@@ -44,31 +45,49 @@ func (handler *ResolveServiceHandler) GetModulePins(ctx context.Context, req *co
 		repositoryMap[fullName] = repo
 	}
 
-	// 获取对应的commits
-	commits, err := handler.resolveService.GetModulePins(repositoryMap, req.Msg.GetModuleReferences())
+	moduleReferences, bufRefErr := bufmoduleref.NewModuleReferencesForProtos(req.Msg.GetModuleReferences()...)
+	if bufRefErr != nil {
+		return nil, connect.NewError(e.NewInternalError(bufRefErr.Error()).Code(), bufRefErr)
+	}
+
+	// 获取所有的依赖commits
+	commits, err := handler.resolver.GetAllDependenciesFromModuleRefs(ctx, moduleReferences)
 	if err != nil {
-		return nil, connect.NewError(err.Code(), err.Err())
+		return nil, connect.NewError(err.Code(), err)
 	}
 
 	retPins := commits.ToProtoModulePins()
+	currentModulePins, curPinErr := bufmoduleref.NewModulePinsForProtos(req.Msg.GetCurrentModulePins()...)
+	if curPinErr != nil {
+		return nil, connect.NewError(e.NewInternalError(curPinErr.Error()).Code(), curPinErr)
+	}
 	// 处理CurrentModulePins
-	for _, currentModulePin := range req.Msg.GetCurrentModulePins() {
-		//
-		ownerName := currentModulePin.GetOwner()
-		repositoryName := currentModulePin.GetRepository()
+	for _, currentModulePin := range currentModulePins {
+		for _, moduleRef := range moduleReferences {
+			if currentModulePin.IdentityString() == moduleRef.IdentityString() {
+				// 需要更新的依赖，加入到返回结果中
+				protoPin := bufmoduleref.NewProtoModulePinForModulePin(currentModulePin)
+				retPins = append(retPins, protoPin)
+				continue
+			}
+		}
+
+		ownerName := currentModulePin.Owner()
+		repositoryName := currentModulePin.Repository()
 		for _, commit := range commits {
 			// 如果current module pin在reference的查询出的commits内，则有breaking的可能
 			if commit.UserName == ownerName && commit.RepositoryName == repositoryName {
-				commitName := currentModulePin.GetCommit()
+				commitName := currentModulePin.Commit()
 				if commit.CommitName != commitName {
 					// 版本号不一样，存在breaking
-					return nil, e.NewInvalidArgumentError(fmt.Sprintf("%s/%s (possible to cause breaking)", currentModulePin.GetOwner(), currentModulePin.GetRepository()))
+					return nil, e.NewInvalidArgumentError(fmt.Sprintf("%s/%s (possible to cause breaking)", currentModulePin.Owner(), currentModulePin.Repository()))
 				}
 			}
 		}
 
 		// 当前pin没有breaking的可能性，加入到返回结果中
-		retPins = append(retPins, currentModulePin)
+		protoPin := bufmoduleref.NewProtoModulePinForModulePin(currentModulePin)
+		retPins = append(retPins, protoPin)
 	}
 
 	resp := connect.NewResponse(&registryv1alpha1.GetModulePinsResponse{
