@@ -37,6 +37,7 @@ func newRepository(db *gorm.DB, opts ...gen.DOOption) repository {
 	_repository.Visibility = field.NewUint8(tableName, "visibility")
 	_repository.Deprecated = field.NewBool(tableName, "deprecated")
 	_repository.DeprecationMsg = field.NewString(tableName, "deprecation_msg")
+	_repository.Url = field.NewString(tableName, "url")
 	_repository.Description = field.NewString(tableName, "description")
 	_repository.DraftCommits = repositoryHasManyDraftCommits{
 		db: db.Session(&gorm.Session{}),
@@ -84,6 +85,7 @@ type repository struct {
 	Visibility     field.Uint8
 	Deprecated     field.Bool
 	DeprecationMsg field.String
+	Url            field.String
 	Description    field.String
 	DraftCommits   repositoryHasManyDraftCommits
 
@@ -114,6 +116,7 @@ func (r *repository) updateTableName(table string) *repository {
 	r.Visibility = field.NewUint8(table, "visibility")
 	r.Deprecated = field.NewBool(table, "deprecated")
 	r.DeprecationMsg = field.NewString(table, "deprecation_msg")
+	r.Url = field.NewString(table, "url")
 	r.Description = field.NewString(table, "description")
 
 	r.fillFieldMap()
@@ -131,7 +134,7 @@ func (r *repository) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (r *repository) fillFieldMap() {
-	r.fieldMap = make(map[string]field.Expr, 13)
+	r.fieldMap = make(map[string]field.Expr, 14)
 	r.fieldMap["id"] = r.ID
 	r.fieldMap["user_id"] = r.UserID
 	r.fieldMap["user_name"] = r.UserName
@@ -142,6 +145,7 @@ func (r *repository) fillFieldMap() {
 	r.fieldMap["visibility"] = r.Visibility
 	r.fieldMap["deprecated"] = r.Deprecated
 	r.fieldMap["deprecation_msg"] = r.DeprecationMsg
+	r.fieldMap["url"] = r.Url
 	r.fieldMap["description"] = r.Description
 
 }

@@ -17,6 +17,7 @@ type RepositoryMapper interface {
 	DeleteByRepositoryID(repositoryID string) error
 	DeleteByUserNameAndRepositoryName(userName, RepositoryName string) error
 	UpdateByUserNameAndRepositoryName(userName, RepositoryName string, repository *model.Repository) error
+	UpdateDeprecatedByUserNameAndRepositoryName(userName, RepositoryName string, repository *model.Repository) error
 }
 
 type RepositoryMapperImpl struct{}
@@ -121,6 +122,12 @@ func (r *RepositoryMapperImpl) DeleteByUserNameAndRepositoryName(userName, Repos
 
 func (r *RepositoryMapperImpl) UpdateByUserNameAndRepositoryName(userName, RepositoryName string, repository *model.Repository) error {
 	_, err := dal.Repository.Where(dal.Repository.UserName.Eq(userName), dal.Repository.RepositoryName.Eq(RepositoryName)).Updates(repository)
+
+	return err
+}
+
+func (r *RepositoryMapperImpl) UpdateDeprecatedByUserNameAndRepositoryName(userName, RepositoryName string, repository *model.Repository) error {
+	_, err := dal.Repository.Select(dal.Repository.Deprecated, dal.Repository.DeprecationMsg).Where(dal.Repository.UserName.Eq(userName), dal.Repository.RepositoryName.Eq(RepositoryName)).Updates(repository)
 
 	return err
 }

@@ -9,7 +9,6 @@ import (
 	"github.com/ProtobufMan/bufman/internal/model"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
-	"strings"
 )
 
 type RepositoryService interface {
@@ -168,7 +167,7 @@ func (repositoryService *RepositoryServiceImpl) DeprecateRepositoryByName(ownerN
 		Deprecated:     true,
 		DeprecationMsg: deprecateMsg,
 	}
-	err := repositoryService.repositoryMapper.UpdateByUserNameAndRepositoryName(ownerName, repositoryName, updatedRepository)
+	err := repositoryService.repositoryMapper.UpdateDeprecatedByUserNameAndRepositoryName(ownerName, repositoryName, updatedRepository)
 	if err != nil {
 		return nil, e.NewInternalError(registryv1alpha1connect.RepositoryServiceDeprecateRepositoryByNameProcedure)
 	}
@@ -181,7 +180,7 @@ func (repositoryService *RepositoryServiceImpl) UndeprecateRepositoryByName(owne
 	updatedRepository := &model.Repository{
 		Deprecated: false,
 	}
-	err := repositoryService.repositoryMapper.UpdateByUserNameAndRepositoryName(ownerName, repositoryName, updatedRepository)
+	err := repositoryService.repositoryMapper.UpdateDeprecatedByUserNameAndRepositoryName(ownerName, repositoryName, updatedRepository)
 	if err != nil {
 		return nil, e.NewInternalError(registryv1alpha1connect.RepositoryServiceUndeprecateRepositoryByNameProcedure)
 	}
@@ -201,14 +200,4 @@ func (repositoryService *RepositoryServiceImpl) UpdateRepositorySettingsByName(o
 	}
 
 	return nil
-}
-
-func SplitFullName(fullName string) (userName, repositoryName string, ok bool) {
-	split := strings.SplitN(fullName, "/", 2)
-	if len(split) != 2 {
-		return
-	}
-	userName, repositoryName = split[0], split[1]
-	ok = userName != "" && repositoryName != ""
-	return
 }
