@@ -35,7 +35,7 @@ func GenerateNextPageToken(lastPageOffset, lastPageSize, lastDataLength int) (st
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, chaim)
 
 	// 将 token 进行加盐加密
-	tokenString, err := token.SignedString(config.Properties.BufMan.PageTokenSecret)
+	tokenString, err := token.SignedString([]byte(config.Properties.BufMan.PageTokenSecret))
 	if err != nil {
 		return "", err
 	}
@@ -52,7 +52,7 @@ func ParsePageToken(tokenString string) (*PageTokenChaim, error) {
 
 	// 解析 token
 	token, err := jwt.ParseWithClaims(tokenString, &PageTokenChaim{}, func(token *jwt.Token) (interface{}, error) {
-		return config.Properties.BufMan.PageTokenSecret, nil
+		return []byte(config.Properties.BufMan.PageTokenSecret), nil
 	})
 
 	if err != nil {
