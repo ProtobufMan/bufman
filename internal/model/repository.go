@@ -35,6 +35,7 @@ type Repository struct {
 	Visibility     uint8     `gorm:"default:1"` // 可见性，1:public 2:private
 	Deprecated     bool      // 是否弃用
 	DeprecationMsg string    // 弃用说明
+	Url            string    // 描述信息中的Url
 	Description    string    // 描述信息
 
 	// 拥有的draft
@@ -63,6 +64,7 @@ func (repository *Repository) ToProtoRepository() *registryv1alpha1.Repository {
 		DeprecationMessage: repository.DeprecationMsg,
 		OwnerName:          repository.UserName,
 		Description:        repository.Description,
+		Url:                repository.Url,
 	}
 }
 
