@@ -291,7 +291,7 @@ func (c *CommitMapperImpl) FindSequenceID(commit *model.Commit) (int64, error) {
 	var sequenceID int64
 	var err error
 	if commit.DraftName == "" {
-		sequenceID, err = dal.Commit.Where(dal.Commit.RepositoryID.Eq(commit.RepositoryID), dal.Commit.DraftName.Eq(""), dal.Commit.ID.Lte(commit.ID), dal.Commit.CreatedTime.Lte(commit.CreatedTime)).Count()
+		sequenceID, err = dal.Commit.Where(dal.Commit.DraftName.Eq(""), dal.Commit.ID.Lte(commit.ID), dal.Commit.CreatedTime.Lte(commit.CreatedTime)).Count()
 	} else {
 		// draft 没有sequence id
 		return 0, nil
