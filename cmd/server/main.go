@@ -21,7 +21,7 @@ func main() {
 	r := router.InitRouter()
 
 	err := http.ListenAndServe(
-		"localhost:39099",
+		"localhost:80",
 		// For gRPC clients, it's convenient to support HTTP/2 without TLS. You can
 		// avoid x/net/http2 by using http.ListenAndServeTLS.
 		h2c.NewHandler(r, &http2.Server{}),

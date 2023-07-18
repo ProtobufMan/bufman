@@ -20,6 +20,7 @@ var (
 	Commit       *commit
 	FileBlob     *fileBlob
 	FileManifest *fileManifest
+	Plugin       *plugin
 	Repository   *repository
 	Tag          *tag
 	Token        *token
@@ -31,6 +32,7 @@ func SetDefault(db *gorm.DB, opts ...gen.DOOption) {
 	Commit = &Q.Commit
 	FileBlob = &Q.FileBlob
 	FileManifest = &Q.FileManifest
+	Plugin = &Q.Plugin
 	Repository = &Q.Repository
 	Tag = &Q.Tag
 	Token = &Q.Token
@@ -43,6 +45,7 @@ func Use(db *gorm.DB, opts ...gen.DOOption) *Query {
 		Commit:       newCommit(db, opts...),
 		FileBlob:     newFileBlob(db, opts...),
 		FileManifest: newFileManifest(db, opts...),
+		Plugin:       newPlugin(db, opts...),
 		Repository:   newRepository(db, opts...),
 		Tag:          newTag(db, opts...),
 		Token:        newToken(db, opts...),
@@ -56,6 +59,7 @@ type Query struct {
 	Commit       commit
 	FileBlob     fileBlob
 	FileManifest fileManifest
+	Plugin       plugin
 	Repository   repository
 	Tag          tag
 	Token        token
@@ -70,6 +74,7 @@ func (q *Query) clone(db *gorm.DB) *Query {
 		Commit:       q.Commit.clone(db),
 		FileBlob:     q.FileBlob.clone(db),
 		FileManifest: q.FileManifest.clone(db),
+		Plugin:       q.Plugin.clone(db),
 		Repository:   q.Repository.clone(db),
 		Tag:          q.Tag.clone(db),
 		Token:        q.Token.clone(db),
@@ -91,6 +96,7 @@ func (q *Query) ReplaceDB(db *gorm.DB) *Query {
 		Commit:       q.Commit.replaceDB(db),
 		FileBlob:     q.FileBlob.replaceDB(db),
 		FileManifest: q.FileManifest.replaceDB(db),
+		Plugin:       q.Plugin.replaceDB(db),
 		Repository:   q.Repository.replaceDB(db),
 		Tag:          q.Tag.replaceDB(db),
 		Token:        q.Token.replaceDB(db),
@@ -102,6 +108,7 @@ type queryCtx struct {
 	Commit       ICommitDo
 	FileBlob     IFileBlobDo
 	FileManifest IFileManifestDo
+	Plugin       IPluginDo
 	Repository   IRepositoryDo
 	Tag          ITagDo
 	Token        ITokenDo
@@ -113,6 +120,7 @@ func (q *Query) WithContext(ctx context.Context) *queryCtx {
 		Commit:       q.Commit.WithContext(ctx),
 		FileBlob:     q.FileBlob.WithContext(ctx),
 		FileManifest: q.FileManifest.WithContext(ctx),
+		Plugin:       q.Plugin.WithContext(ctx),
 		Repository:   q.Repository.WithContext(ctx),
 		Tag:          q.Tag.WithContext(ctx),
 		Token:        q.Token.WithContext(ctx),

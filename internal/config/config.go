@@ -35,7 +35,7 @@ var (
 func LoadConfig() {
 	Properties = &Config{
 		BufMan: BufMan{
-			ServerHost: "localhost:39099",
+			ServerHost: "bufman.io",
 
 			PageTokenExpireTime: time.Minute * 10, // 默认过期时间为10分钟
 			PageTokenSecret:     "123456",

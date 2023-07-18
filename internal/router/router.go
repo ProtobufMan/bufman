@@ -95,6 +95,14 @@ func InitRouter() *gin.Engine {
 	)
 	registerHandler(router, downloadServicePath, downloadServiceHandler)
 
+	// CodeGenerateService
+	codeGenerateServicePath, codeGenerateServiceHandler := registryv1alpha1connect.NewCodeGenerationServiceHandler(handlers.NewCodeGenerateServiceHandler(),
+		interceptors.WithOptionalAuthInterceptor(
+			registryv1alpha1connect.CodeGenerationServiceGenerateCodeProcedure,
+		),
+	)
+	registerHandler(router, codeGenerateServicePath, codeGenerateServiceHandler)
+
 	return router
 }
 
