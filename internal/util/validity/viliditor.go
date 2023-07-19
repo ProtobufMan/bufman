@@ -15,19 +15,23 @@ import (
 	"github.com/ProtobufMan/bufman/internal/e"
 	"github.com/ProtobufMan/bufman/internal/mapper"
 	"github.com/ProtobufMan/bufman/internal/model"
+	"golang.org/x/mod/semver"
 	"gorm.io/gorm"
 	"regexp"
 	"strings"
 )
 
 type Validator interface {
-	CheckUserName(username string) e.ResponseError                                                                     // 检查用户名合法性
-	CheckPassword(password string) e.ResponseError                                                                     // 检查密码合法性
-	CheckRepositoryName(repositoryName string) e.ResponseError                                                         // 检查repo name合法性
-	CheckTagName(tagName string) e.ResponseError                                                                       // 检查tag name合法性
-	CheckDraftName(draftName string) e.ResponseError                                                                   // 检查draft name合法性
-	CheckPageSize(pageSize uint32) e.ResponseError                                                                     // 检查page size合法性
-	SplitFullName(fullName string) (userName, repositoryName string, respErr e.ResponseError)                          // 分割full name
+	CheckUserName(username string) e.ResponseError                                            // 检查用户名合法性
+	CheckPassword(password string) e.ResponseError                                            // 检查密码合法性
+	CheckRepositoryName(repositoryName string) e.ResponseError                                // 检查repo name合法性
+	CheckTagName(tagName string) e.ResponseError                                              // 检查tag name合法性
+	CheckPluginName(pluginName string) e.ResponseError                                        // 检查插件名称合法性
+	CheckVersion(version string) e.ResponseError                                              // 检查版本号是否合法
+	CheckDraftName(draftName string) e.ResponseError                                          // 检查draft name合法性
+	CheckPageSize(pageSize uint32) e.ResponseError                                            // 检查page size合法性
+	SplitFullName(fullName string) (userName, repositoryName string, respErr e.ResponseError) // 分割full name
+
 	CheckRepositoryCanAccess(userID, ownerName, repositoryName, procedure string) (*model.Repository, e.ResponseError) // 检查user id用户是否可以访问repo
 	CheckRepositoryCanAccessByID(userID, repositoryID, procedure string) (*model.Repository, e.ResponseError)
 	CheckRepositoryCanEdit(userID, ownerName, repositoryName, procedure string) (*model.Repository, e.ResponseError) // 检查user是否可以修改repo
@@ -80,6 +84,24 @@ func (validator *ValidatorImpl) CheckTagName(tagName string) e.ResponseError {
 	err := validator.doCheckByLengthAndPattern(tagName, constant.MinTagLength, constant.MaxTagLength, constant.TagPattern)
 	if err != nil {
 		return e.NewInvalidArgumentError("tag name:" + err.Error())
+	}
+
+	return nil
+}
+
+func (validator *ValidatorImpl) CheckPluginName(pluginName string) e.ResponseError {
+	err := validator.doCheckByLengthAndPattern(pluginName, constant.MinPluginLength, constant.MaxPluginLength, constant.PluginNamePattern)
+	if err != nil {
+		return e.NewInvalidArgumentError("plugin name:" + err.Error())
+	}
+
+	return nil
+}
+
+func (validator *ValidatorImpl) CheckVersion(version string) e.ResponseError {
+	if !semver.IsValid(version) {
+		// 版本号不合法
+		return e.NewInvalidArgumentError("version")
 	}
 
 	return nil

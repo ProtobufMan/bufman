@@ -95,6 +95,14 @@ func InitRouter() *gin.Engine {
 	)
 	registerHandler(router, downloadServicePath, downloadServiceHandler)
 
+	// PluginService
+	pluginServicePath, pluginServiceHandler := registryv1alpha1connect.NewPluginCurationServiceHandler(handlers.NewPluginServiceHandler(),
+		interceptors.WithAuthInterceptor(
+			registryv1alpha1connect.PluginCurationServiceCreateCuratedPluginProcedure,
+		),
+	)
+	registerHandler(router, pluginServicePath, pluginServiceHandler)
+
 	// CodeGenerateService
 	codeGenerateServicePath, codeGenerateServiceHandler := registryv1alpha1connect.NewCodeGenerationServiceHandler(handlers.NewCodeGenerateServiceHandler(),
 		interceptors.WithOptionalAuthInterceptor(

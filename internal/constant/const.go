@@ -16,6 +16,10 @@ const (
 	CommitLength  = 32
 	UserIDKey     = "user_id"
 	DefaultBranch = "main"
+)
+
+const (
+	PluginSaveDir = "plugins"
 	FileSavaDir   = "blobs"
 )
 
@@ -39,6 +43,10 @@ const (
 	MinTagLength = 1
 	MaxTagLength = 20
 	TagPattern   = "^[a-zA-Z][a-zA-Z0-9_-]*[a-zA-Z0-9]$"
+
+	MinPluginLength   = 1
+	MaxPluginLength   = 200
+	PluginNamePattern = "^[a-zA-Z][a-zA-Z0-9_-]*[a-zA-Z0-9]$"
 
 	MinPageSize = 1
 	MaxPageSize = 50

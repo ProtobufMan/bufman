@@ -52,4 +52,7 @@ func LoadConfig() {
 	if err := os.MkdirAll(constant.FileSavaDir, 0666); err != nil {
 		panic(err)
 	}
+	if err := os.MkdirAll(constant.PluginSaveDir, 0666); err != nil {
+		panic(err)
+	}
 }
