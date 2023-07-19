@@ -72,6 +72,15 @@ func (handler *PluginServiceHandler) CreateCuratedPlugin(ctx context.Context, re
 
 	// 检查版本号是否合法
 	checkErr = handler.validator.CheckVersion(req.Msg.GetVersion())
+	if checkErr != nil {
+		return nil, connect.NewError(checkErr.Code(), checkErr)
+	}
+
+	// 检查reversion
+	if req.Msg.GetRevision() < 1 {
+		checkErr = e.NewInvalidArgumentError("reversion must greater than 0")
+		return nil, connect.NewError(checkErr.Code(), checkErr)
+	}
 
 	// 检查用户名称
 	user, checkErr := handler.userService.GetUser(userID)
@@ -103,7 +112,10 @@ func (handler *PluginServiceHandler) CreateCuratedPlugin(ctx context.Context, re
 
 	plugin, err := handler.pluginService.CreatePlugin(plugin, req.Msg.BinaryData)
 	if err != nil {
-		return nil, connect.NewError(err.Code(), err)
+		resp := connect.NewResponse(&registryv1alpha1.CreateCuratedPluginResponse{
+			Configuration: plugin.ToProtoPlugin(),
+		})
+		return resp, connect.NewError(err.Code(), err)
 	}
 
 	resp := connect.NewResponse(&registryv1alpha1.CreateCuratedPluginResponse{

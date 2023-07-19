@@ -8,6 +8,8 @@ import (
 	"io"
 	"os"
 	"path"
+	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -45,11 +47,16 @@ func (helper *StorageHelperImpl) StorePlugin(pluginName string, version string, 
 	defer helper.pluginMuDict[fileName].Unlock()
 
 	// 打开文件
-	filePath := fileName
 	if !strings.HasSuffix(pluginName, ".wasm") {
-		filePath = "proto-gen-" + fileName
+		fileName = "proto-gen-" + fileName
+		if runtime.GOOS == "windows" {
+			fileName = fileName + ".exe"
+		}
 	}
+
+	filePath := filepath.Join(constant.PluginSaveDir, fileName)
 	file, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_EXCL, 0666)
+	defer file.Close()
 	if os.IsExist(err) {
 		// 已经存在，直接返回
 		return fileName, nil

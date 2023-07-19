@@ -9,6 +9,7 @@ import (
 	"github.com/ProtobufMan/bufman-cli/private/pkg/app"
 	"github.com/ProtobufMan/bufman/internal/e"
 	"github.com/ProtobufMan/bufman/internal/mapper"
+	"github.com/ProtobufMan/bufman/internal/model"
 	"github.com/ProtobufMan/bufman/internal/util/plugin"
 	"github.com/bufbuild/connect-go"
 	"google.golang.org/protobuf/types/pluginpb"
@@ -52,7 +53,17 @@ func (codeGenerateService *CodeGenerateServiceImpl) PluginCodeGenerate(ctx conte
 		name := pluginReference.GetName()
 		version := pluginReference.GetVersion()
 		revision := pluginReference.GetRevision()
-		pluginModel, err := codeGenerateService.pluginMapper.FindByNameAndVersionReversion(owner, name, version, revision)
+		var pluginModel *model.Plugin
+		if revision != 0 && version != "" {
+			pluginModel, err = codeGenerateService.pluginMapper.FindByNameAndVersionReversion(owner, name, version, revision)
+		} else if revision == 0 && version == "" {
+			pluginModel, err = codeGenerateService.pluginMapper.FindLastByName(owner, name)
+		} else if version != "" {
+			pluginModel, err = codeGenerateService.pluginMapper.FindLastByNameAndVersion(owner, name, version)
+		} else {
+			return nil, e.NewInvalidArgumentError("reversion is not empty but version is empty")
+		}
+
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return nil, e.NewNotFoundError(fmt.Sprintf("plugin %s/%s not found", owner, name))
@@ -60,7 +71,7 @@ func (codeGenerateService *CodeGenerateServiceImpl) PluginCodeGenerate(ctx conte
 
 			return nil, e.NewInternalError("Find Plugin")
 		}
-		if pluginModel.Visibility == uint8(uint8(registryv1alpha1.CuratedPluginVisibility_CURATED_PLUGIN_VISIBILITY_PRIVATE)) && pluginModel.UserID != userID {
+		if pluginModel.Visibility == uint8(registryv1alpha1.CuratedPluginVisibility_CURATED_PLUGIN_VISIBILITY_PRIVATE) && pluginModel.UserID != userID {
 			// 插件是私有的，且不属于当前用户
 			return nil, e.NewPermissionDeniedError(fmt.Sprintf("plugin %s/%s is private", owner, name))
 		}

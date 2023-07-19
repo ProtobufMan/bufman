@@ -8,7 +8,9 @@ import (
 	"github.com/ProtobufMan/bufman-cli/private/bufpkg/bufwasm"
 	"github.com/ProtobufMan/bufman-cli/private/pkg/app"
 	"github.com/ProtobufMan/bufman-cli/private/pkg/command"
+	"github.com/ProtobufMan/bufman/internal/constant"
 	"google.golang.org/protobuf/types/pluginpb"
+	"path/filepath"
 )
 
 type CodeGenerateHelper interface {
@@ -36,7 +38,11 @@ func (helper *CodeGenerateHelperImpl) Generate(ctx context.Context, container ap
 	}
 
 	// generate
-	codeGeneratorResponse, err := bufpluginexec.NewGenerator(nil, storageosProvider, runner, wasmPluginExecutor).Generate(ctx, container, pluginName, []*pluginpb.CodeGeneratorRequest{codeGeneratorRequest})
+	pluginPath := filepath.Join(constant.PluginSaveDir, pluginName)
+	var generateOptions []bufpluginexec.GenerateOption
+	generateOptions = append(generateOptions, bufpluginexec.GenerateWithPluginPath(pluginPath))
+	generateOptions = append(generateOptions, bufpluginexec.GenerateWithWASMEnabled())
+	codeGeneratorResponse, err := bufpluginexec.NewGenerator(nil, storageosProvider, runner, wasmPluginExecutor).Generate(ctx, container, pluginName, []*pluginpb.CodeGeneratorRequest{codeGeneratorRequest}, generateOptions...)
 	if err != nil {
 		return nil, err
 	}

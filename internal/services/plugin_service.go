@@ -50,6 +50,9 @@ func (pluginService *PluginServiceImpl) CreatePlugin(plugin *model.Plugin, binar
 	plugin.BinaryName = binaryName
 	err = pluginService.pluginMapper.Create(plugin)
 	if err != nil {
+		if errors.Is(err, gorm.ErrDuplicatedKey) {
+			return plugin, e.NewAlreadyExistsError("plugin")
+		}
 		return nil, e.NewInternalError(registryv1alpha1connect.PluginCurationServiceCreateCuratedPluginProcedure)
 	}
 
