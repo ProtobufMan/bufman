@@ -24,7 +24,7 @@ func NewTokenServiceHandler() *TokenServiceHandler {
 }
 
 func (handler *TokenServiceHandler) CreateToken(ctx context.Context, req *connect.Request[registryv1alpha1.CreateTokenRequest]) (*connect.Response[registryv1alpha1.CreateTokenResponse], error) {
-	token, err := handler.tokenService.CreateToken(req.Msg.GetUsername(), req.Msg.GetPassword(), req.Msg.GetExpireTime().AsTime(), req.Msg.GetNote())
+	token, err := handler.tokenService.CreateToken(ctx, req.Msg.GetUsername(), req.Msg.GetPassword(), req.Msg.GetExpireTime().AsTime(), req.Msg.GetNote())
 	if err != nil {
 		return nil, connect.NewError(err.Code(), err.Err())
 	}
@@ -40,7 +40,7 @@ func (handler *TokenServiceHandler) GetToken(ctx context.Context, req *connect.R
 	userID := ctx.Value(constant.UserIDKey).(string)
 
 	// 查询token
-	token, err := handler.tokenService.GetToken(userID, req.Msg.GetTokenId())
+	token, err := handler.tokenService.GetToken(ctx, userID, req.Msg.GetTokenId())
 	if err != nil {
 		return nil, connect.NewError(err.Code(), err.Err())
 	}
@@ -67,7 +67,7 @@ func (handler *TokenServiceHandler) ListTokens(ctx context.Context, req *connect
 	userID := ctx.Value(constant.UserIDKey).(string)
 
 	// 查询token
-	tokens, listErr := handler.tokenService.ListTokens(userID, pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), req.Msg.GetReverse())
+	tokens, listErr := handler.tokenService.ListTokens(ctx, userID, pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), req.Msg.GetReverse())
 	if err != nil {
 		return nil, connect.NewError(listErr.Code(), listErr)
 	}
@@ -89,7 +89,7 @@ func (handler *TokenServiceHandler) DeleteToken(ctx context.Context, req *connec
 	userID := ctx.Value(constant.UserIDKey).(string)
 
 	// 删除token
-	err := handler.tokenService.DeleteToken(userID, req.Msg.GetTokenId())
+	err := handler.tokenService.DeleteToken(ctx, userID, req.Msg.GetTokenId())
 	if err != nil {
 		return nil, connect.NewError(err.Code(), err.Err())
 	}

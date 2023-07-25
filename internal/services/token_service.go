@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"errors"
 	"github.com/ProtobufMan/bufman-cli/private/gen/proto/connect/bufman/alpha/registry/v1alpha1/registryv1alpha1connect"
 	"github.com/ProtobufMan/bufman/internal/e"
@@ -13,10 +14,10 @@ import (
 )
 
 type TokenService interface {
-	CreateToken(userName, password string, expireTime time.Time, note string) (*model.Token, e.ResponseError)
-	GetToken(userID, tokenID string) (*model.Token, e.ResponseError)
-	ListTokens(userID string, offset, limit int, reverse bool) (model.Tokens, e.ResponseError)
-	DeleteToken(userID, tokenID string) e.ResponseError
+	CreateToken(ctx context.Context, userName, password string, expireTime time.Time, note string) (*model.Token, e.ResponseError)
+	GetToken(ctx context.Context, userID, tokenID string) (*model.Token, e.ResponseError)
+	ListTokens(ctx context.Context, userID string, offset, limit int, reverse bool) (model.Tokens, e.ResponseError)
+	DeleteToken(ctx context.Context, userID, tokenID string) e.ResponseError
 }
 
 type TokenServiceImpl struct {
@@ -31,7 +32,7 @@ func NewTokenService() TokenService {
 	}
 }
 
-func (tokenService *TokenServiceImpl) CreateToken(userName, password string, expireTime time.Time, note string) (*model.Token, e.ResponseError) {
+func (tokenService *TokenServiceImpl) CreateToken(ctx context.Context, userName, password string, expireTime time.Time, note string) (*model.Token, e.ResponseError) {
 	user, err := tokenService.userMapper.FindByUserName(userName)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -61,7 +62,7 @@ func (tokenService *TokenServiceImpl) CreateToken(userName, password string, exp
 	return token, nil
 }
 
-func (tokenService *TokenServiceImpl) GetToken(userID, tokenID string) (*model.Token, e.ResponseError) {
+func (tokenService *TokenServiceImpl) GetToken(ctx context.Context, userID, tokenID string) (*model.Token, e.ResponseError) {
 	token, err := tokenService.tokenMapper.FindAvailableByTokenID(tokenID)
 	if err != nil {
 		if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
@@ -78,7 +79,7 @@ func (tokenService *TokenServiceImpl) GetToken(userID, tokenID string) (*model.T
 	return token, nil
 }
 
-func (tokenService *TokenServiceImpl) ListTokens(userID string, offset, limit int, reverse bool) (model.Tokens, e.ResponseError) {
+func (tokenService *TokenServiceImpl) ListTokens(ctx context.Context, userID string, offset, limit int, reverse bool) (model.Tokens, e.ResponseError) {
 	tokens, err := tokenService.tokenMapper.FindAvailablePageByUserID(userID, offset, limit, reverse)
 	if err != nil {
 		return nil, e.NewInternalError(registryv1alpha1connect.TokenServiceListTokensProcedure)
@@ -87,7 +88,7 @@ func (tokenService *TokenServiceImpl) ListTokens(userID string, offset, limit in
 	return tokens, nil
 }
 
-func (tokenService *TokenServiceImpl) DeleteToken(userID, tokenID string) e.ResponseError {
+func (tokenService *TokenServiceImpl) DeleteToken(ctx context.Context, userID, tokenID string) e.ResponseError {
 	// 查询token
 	token, err := tokenService.tokenMapper.FindAvailableByTokenID(tokenID)
 	if err != nil {
