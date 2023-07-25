@@ -70,8 +70,8 @@ func (protoParser *ProtoParserImpl) GetPackageDocumentation(ctx context.Context,
 	}
 
 	// 生成package文档
-	documentGenerator := NewDocumentGenerator(commitName, linkers, parserAccessorHandler)
-	return documentGenerator.GenerateDocument(packageName), nil
+	documentGenerator := NewDocumentGenerator(packageName, commitName, linkers, parserAccessorHandler)
+	return documentGenerator.GenerateDocument(), nil
 }
 
 func (protoParser *ProtoParserImpl) TryCompile(ctx context.Context, fileManifest *manifest.Manifest, blobSet *manifest.BlobSet, dependentManifests []*manifest.Manifest, dependentBlobSets []*manifest.BlobSet) e.ResponseError {

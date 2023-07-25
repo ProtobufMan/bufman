@@ -10,25 +10,31 @@ import (
 )
 
 type DocumentGenerator interface {
-	GenerateDocument(packageName string) *registryv1alpha1.PackageDocumentation
+	GenerateDocument() *registryv1alpha1.PackageDocumentation
 }
 
 type documentGeneratorImpl struct {
+	packageName           string
 	commitName            string // 当前的commitName，用于判断是否是外部依赖
 	packageLinkerMap      map[string]linker.Files
 	linkers               linker.Files
+	packageLinkers        linker.Files
 	parserAccessorHandler bufmoduleprotocompile.ParserAccessorHandler
 	messageSet            map[string]*registryv1alpha1.Message
 }
 
-func NewDocumentGenerator(commitName string, links linker.Files, parserAccessorHandler bufmoduleprotocompile.ParserAccessorHandler) DocumentGenerator {
-	return &documentGeneratorImpl{
+func NewDocumentGenerator(packageName, commitName string, linkers linker.Files, parserAccessorHandler bufmoduleprotocompile.ParserAccessorHandler) DocumentGenerator {
+	g := &documentGeneratorImpl{
+		packageName:           packageName,
 		commitName:            commitName,
-		linkers:               links,
+		linkers:               linkers,
 		parserAccessorHandler: parserAccessorHandler,
 		packageLinkerMap:      map[string]linker.Files{},
 		messageSet:            map[string]*registryv1alpha1.Message{},
 	}
+	g.packageLinkers = g.getPackageLinkers()
+
+	return g
 }
 
 // isDependency 判断是否是外部依赖
@@ -45,64 +51,63 @@ func (g *documentGeneratorImpl) toProtoLocation(loc protoreflect.SourceLocation)
 	}
 }
 
-func (g *documentGeneratorImpl) getPackageLinkers(packageName string) linker.Files {
-	if packageLinkers, ok := g.packageLinkerMap[packageName]; ok {
+func (g *documentGeneratorImpl) getPackageLinkers() linker.Files {
+	if packageLinkers, ok := g.packageLinkerMap[g.packageName]; ok {
 		return packageLinkers
 	}
 
 	packageLinkers := make(linker.Files, 0, len(g.linkers))
 	for i := 0; i < len(g.linkers); i++ {
-		if string(g.linkers[i].Package()) == packageName {
+		if string(g.linkers[i].Package()) == g.packageName {
 			packageLinkers = append(packageLinkers, g.linkers[i])
 		}
 	}
-	g.packageLinkerMap[packageName] = packageLinkers
+	g.packageLinkerMap[g.packageName] = packageLinkers
 	return packageLinkers
 }
 
-func (g *documentGeneratorImpl) GenerateDocument(packageName string) *registryv1alpha1.PackageDocumentation {
+func (g *documentGeneratorImpl) GenerateDocument() *registryv1alpha1.PackageDocumentation {
 
 	packageDocument := &registryv1alpha1.PackageDocumentation{
-		Name:     packageName,
-		Services: g.GetPackageServices(packageName),
-		Enums:    g.GetPackageEnums(packageName),
-		Messages: g.GetPackageMessages(packageName),
+		Name:     g.packageName,
+		Services: g.GetPackageServices(),
+		Enums:    g.GetPackageEnums(),
+		Messages: g.GetPackageMessages(),
 		// TODO FileExtensions: nil,
 	}
 
 	return packageDocument
 }
 
-func (g *documentGeneratorImpl) getNestedName(name string, nestedPrefixes ...string) string {
-	parts := append(nestedPrefixes, name)
-	return strings.Join(parts, ".")
+func (g *documentGeneratorImpl) getNestedName(fullName string) string {
+
+	return strings.Replace(fullName, g.packageName+".", "", 1)
 }
 
-func (g *documentGeneratorImpl) GetPackageMessages(packageName string) []*registryv1alpha1.Message {
-	packageLinkers := g.getPackageLinkers(packageName)
+func (g *documentGeneratorImpl) GetPackageMessages() []*registryv1alpha1.Message {
 	var messages []*registryv1alpha1.Message
 
-	for i := 0; i < len(packageLinkers); i++ {
-		packageLink := packageLinkers[i]
+	for i := 0; i < len(g.packageLinkers); i++ {
+		packageLink := g.packageLinkers[i]
 		messages = append(messages, g.GetMessages(packageLink.Messages())...)
 	}
 
 	return messages
 }
 
-func (g *documentGeneratorImpl) GetMessages(messageDescriptors protoreflect.MessageDescriptors, nestedPrefixes ...string) []*registryv1alpha1.Message {
+func (g *documentGeneratorImpl) GetMessages(messageDescriptors protoreflect.MessageDescriptors) []*registryv1alpha1.Message {
 	messages := make([]*registryv1alpha1.Message, 0, messageDescriptors.Len())
 
 	for i := 0; i < messageDescriptors.Len(); i++ {
 		messageDescriptor := messageDescriptors.Get(i)
-		message := g.GetMessage(messageDescriptor, nestedPrefixes...)
+		message := g.GetMessage(messageDescriptor)
 		messages = append(messages, message)
 	}
 
 	return messages
 }
 
-func (g *documentGeneratorImpl) GetMessage(messageDescriptor protoreflect.MessageDescriptor, nestedPrefixes ...string) *registryv1alpha1.Message {
+func (g *documentGeneratorImpl) GetMessage(messageDescriptor protoreflect.MessageDescriptor) *registryv1alpha1.Message {
 	if message, ok := g.messageSet[string(messageDescriptor.FullName())]; ok {
 		return message
 	}
@@ -114,7 +119,7 @@ func (g *documentGeneratorImpl) GetMessage(messageDescriptor protoreflect.Messag
 
 	message := &registryv1alpha1.Message{
 		Name:        string(messageDescriptor.Name()),
-		NestedName:  g.getNestedName(string(messageDescriptor.Name()), nestedPrefixes...),
+		NestedName:  g.getNestedName(string(messageDescriptor.FullName())),
 		FullName:    string(messageDescriptor.FullName()),
 		Description: messageLocation.LeadingComments,
 		FilePath:    messageDescriptor.ParentFile().Path(),
@@ -126,8 +131,34 @@ func (g *documentGeneratorImpl) GetMessage(messageDescriptor protoreflect.Messag
 		// TODO ImplicitlyDeprecated:
 	}
 
-	// TODO fill message fields
+	// fill message fields
+	fields := make([]*registryv1alpha1.Field, 0, messageDescriptor.Fields().Len())
+	for i := 0; i < messageDescriptor.Fields().Len(); i++ {
+		fieldDescriptor := messageDescriptor.Fields().Get(i)
+		fieldLocation := fieldDescriptor.ParentFile().SourceLocations().ByDescriptor(fieldDescriptor)
+		fieldOptions := protoutil.ProtoFromFieldDescriptor(fieldDescriptor).GetOptions()
 
+		field := &registryv1alpha1.Field{
+			Name:        string(fieldDescriptor.Name()),
+			Description: fieldLocation.LeadingComments,
+			Label:       fieldDescriptor.Cardinality().String(),
+			NestedType:  fieldDescriptor.Kind().String(),
+			FullType:    fieldDescriptor.Kind().String(),
+			Tag:         uint32(fieldDescriptor.Number()),
+			// TODO MapEntry:    nil,
+			// TODO Extendee:        "",
+			FieldOptions: &registryv1alpha1.FieldOptions{
+				Deprecated: fieldOptions.GetDeprecated(),
+				Packed:     fieldOptions.Packed,
+				Ctype:      int32(fieldOptions.GetCtype()),
+				Jstype:     int32(fieldOptions.GetJstype()),
+			},
+		}
+
+		// TODO field kind is MapEntry Message Enum
+
+		fields = append(fields, field)
+	}
 	// TODO fill message extensions
 
 	// TODO handle message nested message
@@ -140,31 +171,30 @@ func (g *documentGeneratorImpl) GetMessage(messageDescriptor protoreflect.Messag
 	return message
 }
 
-func (g *documentGeneratorImpl) GetPackageEnums(packageName string) []*registryv1alpha1.Enum {
-	packageLinkers := g.getPackageLinkers(packageName)
+func (g *documentGeneratorImpl) GetPackageEnums() []*registryv1alpha1.Enum {
 	var enums []*registryv1alpha1.Enum
 
-	for i := 0; i < len(packageLinkers); i++ {
-		packageLink := packageLinkers[i]
+	for i := 0; i < len(g.packageLinkers); i++ {
+		packageLink := g.packageLinkers[i]
 		enums = append(enums, g.GetEnums(packageLink.Enums())...)
 	}
 
 	return enums
 }
 
-func (g *documentGeneratorImpl) GetEnums(enumDescriptors protoreflect.EnumDescriptors, nestedPrefixes ...string) []*registryv1alpha1.Enum {
+func (g *documentGeneratorImpl) GetEnums(enumDescriptors protoreflect.EnumDescriptors) []*registryv1alpha1.Enum {
 	enums := make([]*registryv1alpha1.Enum, 0, enumDescriptors.Len())
 
 	for i := 0; i < enumDescriptors.Len(); i++ {
 		enumDescriptor := enumDescriptors.Get(i)
-		enum := g.GetEnum(enumDescriptor, nestedPrefixes...)
+		enum := g.GetEnum(enumDescriptor)
 		enums = append(enums, enum)
 	}
 
 	return enums
 }
 
-func (g *documentGeneratorImpl) GetEnum(enumDescriptor protoreflect.EnumDescriptor, nestedPrefixes ...string) *registryv1alpha1.Enum {
+func (g *documentGeneratorImpl) GetEnum(enumDescriptor protoreflect.EnumDescriptor) *registryv1alpha1.Enum {
 	// get location info
 	enumLocation := enumDescriptor.ParentFile().SourceLocations().ByDescriptor(enumDescriptor)
 	// get options
@@ -172,7 +202,7 @@ func (g *documentGeneratorImpl) GetEnum(enumDescriptor protoreflect.EnumDescript
 
 	enum := &registryv1alpha1.Enum{
 		Name:        string(enumDescriptor.Name()),
-		NestedName:  g.getNestedName(string(enumDescriptor.Name()), nestedPrefixes...),
+		NestedName:  g.getNestedName(string(enumDescriptor.FullName())),
 		FullName:    string(enumDescriptor.FullName()),
 		Description: enumLocation.LeadingComments,
 		FilePath:    enumDescriptor.ParentFile().Path(),
@@ -207,31 +237,30 @@ func (g *documentGeneratorImpl) GetEnum(enumDescriptor protoreflect.EnumDescript
 	return enum
 }
 
-func (g *documentGeneratorImpl) GetPackageServices(packageName string) []*registryv1alpha1.Service {
-	packageLinkers := g.getPackageLinkers(packageName)
+func (g *documentGeneratorImpl) GetPackageServices() []*registryv1alpha1.Service {
 	var services []*registryv1alpha1.Service
 
-	for i := 0; i < len(packageLinkers); i++ {
-		packageLink := packageLinkers[i]
+	for i := 0; i < len(g.packageLinkers); i++ {
+		packageLink := g.packageLinkers[i]
 		services = append(services, g.GetServices(packageLink.Services())...)
 	}
 
 	return services
 }
 
-func (g *documentGeneratorImpl) GetServices(serviceDescriptors protoreflect.ServiceDescriptors, nestedPrefixes ...string) []*registryv1alpha1.Service {
+func (g *documentGeneratorImpl) GetServices(serviceDescriptors protoreflect.ServiceDescriptors) []*registryv1alpha1.Service {
 	services := make([]*registryv1alpha1.Service, 0, serviceDescriptors.Len())
 
 	for i := 0; i < serviceDescriptors.Len(); i++ {
 		serviceDescriptor := serviceDescriptors.Get(i)
-		service := g.GetService(serviceDescriptor, nestedPrefixes...)
+		service := g.GetService(serviceDescriptor)
 		services = append(services, service)
 	}
 
 	return services
 }
 
-func (g *documentGeneratorImpl) GetService(serviceDescriptor protoreflect.ServiceDescriptor, nestedPrefixes ...string) *registryv1alpha1.Service {
+func (g *documentGeneratorImpl) GetService(serviceDescriptor protoreflect.ServiceDescriptor) *registryv1alpha1.Service {
 	// get location info
 	serviceLocation := serviceDescriptor.ParentFile().SourceLocations().ByDescriptor(serviceDescriptor)
 	// get options
@@ -239,7 +268,7 @@ func (g *documentGeneratorImpl) GetService(serviceDescriptor protoreflect.Servic
 
 	service := &registryv1alpha1.Service{
 		Name:        string(serviceDescriptor.Name()),
-		NestedName:  g.getNestedName(string(serviceDescriptor.Name()), nestedPrefixes...),
+		NestedName:  g.getNestedName(string(serviceDescriptor.FullName())),
 		FullName:    string(serviceDescriptor.FullName()),
 		Description: serviceLocation.LeadingComments,
 		FilePath:    serviceDescriptor.ParentFile().Path(),
@@ -279,8 +308,8 @@ func (g *documentGeneratorImpl) GetService(serviceDescriptor protoreflect.Servic
 	return service
 }
 
-func (g *documentGeneratorImpl) getMethodRequestResponse(streaming bool, descriptor protoreflect.MessageDescriptor, nestedPrefixes ...string) *registryv1alpha1.MethodRequestResponse {
-	m := g.GetMessage(descriptor, nestedPrefixes...)
+func (g *documentGeneratorImpl) getMethodRequestResponse(streaming bool, descriptor protoreflect.MessageDescriptor) *registryv1alpha1.MethodRequestResponse {
+	m := g.GetMessage(descriptor)
 
 	r := &registryv1alpha1.MethodRequestResponse{
 		NestedType: m.NestedName,
