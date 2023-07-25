@@ -55,7 +55,7 @@ func (downloadService *DownloadServiceImpl) DownloadManifestAndBlobs(ctx context
 	}
 
 	// 读取
-	fileManifest, blobSet, err := downloadService.storageHelper.ReadToManifestAndBlobSet(modelFileManifest, fileBlobs)
+	fileManifest, blobSet, err := downloadService.storageHelper.ReadToManifestAndBlobSet(ctx, modelFileManifest, fileBlobs)
 	if err != nil {
 		return nil, nil, e.NewInternalError(err.Error())
 	}

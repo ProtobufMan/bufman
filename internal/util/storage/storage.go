@@ -29,7 +29,7 @@ type StorageHelper interface {
 	GetDocumentAndLicenseFromBlob(ctx context.Context, fileManifest *manifest.Manifest, blobSet *manifest.BlobSet) (manifest.Blob, manifest.Blob, error)
 	GetBufConfigFromBlob(ctx context.Context, fileManifest *manifest.Manifest, blobSet *manifest.BlobSet) (*bufconfig.Config, error)
 	GetBufConfigFromProto(ctx context.Context, protoManifest *modulev1alpha1.Blob, protoBlobs []*modulev1alpha1.Blob) (*bufconfig.Config, error)
-	ReadToManifestAndBlobSet(modelFileManifest *model.FileManifest, fileBlobs model.FileBlobs) (*manifest.Manifest, *manifest.BlobSet, error) // 读取为manifest和blob set
+	ReadToManifestAndBlobSet(ctx context.Context, modelFileManifest *model.FileManifest, fileBlobs model.FileBlobs) (*manifest.Manifest, *manifest.BlobSet, error) // 读取为manifest和blob set
 
 	StorePlugin(pluginName string, version string, reversion uint32, binaryData []byte) (fileName string, err error) // 存储插件
 }
@@ -159,7 +159,7 @@ func (helper *StorageHelperImpl) GetBufConfigFromProto(ctx context.Context, prot
 	return helper.GetBufConfigFromBlob(ctx, fileManifest, blobSet)
 }
 
-func (helper *StorageHelperImpl) ReadToManifestAndBlobSet(modelFileManifest *model.FileManifest, fileBlobs model.FileBlobs) (*manifest.Manifest, *manifest.BlobSet, error) {
+func (helper *StorageHelperImpl) ReadToManifestAndBlobSet(ctx context.Context, modelFileManifest *model.FileManifest, fileBlobs model.FileBlobs) (*manifest.Manifest, *manifest.BlobSet, error) {
 	// 读取文件清单
 	reader, err := helper.Read(modelFileManifest.Digest)
 	if err != nil {
@@ -187,7 +187,7 @@ func (helper *StorageHelperImpl) ReadToManifestAndBlobSet(modelFileManifest *mod
 		blobs = append(blobs, blob)
 	}
 
-	blobSet, err := manifest.NewBlobSet(context.Background(), blobs)
+	blobSet, err := manifest.NewBlobSet(ctx, blobs)
 	if err != nil {
 		return nil, nil, err
 	}

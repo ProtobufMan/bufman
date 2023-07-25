@@ -88,7 +88,7 @@ func (docsService *DocsServiceImpl) GetSourceFile(ctx context.Context, repositor
 
 func (docsService *DocsServiceImpl) GetModulePackages(ctx context.Context, repositoryID, reference string) ([]*registryv1alpha1.ModulePackage, e.ResponseError) {
 	// 读取commit文件
-	fileManifest, blobSet, err := docsService.getManifestAndBlobSet(repositoryID, reference)
+	fileManifest, blobSet, err := docsService.getManifestAndBlobSet(ctx, repositoryID, reference)
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +110,7 @@ func (docsService *DocsServiceImpl) GetModulePackages(ctx context.Context, repos
 
 func (docsService *DocsServiceImpl) GetModuleDocumentation(ctx context.Context, repositoryID, reference string) (*registryv1alpha1.ModuleDocumentation, e.ResponseError) {
 	// 读取commit文件
-	fileManifest, blobSet, err := docsService.getManifestAndBlobSet(repositoryID, reference)
+	fileManifest, blobSet, err := docsService.getManifestAndBlobSet(ctx, repositoryID, reference)
 	if err != nil {
 		return nil, err
 	}
@@ -175,7 +175,7 @@ func (docsService *DocsServiceImpl) getDependentManifestsAndBlobSets(ctx context
 	dependentBlobSets := make([]*manifest.BlobSet, 0, len(dependentCommits))
 	for i := 0; i < len(dependentCommits); i++ {
 		dependentCommit := dependentCommits[i]
-		dependentManifest, dependentBlobSet, getErr := docsService.getManifestAndBlobSet(dependentCommit.RepositoryID, dependentCommit.CommitName)
+		dependentManifest, dependentBlobSet, getErr := docsService.getManifestAndBlobSet(ctx, dependentCommit.RepositoryID, dependentCommit.CommitName)
 		if getErr != nil {
 			return nil, nil, getErr
 		}
@@ -187,7 +187,7 @@ func (docsService *DocsServiceImpl) getDependentManifestsAndBlobSets(ctx context
 	return dependentManifests, dependentBlobSets, nil
 }
 
-func (docsService *DocsServiceImpl) getManifestAndBlobSet(repositoryID string, reference string) (*manifest.Manifest, *manifest.BlobSet, e.ResponseError) {
+func (docsService *DocsServiceImpl) getManifestAndBlobSet(ctx context.Context, repositoryID string, reference string) (*manifest.Manifest, *manifest.BlobSet, e.ResponseError) {
 	// 查询reference对应的commit
 	commit, err := docsService.commitMapper.FindByRepositoryIDAndReference(repositoryID, reference)
 	if err != nil {
@@ -213,7 +213,7 @@ func (docsService *DocsServiceImpl) getManifestAndBlobSet(repositoryID string, r
 	}
 
 	// 读取
-	fileManifest, blobSet, err := docsService.storageHelper.ReadToManifestAndBlobSet(modelFileManifest, fileBlobs)
+	fileManifest, blobSet, err := docsService.storageHelper.ReadToManifestAndBlobSet(ctx, modelFileManifest, fileBlobs)
 	if err != nil {
 		return nil, nil, e.NewInternalError(err.Error())
 	}

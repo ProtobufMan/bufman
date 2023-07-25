@@ -66,7 +66,7 @@ func (pushService *PushServiceImpl) GetManifestAndBlobSet(ctx context.Context, r
 	}
 
 	// 读取
-	fileManifest, blobSet, err := pushService.storageHelper.ReadToManifestAndBlobSet(modelFileManifest, fileBlobs)
+	fileManifest, blobSet, err := pushService.storageHelper.ReadToManifestAndBlobSet(ctx, modelFileManifest, fileBlobs)
 	if err != nil {
 		return nil, nil, e.NewInternalError(err.Error())
 	}
