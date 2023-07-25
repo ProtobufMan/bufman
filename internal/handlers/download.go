@@ -33,7 +33,7 @@ func (handler *DownloadServiceHandler) DownloadManifestAndBlobs(ctx context.Cont
 	}
 
 	// 获取对应文件内容、文件清单
-	fileManifest, blobSet, err := handler.downloadService.DownloadManifestAndBlobs(repository.RepositoryID, req.Msg.GetReference())
+	fileManifest, blobSet, err := handler.downloadService.DownloadManifestAndBlobs(ctx, repository.RepositoryID, req.Msg.GetReference())
 	if err != nil {
 		return nil, connect.NewError(err.Code(), err)
 	}

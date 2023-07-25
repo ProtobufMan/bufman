@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/ProtobufMan/bufman-cli/private/pkg/manifest"
@@ -11,7 +12,7 @@ import (
 )
 
 type DownloadService interface {
-	DownloadManifestAndBlobs(registerID string, reference string) (*manifest.Manifest, *manifest.BlobSet, e.ResponseError)
+	DownloadManifestAndBlobs(ctx context.Context, registerID string, reference string) (*manifest.Manifest, *manifest.BlobSet, e.ResponseError)
 }
 
 type DownloadServiceImpl struct {
@@ -28,7 +29,7 @@ func NewDownloadService() DownloadService {
 	}
 }
 
-func (downloadService *DownloadServiceImpl) DownloadManifestAndBlobs(registerID string, reference string) (*manifest.Manifest, *manifest.BlobSet, e.ResponseError) {
+func (downloadService *DownloadServiceImpl) DownloadManifestAndBlobs(ctx context.Context, registerID string, reference string) (*manifest.Manifest, *manifest.BlobSet, e.ResponseError) {
 	// 查询reference对应的commit
 	commit, err := downloadService.commitMapper.FindByRepositoryIDAndReference(registerID, reference)
 	if err != nil {
