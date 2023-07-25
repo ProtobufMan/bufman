@@ -6,8 +6,8 @@ require (
 	github.com/ProtobufMan/bufman-cli v0.0.0-20230719030041-0aa66bf1cadb
 	github.com/bufbuild/connect-go v1.9.0
 	github.com/bufbuild/protocompile v0.5.1
-	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/gin-gonic/gin v1.9.1
+	github.com/golang-jwt/jwt/v5 v5.0.0
 	github.com/google/uuid v1.3.0
 	golang.org/x/mod v0.12.0
 	golang.org/x/net v0.12.0
