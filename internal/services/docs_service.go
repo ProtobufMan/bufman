@@ -17,11 +17,11 @@ import (
 )
 
 type DocsService interface {
-	GetSourceDirectoryInfo(repositoryID, reference string) (model.FileBlobs, e.ResponseError)
-	GetSourceFile(repositoryID, reference, path string) ([]byte, e.ResponseError)
-	GetModulePackages(repositoryID, reference string) ([]*registryv1alpha1.ModulePackage, e.ResponseError)
-	GetModuleDocumentation(repositoryID, reference string) (*registryv1alpha1.ModuleDocumentation, e.ResponseError)
-	GetPackageDocumentation(repositoryID, reference, packageName string) (*registryv1alpha1.PackageDocumentation, e.ResponseError)
+	GetSourceDirectoryInfo(ctx context.Context, repositoryID, reference string) (model.FileBlobs, e.ResponseError)
+	GetSourceFile(ctx context.Context, repositoryID, reference, path string) ([]byte, e.ResponseError)
+	GetModulePackages(ctx context.Context, repositoryID, reference string) ([]*registryv1alpha1.ModulePackage, e.ResponseError)
+	GetModuleDocumentation(ctx context.Context, repositoryID, reference string) (*registryv1alpha1.ModuleDocumentation, e.ResponseError)
+	GetPackageDocumentation(ctx context.Context, repositoryID, reference, packageName string) (*registryv1alpha1.PackageDocumentation, e.ResponseError)
 }
 
 type DocsServiceImpl struct {
@@ -32,7 +32,7 @@ type DocsServiceImpl struct {
 	resolver      resolve.Resolver
 }
 
-func (docsService *DocsServiceImpl) GetSourceDirectoryInfo(repositoryID, reference string) (model.FileBlobs, e.ResponseError) {
+func (docsService *DocsServiceImpl) GetSourceDirectoryInfo(ctx context.Context, repositoryID, reference string) (model.FileBlobs, e.ResponseError) {
 	// 根据reference查询commit
 	commit, err := docsService.commitMapper.FindByRepositoryIDAndReference(repositoryID, reference)
 	if err != nil {
@@ -52,7 +52,7 @@ func (docsService *DocsServiceImpl) GetSourceDirectoryInfo(repositoryID, referen
 	return fileBlobs, nil
 }
 
-func (docsService *DocsServiceImpl) GetSourceFile(repositoryID, reference, path string) ([]byte, e.ResponseError) {
+func (docsService *DocsServiceImpl) GetSourceFile(ctx context.Context, repositoryID, reference, path string) ([]byte, e.ResponseError) {
 	// 根据reference查询commit
 	commit, err := docsService.commitMapper.FindByRepositoryIDAndReference(repositoryID, reference)
 	if err != nil {
@@ -86,7 +86,7 @@ func (docsService *DocsServiceImpl) GetSourceFile(repositoryID, reference, path 
 	return content, nil
 }
 
-func (docsService *DocsServiceImpl) GetModulePackages(repositoryID, reference string) ([]*registryv1alpha1.ModulePackage, e.ResponseError) {
+func (docsService *DocsServiceImpl) GetModulePackages(ctx context.Context, repositoryID, reference string) ([]*registryv1alpha1.ModulePackage, e.ResponseError) {
 	// 读取commit文件
 	fileManifest, blobSet, err := docsService.getManifestAndBlobSet(repositoryID, reference)
 	if err != nil {
@@ -94,13 +94,13 @@ func (docsService *DocsServiceImpl) GetModulePackages(repositoryID, reference st
 	}
 
 	// 读取依赖
-	dependentManifests, dependentBlobSets, err := docsService.getDependentManifestsAndBlobSets(fileManifest, blobSet)
+	dependentManifests, dependentBlobSets, err := docsService.getDependentManifestsAndBlobSets(ctx, fileManifest, blobSet)
 	if err != nil {
 		return nil, err
 	}
 
 	// 获取所有的packages
-	packages, err := docsService.protoParser.GetPackages(context.Background(), fileManifest, blobSet, dependentManifests, dependentBlobSets)
+	packages, err := docsService.protoParser.GetPackages(ctx, fileManifest, blobSet, dependentManifests, dependentBlobSets)
 	if err != nil {
 		return nil, err
 	}
@@ -108,20 +108,20 @@ func (docsService *DocsServiceImpl) GetModulePackages(repositoryID, reference st
 	return packages, nil
 }
 
-func (docsService *DocsServiceImpl) GetModuleDocumentation(repositoryID, reference string) (*registryv1alpha1.ModuleDocumentation, e.ResponseError) {
+func (docsService *DocsServiceImpl) GetModuleDocumentation(ctx context.Context, repositoryID, reference string) (*registryv1alpha1.ModuleDocumentation, e.ResponseError) {
 	// 读取commit文件
 	fileManifest, blobSet, err := docsService.getManifestAndBlobSet(repositoryID, reference)
 	if err != nil {
 		return nil, err
 	}
 
-	documentBlob, licenseBlob, readErr := docsService.storageHelper.GetDocumentAndLicenseFromBlob(context.Background(), fileManifest, blobSet)
+	documentBlob, licenseBlob, readErr := docsService.storageHelper.GetDocumentAndLicenseFromBlob(ctx, fileManifest, blobSet)
 	if readErr != nil {
 		return nil, e.NewInternalError(readErr.Error())
 	}
 
 	// 读取document
-	documentReader, readErr := documentBlob.Open(context.Background())
+	documentReader, readErr := documentBlob.Open(ctx)
 	if readErr != nil {
 		return nil, e.NewInternalError(readErr.Error())
 	}
@@ -131,7 +131,7 @@ func (docsService *DocsServiceImpl) GetModuleDocumentation(repositoryID, referen
 	}
 
 	// 读取license
-	licenseReader, readErr := licenseBlob.Open(context.Background())
+	licenseReader, readErr := licenseBlob.Open(ctx)
 	if readErr != nil {
 		return nil, e.NewInternalError(readErr.Error())
 	}
@@ -151,21 +151,21 @@ func (docsService *DocsServiceImpl) GetModuleDocumentation(repositoryID, referen
 	}, nil
 }
 
-func (docsService *DocsServiceImpl) GetPackageDocumentation(repositoryID, reference, packageName string) (*registryv1alpha1.PackageDocumentation, e.ResponseError) {
+func (docsService *DocsServiceImpl) GetPackageDocumentation(ctx context.Context, repositoryID, reference, packageName string) (*registryv1alpha1.PackageDocumentation, e.ResponseError) {
 	//TODO implement me
 	panic("implement me")
 }
 
 // getDependentManifestsAndBlobSets 获取依赖的manifests和blob sets
-func (docsService *DocsServiceImpl) getDependentManifestsAndBlobSets(fileManifest *manifest.Manifest, blobSet *manifest.BlobSet) ([]*manifest.Manifest, []*manifest.BlobSet, e.ResponseError) {
+func (docsService *DocsServiceImpl) getDependentManifestsAndBlobSets(ctx context.Context, fileManifest *manifest.Manifest, blobSet *manifest.BlobSet) ([]*manifest.Manifest, []*manifest.BlobSet, e.ResponseError) {
 	// 获取bufConfig
-	bufConfig, configErr := docsService.storageHelper.GetBufConfigFromBlob(context.Background(), fileManifest, blobSet)
+	bufConfig, configErr := docsService.storageHelper.GetBufConfigFromBlob(ctx, fileManifest, blobSet)
 	if configErr != nil {
 		return nil, nil, e.NewInternalError(configErr.Error())
 	}
 
 	// 获取全部依赖commits
-	dependentCommits, dependenceErr := docsService.resolver.GetAllDependenciesFromBufConfig(context.Background(), bufConfig)
+	dependentCommits, dependenceErr := docsService.resolver.GetAllDependenciesFromBufConfig(ctx, bufConfig)
 	if dependenceErr != nil {
 		return nil, nil, e.NewInternalError(dependenceErr.Error())
 	}
