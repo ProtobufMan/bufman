@@ -131,7 +131,7 @@ func TestDeleteRepositoryByFullName(t *testing.T) {
 func newTestRepositoryClient(t *testing.T) registryv1alpha1connect.RepositoryServiceClient {
 	TestCreateToken(t)
 	var client registryv1alpha1connect.RepositoryServiceClient
-	client = registryv1alpha1connect.NewRepositoryServiceClient(http.DefaultClient, "http://localhost:39099", interceptors.WithAuthHeaderInterceptor(testToken))
+	client = registryv1alpha1connect.NewRepositoryServiceClient(http.DefaultClient, "http://bufman.io", interceptors.WithAuthHeaderInterceptor(testToken))
 
 	return client
 }

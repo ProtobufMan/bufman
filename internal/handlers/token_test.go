@@ -19,7 +19,7 @@ var (
 
 func TestCreateToken(t *testing.T) {
 	var tokenClient registryv1alpha1connect.TokenServiceClient
-	tokenClient = registryv1alpha1connect.NewTokenServiceClient(http.DefaultClient, "http://localhost:39099")
+	tokenClient = registryv1alpha1connect.NewTokenServiceClient(http.DefaultClient, "http://bufman.io")
 
 	TestCreateUser(t)
 
@@ -42,7 +42,7 @@ func TestCreateToken(t *testing.T) {
 }
 
 func TestCheckAuth(t *testing.T) {
-	tokenClient := registryv1alpha1connect.NewTokenServiceClient(http.DefaultClient, "http://localhost:39099", interceptors.WithAuthHeaderInterceptor("wrong token"))
+	tokenClient := registryv1alpha1connect.NewTokenServiceClient(http.DefaultClient, "http://bufman.io", interceptors.WithAuthHeaderInterceptor("wrong token"))
 	ListTokensReq := connect.NewRequest(&registryv1alpha1.ListTokensRequest{
 		PageSize: 10,
 		Reverse:  false,
@@ -58,7 +58,7 @@ func TestListTokens(t *testing.T) {
 	TestCreateToken(t)
 	// ListTokens
 	var tokenClient registryv1alpha1connect.TokenServiceClient
-	tokenClient = registryv1alpha1connect.NewTokenServiceClient(http.DefaultClient, "http://localhost:39099", interceptors.WithAuthHeaderInterceptor(testToken))
+	tokenClient = registryv1alpha1connect.NewTokenServiceClient(http.DefaultClient, "http://bufman.io", interceptors.WithAuthHeaderInterceptor(testToken))
 
 	ListTokensReq := connect.NewRequest(&registryv1alpha1.ListTokensRequest{
 		PageSize: 10,
@@ -84,7 +84,7 @@ func TestGetToken(t *testing.T) {
 	TestListTokens(t)
 
 	var tokenClient registryv1alpha1connect.TokenServiceClient
-	tokenClient = registryv1alpha1connect.NewTokenServiceClient(http.DefaultClient, "http://localhost:39099", interceptors.WithAuthHeaderInterceptor(testToken))
+	tokenClient = registryv1alpha1connect.NewTokenServiceClient(http.DefaultClient, "http://bufman.io", interceptors.WithAuthHeaderInterceptor(testToken))
 
 	for i := 0; i < len(testTokens); i++ {
 		// get token
@@ -104,7 +104,7 @@ func TestDeleteToken(t *testing.T) {
 	TestListTokens(t)
 
 	var tokenClient registryv1alpha1connect.TokenServiceClient
-	tokenClient = registryv1alpha1connect.NewTokenServiceClient(http.DefaultClient, "http://localhost:39099", interceptors.WithAuthHeaderInterceptor(testToken))
+	tokenClient = registryv1alpha1connect.NewTokenServiceClient(http.DefaultClient, "http://bufman.io", interceptors.WithAuthHeaderInterceptor(testToken))
 
 	for i := 0; i < len(testTokens); i++ {
 		deleteTokenReq := connect.NewRequest(&registryv1alpha1.DeleteTokenRequest{

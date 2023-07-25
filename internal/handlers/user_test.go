@@ -16,7 +16,7 @@ var (
 )
 
 func init() {
-	userClient = registryv1alpha1connect.NewUserServiceClient(http.DefaultClient, "http://localhost:39099")
+	userClient = registryv1alpha1connect.NewUserServiceClient(http.DefaultClient, "http://bufman.io")
 }
 
 func TestCreateUser(t *testing.T) {
