@@ -83,7 +83,7 @@ func (handler *PushServiceHandler) PushManifestAndBlobs(ctx context.Context, req
 	dependentBlobSets := make([]*manifest.BlobSet, 0, len(dependentCommits))
 	for i := 0; i < len(dependentCommits); i++ {
 		dependentCommit := dependentCommits[i]
-		dependentManifest, dependentBlobSet, getErr := handler.pushService.GetManifestAndBlobSet(dependentCommit.RepositoryID, dependentCommit.CommitName)
+		dependentManifest, dependentBlobSet, getErr := handler.pushService.GetManifestAndBlobSet(ctx, dependentCommit.RepositoryID, dependentCommit.CommitName)
 		if getErr != nil {
 			return nil, connect.NewError(getErr.Code(), getErr)
 		}
@@ -102,11 +102,11 @@ func (handler *PushServiceHandler) PushManifestAndBlobs(ctx context.Context, req
 	var serviceErr e.ResponseError
 	userID := ctx.Value(constant.UserIDKey).(string)
 	if req.Msg.DraftName != "" {
-		commit, serviceErr = handler.pushService.PushManifestAndBlobsWithDraft(userID, req.Msg.GetOwner(), req.Msg.GetRepository(), fileManifest, blobSet, req.Msg.GetDraftName())
+		commit, serviceErr = handler.pushService.PushManifestAndBlobsWithDraft(ctx, userID, req.Msg.GetOwner(), req.Msg.GetRepository(), fileManifest, blobSet, req.Msg.GetDraftName())
 	} else if len(req.Msg.GetTags()) > 0 {
-		commit, serviceErr = handler.pushService.PushManifestAndBlobsWithTags(userID, req.Msg.GetOwner(), req.Msg.GetRepository(), fileManifest, blobSet, req.Msg.GetTags())
+		commit, serviceErr = handler.pushService.PushManifestAndBlobsWithTags(ctx, userID, req.Msg.GetOwner(), req.Msg.GetRepository(), fileManifest, blobSet, req.Msg.GetTags())
 	} else {
-		commit, serviceErr = handler.pushService.PushManifestAndBlobs(userID, req.Msg.GetOwner(), req.Msg.GetRepository(), fileManifest, blobSet)
+		commit, serviceErr = handler.pushService.PushManifestAndBlobs(ctx, userID, req.Msg.GetOwner(), req.Msg.GetRepository(), fileManifest, blobSet)
 	}
 	if serviceErr != nil {
 		return nil, connect.NewError(serviceErr.Code(), serviceErr.Err())

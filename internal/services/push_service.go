@@ -16,10 +16,10 @@ import (
 )
 
 type PushService interface {
-	PushManifestAndBlobs(userID, ownerName, repositoryName string, fileManifest *manifest.Manifest, fileBlobs *manifest.BlobSet) (*model.Commit, e.ResponseError)
-	PushManifestAndBlobsWithTags(userID, ownerName, repositoryName string, fileManifest *manifest.Manifest, fileBlobs *manifest.BlobSet, tagNames []string) (*model.Commit, e.ResponseError)
-	PushManifestAndBlobsWithDraft(userID, ownerName, repositoryName string, fileManifest *manifest.Manifest, fileBlobs *manifest.BlobSet, draftName string) (*model.Commit, e.ResponseError)
-	GetManifestAndBlobSet(repositoryID string, reference string) (*manifest.Manifest, *manifest.BlobSet, e.ResponseError)
+	PushManifestAndBlobs(ctx context.Context, userID, ownerName, repositoryName string, fileManifest *manifest.Manifest, fileBlobs *manifest.BlobSet) (*model.Commit, e.ResponseError)
+	PushManifestAndBlobsWithTags(ctx context.Context, userID, ownerName, repositoryName string, fileManifest *manifest.Manifest, fileBlobs *manifest.BlobSet, tagNames []string) (*model.Commit, e.ResponseError)
+	PushManifestAndBlobsWithDraft(ctx context.Context, userID, ownerName, repositoryName string, fileManifest *manifest.Manifest, fileBlobs *manifest.BlobSet, draftName string) (*model.Commit, e.ResponseError)
+	GetManifestAndBlobSet(ctx context.Context, repositoryID string, reference string) (*manifest.Manifest, *manifest.BlobSet, e.ResponseError)
 }
 
 type PushServiceImpl struct {
@@ -40,7 +40,7 @@ func NewPushService() PushService {
 	}
 }
 
-func (pushService *PushServiceImpl) GetManifestAndBlobSet(repositoryID string, reference string) (*manifest.Manifest, *manifest.BlobSet, e.ResponseError) {
+func (pushService *PushServiceImpl) GetManifestAndBlobSet(ctx context.Context, repositoryID string, reference string) (*manifest.Manifest, *manifest.BlobSet, e.ResponseError) {
 	// 查询reference对应的commit
 	commit, err := pushService.commitMapper.FindByRepositoryIDAndReference(repositoryID, reference)
 	if err != nil {
@@ -74,14 +74,14 @@ func (pushService *PushServiceImpl) GetManifestAndBlobSet(repositoryID string, r
 	return fileManifest, blobSet, nil
 }
 
-func (pushService *PushServiceImpl) PushManifestAndBlobs(userID, ownerName, repositoryName string, fileManifest *manifest.Manifest, fileBlobs *manifest.BlobSet) (*model.Commit, e.ResponseError) {
+func (pushService *PushServiceImpl) PushManifestAndBlobs(ctx context.Context, userID, ownerName, repositoryName string, fileManifest *manifest.Manifest, fileBlobs *manifest.BlobSet) (*model.Commit, e.ResponseError) {
 	commit, err := pushService.toCommit(userID, ownerName, repositoryName, fileManifest)
 	if err != nil {
 		return nil, err
 	}
 
 	// 写入文件
-	err = pushService.saveFileManifestAndBlobs(fileManifest, fileBlobs)
+	err = pushService.saveFileManifestAndBlobs(ctx, fileManifest, fileBlobs)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +102,7 @@ func (pushService *PushServiceImpl) PushManifestAndBlobs(userID, ownerName, repo
 	return commit, nil
 }
 
-func (pushService *PushServiceImpl) PushManifestAndBlobsWithTags(userID, ownerName, repositoryName string, fileManifest *manifest.Manifest, fileBlobs *manifest.BlobSet, tagNames []string) (*model.Commit, e.ResponseError) {
+func (pushService *PushServiceImpl) PushManifestAndBlobsWithTags(ctx context.Context, userID, ownerName, repositoryName string, fileManifest *manifest.Manifest, fileBlobs *manifest.BlobSet, tagNames []string) (*model.Commit, e.ResponseError) {
 	commit, err := pushService.toCommit(userID, ownerName, repositoryName, fileManifest)
 	if err != nil {
 		return nil, err
@@ -122,7 +122,7 @@ func (pushService *PushServiceImpl) PushManifestAndBlobsWithTags(userID, ownerNa
 	commit.Tags = tags
 
 	// 写入文件
-	err = pushService.saveFileManifestAndBlobs(fileManifest, fileBlobs)
+	err = pushService.saveFileManifestAndBlobs(ctx, fileManifest, fileBlobs)
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +142,7 @@ func (pushService *PushServiceImpl) PushManifestAndBlobsWithTags(userID, ownerNa
 	return commit, nil
 }
 
-func (pushService *PushServiceImpl) PushManifestAndBlobsWithDraft(userID, ownerName, repositoryName string, fileManifest *manifest.Manifest, fileBlobs *manifest.BlobSet, draftName string) (*model.Commit, e.ResponseError) {
+func (pushService *PushServiceImpl) PushManifestAndBlobsWithDraft(ctx context.Context, userID, ownerName, repositoryName string, fileManifest *manifest.Manifest, fileBlobs *manifest.BlobSet, draftName string) (*model.Commit, e.ResponseError) {
 	commit, err := pushService.toCommit(userID, ownerName, repositoryName, fileManifest)
 	if err != nil {
 		return nil, err
@@ -150,7 +150,7 @@ func (pushService *PushServiceImpl) PushManifestAndBlobsWithDraft(userID, ownerN
 	commit.DraftName = draftName
 
 	// 写入文件
-	err = pushService.saveFileManifestAndBlobs(fileManifest, fileBlobs)
+	err = pushService.saveFileManifestAndBlobs(ctx, fileManifest, fileBlobs)
 	if err != nil {
 		return nil, err
 	}
@@ -221,7 +221,7 @@ func (pushService *PushServiceImpl) toCommit(userID, ownerName, repositoryName s
 	return commit, nil
 }
 
-func (pushService *PushServiceImpl) saveFileManifestAndBlobs(fileManifest *manifest.Manifest, fileBlobs *manifest.BlobSet) e.ResponseError {
+func (pushService *PushServiceImpl) saveFileManifestAndBlobs(ctx context.Context, fileManifest *manifest.Manifest, fileBlobs *manifest.BlobSet) e.ResponseError {
 	// 保存file blobs
 	err := fileManifest.Range(func(path string, digest manifest.Digest) error {
 		blob, ok := fileBlobs.BlobFor(digest.String())
@@ -229,7 +229,7 @@ func (pushService *PushServiceImpl) saveFileManifestAndBlobs(fileManifest *manif
 			return e.NewInvalidArgumentError("file blobs")
 		}
 
-		readCloser, err := blob.Open(context.Background())
+		readCloser, err := blob.Open(ctx)
 		if err != nil {
 			return e.NewInternalError(registryv1alpha1connect.PushServicePushManifestAndBlobsProcedure)
 		}
@@ -251,7 +251,7 @@ func (pushService *PushServiceImpl) saveFileManifestAndBlobs(fileManifest *manif
 	if err != nil {
 		return e.NewInternalError(registryv1alpha1connect.PushServicePushManifestAndBlobsProcedure)
 	}
-	readCloser, err := blob.Open(context.Background())
+	readCloser, err := blob.Open(ctx)
 	if err != nil {
 		return e.NewInternalError(registryv1alpha1connect.PushServicePushManifestAndBlobsProcedure)
 	}
