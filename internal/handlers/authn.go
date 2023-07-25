@@ -21,7 +21,7 @@ func NewAuthnServiceHandler() *AuthnServiceHandler {
 func (handler *AuthnServiceHandler) GetCurrentUser(ctx context.Context, req *connect.Request[registryv1alpha1.GetCurrentUserRequest]) (*connect.Response[registryv1alpha1.GetCurrentUserResponse], error) {
 	userID := ctx.Value(constant.UserIDKey).(string)
 
-	user, err := handler.userService.GetUser(userID)
+	user, err := handler.userService.GetUser(ctx, userID)
 	if err != nil {
 		return nil, connect.NewError(err.Code(), err.Err())
 	}
