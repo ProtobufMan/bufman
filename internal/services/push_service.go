@@ -3,32 +3,29 @@ package services
 import (
 	"context"
 	"errors"
-	"github.com/ProtobufMan/bufman-cli/private/bufpkg/bufmodule"
-	"github.com/ProtobufMan/bufman-cli/private/bufpkg/bufmodule/bufmoduleprotocompile"
+	"fmt"
 	"github.com/ProtobufMan/bufman-cli/private/gen/proto/connect/bufman/alpha/registry/v1alpha1/registryv1alpha1connect"
 	"github.com/ProtobufMan/bufman-cli/private/pkg/manifest"
-	"github.com/ProtobufMan/bufman-cli/private/pkg/thread"
 	"github.com/ProtobufMan/bufman/internal/e"
 	"github.com/ProtobufMan/bufman/internal/mapper"
 	"github.com/ProtobufMan/bufman/internal/model"
 	"github.com/ProtobufMan/bufman/internal/util/security"
 	"github.com/ProtobufMan/bufman/internal/util/storage"
-	"github.com/bufbuild/protocompile"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
-	"strings"
 )
 
 type PushService interface {
 	PushManifestAndBlobs(userID, ownerName, repositoryName string, fileManifest *manifest.Manifest, fileBlobs *manifest.BlobSet) (*model.Commit, e.ResponseError)
 	PushManifestAndBlobsWithTags(userID, ownerName, repositoryName string, fileManifest *manifest.Manifest, fileBlobs *manifest.BlobSet, tagNames []string) (*model.Commit, e.ResponseError)
 	PushManifestAndBlobsWithDraft(userID, ownerName, repositoryName string, fileManifest *manifest.Manifest, fileBlobs *manifest.BlobSet, draftName string) (*model.Commit, e.ResponseError)
-	TryCompile(ctx context.Context, fileManifest *manifest.Manifest, blobSet *manifest.BlobSet, dependentManifests []*manifest.Manifest, dependentBlobSets []*manifest.BlobSet) e.ResponseError
+	GetManifestAndBlobSet(repositoryID string, reference string) (*manifest.Manifest, *manifest.BlobSet, e.ResponseError)
 }
 
 type PushServiceImpl struct {
 	userMapper       mapper.UserMapper
 	repositoryMapper mapper.RepositoryMapper
+	fileMapper       mapper.FileMapper
 	commitMapper     mapper.CommitMapper
 	storageHelper    storage.StorageHelper
 }
@@ -38,54 +35,43 @@ func NewPushService() PushService {
 		userMapper:       &mapper.UserMapperImpl{},
 		repositoryMapper: &mapper.RepositoryMapperImpl{},
 		commitMapper:     &mapper.CommitMapperImpl{},
+		fileMapper:       &mapper.FileMapperImpl{},
 		storageHelper:    storage.NewStorageHelper(),
 	}
 }
 
-func (pushService *PushServiceImpl) TryCompile(ctx context.Context, fileManifest *manifest.Manifest, blobSet *manifest.BlobSet, dependentManifests []*manifest.Manifest, dependentBlobSets []*manifest.BlobSet) e.ResponseError {
-	// 检查编译
-	module, err := bufmodule.NewModuleForManifestAndBlobSet(ctx, fileManifest, blobSet)
+func (pushService *PushServiceImpl) GetManifestAndBlobSet(repositoryID string, reference string) (*manifest.Manifest, *manifest.BlobSet, e.ResponseError) {
+	// 查询reference对应的commit
+	commit, err := pushService.commitMapper.FindByRepositoryIDAndReference(repositoryID, reference)
 	if err != nil {
-		return e.NewInternalError(err.Error())
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil, e.NewNotFoundError(fmt.Sprintf("repository %s", repositoryID))
+		}
+
+		return nil, nil, e.NewInternalError(err.Error())
 	}
-	dependentModules := make([]bufmodule.Module, 0, len(dependentManifests))
-	for i := 0; i < len(dependentManifests); i++ {
-		dependentModule, err := bufmodule.NewModuleForManifestAndBlobSet(ctx, dependentManifests[i], dependentBlobSets[i])
+
+	// 查询文件清单
+	modelFileManifest, err := pushService.fileMapper.FindManifestByCommitID(commit.CommitID)
+	if err != nil {
 		if err != nil {
-			return e.NewInternalError(err.Error())
+			return nil, nil, e.NewInternalError(err.Error())
 		}
-		dependentModules = append(dependentModules, dependentModule)
-	}
-	moduleFileSet := bufmodule.NewModuleFileSet(module, dependentModules)
-	parserAccessorHandler := bufmoduleprotocompile.NewParserAccessorHandler(ctx, moduleFileSet)
-	compiler := protocompile.Compiler{
-		MaxParallelism: thread.Parallelism(),
-		SourceInfoMode: protocompile.SourceInfoStandard,
-		Resolver:       &protocompile.SourceResolver{Accessor: parserAccessorHandler.Open},
 	}
 
-	// fileDescriptors are in the same order as paths per the documentation
-	protoPaths := getProtoPaths(fileManifest)
-	_, err = compiler.Compile(ctx, protoPaths...)
+	// 接着查询blobs
+	fileBlobs, err := pushService.fileMapper.FindAllBlobsByCommitID(commit.CommitID)
 	if err != nil {
-		return e.NewInternalError(err.Error())
+		return nil, nil, e.NewInternalError(err.Error())
 	}
 
-	return nil
-}
+	// 读取
+	fileManifest, blobSet, err := pushService.storageHelper.ReadToManifestAndBlobSet(modelFileManifest, fileBlobs)
+	if err != nil {
+		return nil, nil, e.NewInternalError(err.Error())
+	}
 
-func getProtoPaths(fileManifest *manifest.Manifest) []string {
-
-	var protoPaths []string
-	_ = fileManifest.Range(func(path string, digest manifest.Digest) error {
-		if strings.HasSuffix(path, ".proto") {
-			protoPaths = append(protoPaths, path)
-		}
-
-		return nil
-	})
-
-	return protoPaths
+	return fileManifest, blobSet, nil
 }
 
 func (pushService *PushServiceImpl) PushManifestAndBlobs(userID, ownerName, repositoryName string, fileManifest *manifest.Manifest, fileBlobs *manifest.BlobSet) (*model.Commit, e.ResponseError) {

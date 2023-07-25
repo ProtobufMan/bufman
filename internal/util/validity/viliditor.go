@@ -288,6 +288,7 @@ func (validator *ValidatorImpl) CheckManifestAndBlobs(ctx context.Context, proto
 		buflock.ExternalConfigFilePath,
 		bufmodule.LicenseFilePath,
 	}
+	externalPaths = append(externalPaths, bufmodule.AllDocumentationPaths...)
 	externalPaths = append(externalPaths, bufconfig.AllConfigFilePaths...)
 	err = fileManifest.Range(func(path string, digest manifest.Digest) error {
 		_, ok := blobSet.BlobFor(digest.String())

@@ -8,24 +8,28 @@ import (
 	"github.com/ProtobufMan/bufman/internal/e"
 	"github.com/ProtobufMan/bufman/internal/model"
 	"github.com/ProtobufMan/bufman/internal/services"
+	"github.com/ProtobufMan/bufman/internal/util/parse"
 	"github.com/ProtobufMan/bufman/internal/util/resolve"
+	"github.com/ProtobufMan/bufman/internal/util/storage"
 	"github.com/ProtobufMan/bufman/internal/util/validity"
 	"github.com/bufbuild/connect-go"
 )
 
 type PushServiceHandler struct {
-	pushService     services.PushService
-	downloadService services.DownloadService
-	validator       validity.Validator
-	resolver        resolve.Resolver
+	pushService   services.PushService
+	validator     validity.Validator
+	resolver      resolve.Resolver
+	storageHelper storage.StorageHelper
+	parser        parse.ProtoParser
 }
 
 func NewPushServiceHandler() *PushServiceHandler {
 	return &PushServiceHandler{
-		pushService:     services.NewPushService(),
-		downloadService: services.NewDownloadService(),
-		validator:       validity.NewValidator(),
-		resolver:        resolve.NewResolver(),
+		pushService:   services.NewPushService(),
+		validator:     validity.NewValidator(),
+		resolver:      resolve.NewResolver(),
+		storageHelper: storage.NewStorageHelper(),
+		parser:        parse.NewProtoParser(),
 	}
 }
 
@@ -62,8 +66,9 @@ func (handler *PushServiceHandler) PushManifestAndBlobs(ctx context.Context, req
 	}
 
 	// 获取bufConfig
-	bufConfig, configErr := handler.resolver.GetBufConfigFromBlob(ctx, fileManifest, blobSet)
-	if configErr != nil {
+	bufConfig, err := handler.storageHelper.GetBufConfigFromBlob(ctx, fileManifest, blobSet)
+	if err != nil {
+		configErr := e.NewInternalError(err.Error())
 		return nil, connect.NewError(configErr.Code(), configErr)
 	}
 
@@ -78,9 +83,9 @@ func (handler *PushServiceHandler) PushManifestAndBlobs(ctx context.Context, req
 	dependentBlobSets := make([]*manifest.BlobSet, 0, len(dependentCommits))
 	for i := 0; i < len(dependentCommits); i++ {
 		dependentCommit := dependentCommits[i]
-		dependentManifest, dependentBlobSet, downloadErr := handler.downloadService.DownloadManifestAndBlobs(dependentCommit.RepositoryID, dependentCommit.CommitName)
-		if downloadErr != nil {
-			return nil, connect.NewError(downloadErr.Code(), downloadErr)
+		dependentManifest, dependentBlobSet, getErr := handler.pushService.GetManifestAndBlobSet(dependentCommit.RepositoryID, dependentCommit.CommitName)
+		if getErr != nil {
+			return nil, connect.NewError(getErr.Code(), getErr)
 		}
 
 		dependentManifests = append(dependentManifests, dependentManifest)
@@ -88,7 +93,7 @@ func (handler *PushServiceHandler) PushManifestAndBlobs(ctx context.Context, req
 	}
 
 	// 编译检查
-	compileErr := handler.pushService.TryCompile(ctx, fileManifest, blobSet, dependentManifests, dependentBlobSets)
+	compileErr := handler.parser.TryCompile(ctx, fileManifest, blobSet, dependentManifests, dependentBlobSets)
 	if compileErr != nil {
 		return nil, connect.NewError(compileErr.Code(), compileErr)
 	}

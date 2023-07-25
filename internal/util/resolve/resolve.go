@@ -5,9 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ProtobufMan/bufman-cli/private/bufpkg/bufconfig"
-	"github.com/ProtobufMan/bufman-cli/private/bufpkg/bufmanifest"
 	"github.com/ProtobufMan/bufman-cli/private/bufpkg/bufmodule/bufmoduleref"
-	modulev1alpha1 "github.com/ProtobufMan/bufman-cli/private/gen/proto/go/bufman/alpha/module/v1alpha1"
 	"github.com/ProtobufMan/bufman-cli/private/pkg/manifest"
 	"github.com/ProtobufMan/bufman/internal/config"
 	"github.com/ProtobufMan/bufman/internal/e"
@@ -19,8 +17,6 @@ import (
 )
 
 type Resolver interface {
-	GetBufConfigFromBlob(ctx context.Context, fileManifest *manifest.Manifest, blobSet *manifest.BlobSet) (*bufconfig.Config, e.ResponseError)
-	GetBufConfigFromProto(ctx context.Context, protoManifest *modulev1alpha1.Blob, protoBlobs []*modulev1alpha1.Blob) (*bufconfig.Config, e.ResponseError)
 	GetAllDependenciesFromBufConfig(ctx context.Context, bufConfig *bufconfig.Config) (model.Commits, e.ResponseError)                         // 获取全部依赖
 	GetDirectDependenciesFromBufConfig(ctx context.Context, bufConfig *bufconfig.Config) (model.Commits, e.ResponseError)                      // 获取直接依赖
 	GetAllDependenciesFromModuleRefs(ctx context.Context, moduleReferences []bufmoduleref.ModuleReference) (model.Commits, e.ResponseError)    // 获取全部依赖
@@ -166,69 +162,6 @@ func (resolver *ResolverImpl) GetBufConfigFromCommitID(ctx context.Context, comm
 	}
 
 	return bufConfig, nil
-}
-
-func (resolver *ResolverImpl) GetBufConfigFromBlob(ctx context.Context, fileManifest *manifest.Manifest, blobSet *manifest.BlobSet) (*bufconfig.Config, e.ResponseError) {
-	var configFileExist bool
-	var configFileData []byte
-
-	err := fileManifest.Range(func(path string, digest manifest.Digest) error {
-		blob, ok := blobSet.BlobFor(digest.String())
-		if !ok {
-			// 文件清单中有的文件，在file blobs中没有
-			return errors.New("check manifest and file blobs failed")
-		}
-
-		// 如果遇到配置文件，就记录下来
-		for _, configFilePath := range bufconfig.AllConfigFilePaths {
-			if path == configFilePath {
-				if configFileExist {
-					return errors.New("two config files")
-				}
-				reader, err := blob.Open(ctx)
-				if err != nil {
-					return err
-				}
-				configFileData, err = io.ReadAll(reader)
-				if err != nil {
-					return err
-				}
-				configFileExist = true
-			}
-		}
-
-		return nil
-	})
-	if err != nil {
-		return nil, e.NewInvalidArgumentError(err.Error())
-	}
-	if !configFileExist {
-		// 不存在配置文件
-		return nil, e.NewInvalidArgumentError("no config file")
-	}
-
-	// 生成Config，并验证其中的依赖关系
-	bufConfig, err := bufconfig.GetConfigForData(ctx, configFileData)
-	if err != nil {
-		// 无法解析配置文件
-		return nil, e.NewInvalidArgumentError(err.Error())
-	}
-
-	return bufConfig, nil
-}
-
-func (resolver *ResolverImpl) GetBufConfigFromProto(ctx context.Context, protoManifest *modulev1alpha1.Blob, protoBlobs []*modulev1alpha1.Blob) (*bufconfig.Config, e.ResponseError) {
-	fileManifest, err := bufmanifest.NewManifestFromProto(ctx, protoManifest)
-	if err != nil {
-		return nil, e.NewInvalidArgumentError(err.Error())
-	}
-
-	blobSet, err := bufmanifest.NewBlobSetFromProto(ctx, protoBlobs)
-	if err != nil {
-		return nil, e.NewInvalidArgumentError(err.Error())
-	}
-
-	return resolver.GetBufConfigFromBlob(ctx, fileManifest, blobSet)
 }
 
 func (resolver *ResolverImpl) doGetDependencies(ctx context.Context, dependentCommitSet map[string]*model.Commit, dependencyReferences []bufmoduleref.ModuleReference, getAll bool) (map[string]*model.Commit, e.ResponseError) {
