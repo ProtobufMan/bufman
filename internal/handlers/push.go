@@ -8,7 +8,7 @@ import (
 	"github.com/ProtobufMan/bufman/internal/e"
 	"github.com/ProtobufMan/bufman/internal/model"
 	"github.com/ProtobufMan/bufman/internal/services"
-	"github.com/ProtobufMan/bufman/internal/util/parse"
+	"github.com/ProtobufMan/bufman/internal/util/parser"
 	"github.com/ProtobufMan/bufman/internal/util/resolve"
 	"github.com/ProtobufMan/bufman/internal/util/storage"
 	"github.com/ProtobufMan/bufman/internal/util/validity"
@@ -20,7 +20,7 @@ type PushServiceHandler struct {
 	validator     validity.Validator
 	resolver      resolve.Resolver
 	storageHelper storage.StorageHelper
-	parser        parse.ProtoParser
+	protoParser   parser.ProtoParser
 }
 
 func NewPushServiceHandler() *PushServiceHandler {
@@ -29,7 +29,7 @@ func NewPushServiceHandler() *PushServiceHandler {
 		validator:     validity.NewValidator(),
 		resolver:      resolve.NewResolver(),
 		storageHelper: storage.NewStorageHelper(),
-		parser:        parse.NewProtoParser(),
+		protoParser:   parser.NewProtoParser(),
 	}
 }
 
@@ -93,7 +93,7 @@ func (handler *PushServiceHandler) PushManifestAndBlobs(ctx context.Context, req
 	}
 
 	// 编译检查
-	compileErr := handler.parser.TryCompile(ctx, fileManifest, blobSet, dependentManifests, dependentBlobSets)
+	compileErr := handler.protoParser.TryCompile(ctx, fileManifest, blobSet, dependentManifests, dependentBlobSets)
 	if compileErr != nil {
 		return nil, connect.NewError(compileErr.Code(), compileErr)
 	}

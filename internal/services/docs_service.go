@@ -4,12 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/ProtobufMan/bufman-cli/private/bufpkg/bufmodule/bufmoduleref"
 	registryv1alpha1 "github.com/ProtobufMan/bufman-cli/private/gen/proto/go/bufman/alpha/registry/v1alpha1"
 	"github.com/ProtobufMan/bufman-cli/private/pkg/manifest"
+	"github.com/ProtobufMan/bufman/internal/config"
 	"github.com/ProtobufMan/bufman/internal/e"
 	"github.com/ProtobufMan/bufman/internal/mapper"
 	"github.com/ProtobufMan/bufman/internal/model"
-	"github.com/ProtobufMan/bufman/internal/util/parse"
+	"github.com/ProtobufMan/bufman/internal/util/parser"
 	"github.com/ProtobufMan/bufman/internal/util/resolve"
 	"github.com/ProtobufMan/bufman/internal/util/storage"
 	"gorm.io/gorm"
@@ -28,7 +30,7 @@ type DocsServiceImpl struct {
 	commitMapper  mapper.CommitMapper
 	fileMapper    mapper.FileMapper
 	storageHelper storage.StorageHelper
-	protoParser   parse.ProtoParser
+	protoParser   parser.ProtoParser
 	resolver      resolve.Resolver
 }
 
@@ -152,22 +154,66 @@ func (docsService *DocsServiceImpl) GetModuleDocumentation(ctx context.Context, 
 }
 
 func (docsService *DocsServiceImpl) GetPackageDocumentation(ctx context.Context, repositoryID, reference, packageName string) (*registryv1alpha1.PackageDocumentation, e.ResponseError) {
-	// 读取commit文件
-	fileManifest, blobSet, err := docsService.getManifestAndBlobSet(ctx, repositoryID, reference)
+	// 查询reference对应的commit
+	commit, err := docsService.commitMapper.FindByRepositoryIDAndReference(repositoryID, reference)
 	if err != nil {
-		return nil, err
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, e.NewNotFoundError(fmt.Sprintf("repository %s", repositoryID))
+		}
+
+		return nil, e.NewInternalError(err.Error())
 	}
 
-	// 读取依赖
-	dependentManifests, dependentBlobSets, err := docsService.getDependentManifestsAndBlobSets(ctx, fileManifest, blobSet)
+	// 获取文件清单
+	fileManifest, blobSet, err := docsService.getManifestAndBlobSetByCommitID(ctx, commit.CommitID)
 	if err != nil {
-		return nil, err
+		return nil, e.NewInternalError(err.Error())
+	}
+
+	identity, err := bufmoduleref.NewModuleIdentity(config.Properties.BufMan.ServerHost, commit.UserName, commit.RepositoryName)
+	if err != nil {
+		return nil, e.NewInternalError(err.Error())
+	}
+	commitName := commit.CommitName
+
+	// 获取bufConfig
+	bufConfig, configErr := docsService.storageHelper.GetBufConfigFromBlob(ctx, fileManifest, blobSet)
+	if configErr != nil {
+		return nil, e.NewInternalError(configErr.Error())
+	}
+
+	// 获取全部依赖commits
+	dependentCommits, dependenceErr := docsService.resolver.GetAllDependenciesFromBufConfig(ctx, bufConfig)
+	if dependenceErr != nil {
+		return nil, e.NewInternalError(dependenceErr.Error())
+	}
+
+	// 读取依赖文件
+	dependentManifests := make([]*manifest.Manifest, 0, len(dependentCommits))
+	dependentBlobSets := make([]*manifest.BlobSet, 0, len(dependentCommits))
+	dependentIdentities := make([]bufmoduleref.ModuleIdentity, 0, len(dependentCommits))
+	dependentCommitNames := make([]string, 0, len(dependentCommits))
+	for i := 0; i < len(dependentCommits); i++ {
+		dependentCommit := dependentCommits[i]
+		dependentManifest, dependentBlobSet, getErr := docsService.getManifestAndBlobSetByCommitID(ctx, dependentCommit.CommitID)
+		if getErr != nil {
+			return nil, getErr
+		}
+
+		dependentIdentity, err := bufmoduleref.NewModuleIdentity(config.Properties.BufMan.ServerHost, dependentCommit.UserName, dependentCommit.RepositoryName)
+		if err != nil {
+			return nil, e.NewInternalError(err.Error())
+		}
+		dependentIdentities = append(dependentIdentities, dependentIdentity)
+		dependentCommitNames = append(dependentCommitNames, dependentCommit.CommitName)
+		dependentManifests = append(dependentManifests, dependentManifest)
+		dependentBlobSets = append(dependentBlobSets, dependentBlobSet)
 	}
 
 	// 根据proto文件生成文档
-	packageDocument, err := docsService.protoParser.GetPackageDocumentation(ctx, packageName, fileManifest, blobSet, dependentManifests, dependentBlobSets)
+	packageDocument, documentErr := docsService.protoParser.GetPackageDocumentation(ctx, packageName, identity, commitName, fileManifest, blobSet, dependentIdentities, dependentCommitNames, dependentManifests, dependentBlobSets)
 	if err != nil {
-		return nil, err
+		return nil, documentErr
 	}
 
 	return packageDocument, nil
@@ -192,7 +238,7 @@ func (docsService *DocsServiceImpl) getDependentManifestsAndBlobSets(ctx context
 	dependentBlobSets := make([]*manifest.BlobSet, 0, len(dependentCommits))
 	for i := 0; i < len(dependentCommits); i++ {
 		dependentCommit := dependentCommits[i]
-		dependentManifest, dependentBlobSet, getErr := docsService.getManifestAndBlobSet(ctx, dependentCommit.RepositoryID, dependentCommit.CommitName)
+		dependentManifest, dependentBlobSet, getErr := docsService.getManifestAndBlobSetByCommitID(ctx, dependentCommit.CommitID)
 		if getErr != nil {
 			return nil, nil, getErr
 		}
@@ -215,8 +261,12 @@ func (docsService *DocsServiceImpl) getManifestAndBlobSet(ctx context.Context, r
 		return nil, nil, e.NewInternalError(err.Error())
 	}
 
+	return docsService.getManifestAndBlobSetByCommitID(ctx, commit.CommitID)
+}
+
+func (docsService *DocsServiceImpl) getManifestAndBlobSetByCommitID(ctx context.Context, commitID string) (*manifest.Manifest, *manifest.BlobSet, e.ResponseError) {
 	// 查询文件清单
-	modelFileManifest, err := docsService.fileMapper.FindManifestByCommitID(commit.CommitID)
+	modelFileManifest, err := docsService.fileMapper.FindManifestByCommitID(commitID)
 	if err != nil {
 		if err != nil {
 			return nil, nil, e.NewInternalError(err.Error())
@@ -224,7 +274,7 @@ func (docsService *DocsServiceImpl) getManifestAndBlobSet(ctx context.Context, r
 	}
 
 	// 接着查询blobs
-	fileBlobs, err := docsService.fileMapper.FindAllBlobsByCommitID(commit.CommitID)
+	fileBlobs, err := docsService.fileMapper.FindAllBlobsByCommitID(commitID)
 	if err != nil {
 		return nil, nil, e.NewInternalError(err.Error())
 	}
