@@ -152,8 +152,25 @@ func (docsService *DocsServiceImpl) GetModuleDocumentation(ctx context.Context, 
 }
 
 func (docsService *DocsServiceImpl) GetPackageDocumentation(ctx context.Context, repositoryID, reference, packageName string) (*registryv1alpha1.PackageDocumentation, e.ResponseError) {
-	//TODO implement me
-	panic("implement me")
+	// 读取commit文件
+	fileManifest, blobSet, err := docsService.getManifestAndBlobSet(ctx, repositoryID, reference)
+	if err != nil {
+		return nil, err
+	}
+
+	// 读取依赖
+	dependentManifests, dependentBlobSets, err := docsService.getDependentManifestsAndBlobSets(ctx, fileManifest, blobSet)
+	if err != nil {
+		return nil, err
+	}
+
+	// 根据proto文件生成文档
+	packageDocument, err := docsService.protoParser.GetPackageDocumentation(ctx, packageName, fileManifest, blobSet, dependentManifests, dependentBlobSets)
+	if err != nil {
+		return nil, err
+	}
+
+	return packageDocument, nil
 }
 
 // getDependentManifestsAndBlobSets 获取依赖的manifests和blob sets
