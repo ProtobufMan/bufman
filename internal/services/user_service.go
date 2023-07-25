@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"errors"
 	"github.com/ProtobufMan/bufman-cli/private/gen/proto/connect/bufman/alpha/registry/v1alpha1/registryv1alpha1connect"
 	"github.com/ProtobufMan/bufman/internal/e"
@@ -12,10 +13,10 @@ import (
 )
 
 type UserService interface {
-	CreateUser(userName, password string) (*model.User, e.ResponseError)
-	GetUser(userID string) (*model.User, e.ResponseError)
-	GetUserByUsername(userName string) (*model.User, e.ResponseError)
-	ListUsers(offset int, limit int, reverse bool) (model.Users, e.ResponseError)
+	CreateUser(ctx context.Context, userName, password string) (*model.User, e.ResponseError)
+	GetUser(ctx context.Context, userID string) (*model.User, e.ResponseError)
+	GetUserByUsername(ctx context.Context, userName string) (*model.User, e.ResponseError)
+	ListUsers(ctx context.Context, offset int, limit int, reverse bool) (model.Users, e.ResponseError)
 }
 
 type UserServiceImpl struct {
@@ -28,7 +29,7 @@ func NewUserService() UserService {
 	}
 }
 
-func (userService *UserServiceImpl) CreateUser(userName, password string) (*model.User, e.ResponseError) {
+func (userService *UserServiceImpl) CreateUser(ctx context.Context, userName, password string) (*model.User, e.ResponseError) {
 	user := &model.User{
 		UserID:   uuid.NewString(),
 		UserName: userName,
@@ -48,7 +49,7 @@ func (userService *UserServiceImpl) CreateUser(userName, password string) (*mode
 	return user, nil
 }
 
-func (userService *UserServiceImpl) GetUser(userID string) (*model.User, e.ResponseError) {
+func (userService *UserServiceImpl) GetUser(ctx context.Context, userID string) (*model.User, e.ResponseError) {
 	user, err := userService.userMapper.FindByUserID(userID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -61,7 +62,7 @@ func (userService *UserServiceImpl) GetUser(userID string) (*model.User, e.Respo
 	return user, nil
 }
 
-func (userService *UserServiceImpl) GetUserByUsername(userName string) (*model.User, e.ResponseError) {
+func (userService *UserServiceImpl) GetUserByUsername(ctx context.Context, userName string) (*model.User, e.ResponseError) {
 	user, err := userService.userMapper.FindByUserName(userName)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -74,7 +75,7 @@ func (userService *UserServiceImpl) GetUserByUsername(userName string) (*model.U
 	return user, nil
 }
 
-func (userService *UserServiceImpl) ListUsers(offset int, limit int, reverse bool) (model.Users, e.ResponseError) {
+func (userService *UserServiceImpl) ListUsers(ctx context.Context, offset int, limit int, reverse bool) (model.Users, e.ResponseError) {
 	users, err := userService.userMapper.FindPage(offset, limit, reverse)
 	if err != nil {
 		return nil, e.NewInternalError(registryv1alpha1connect.UserServiceListUsersProcedure)

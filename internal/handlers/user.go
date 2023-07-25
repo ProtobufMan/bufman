@@ -50,7 +50,7 @@ func (handler *UserServiceHandler) CreateUser(ctx context.Context, req *connect.
 		return nil, connect.NewError(argErr.Code(), argErr.Err())
 	}
 
-	user, err := handler.userService.CreateUser(req.Msg.GetUsername(), req.Msg.GetPassword()) // 创建用户
+	user, err := handler.userService.CreateUser(ctx, req.Msg.GetUsername(), req.Msg.GetPassword()) // 创建用户
 	if err != nil {
 		return nil, connect.NewError(err.Code(), err.Err())
 	}
@@ -63,7 +63,7 @@ func (handler *UserServiceHandler) CreateUser(ctx context.Context, req *connect.
 }
 
 func (handler *UserServiceHandler) GetUser(ctx context.Context, req *connect.Request[registryv1alpha1.GetUserRequest]) (*connect.Response[registryv1alpha1.GetUserResponse], error) {
-	user, err := handler.userService.GetUser(req.Msg.GetId()) // 创建用户
+	user, err := handler.userService.GetUser(ctx, req.Msg.GetId()) // 创建用户
 	if err != nil {
 		return nil, connect.NewError(err.Code(), err.Err())
 	}
@@ -74,7 +74,7 @@ func (handler *UserServiceHandler) GetUser(ctx context.Context, req *connect.Req
 	return resp, nil
 }
 func (handler *UserServiceHandler) GetUserByUsername(ctx context.Context, req *connect.Request[registryv1alpha1.GetUserByUsernameRequest]) (*connect.Response[registryv1alpha1.GetUserByUsernameResponse], error) {
-	user, err := handler.userService.GetUserByUsername(req.Msg.GetUsername()) // 创建用户
+	user, err := handler.userService.GetUserByUsername(ctx, req.Msg.GetUsername()) // 创建用户
 	if err != nil {
 		return nil, connect.NewError(err.Code(), err.Err())
 	}
@@ -98,7 +98,7 @@ func (handler *UserServiceHandler) ListUsers(ctx context.Context, req *connect.R
 		return nil, e.NewInvalidArgumentError("page token")
 	}
 
-	users, ListErr := handler.userService.ListUsers(pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), req.Msg.GetReverse()) // 创建用户
+	users, ListErr := handler.userService.ListUsers(ctx, pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), req.Msg.GetReverse()) // 创建用户
 	if err != nil {
 		return nil, connect.NewError(ListErr.Code(), ListErr)
 	}
