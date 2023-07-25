@@ -47,7 +47,7 @@ func (handler *CommitServiceHandler) ListRepositoryCommitsByReference(ctx contex
 	}
 
 	// 查询
-	commits, respErr := handler.commitService.ListRepositoryCommitsByReference(repository.RepositoryID, req.Msg.GetReference(), pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), req.Msg.GetReverse())
+	commits, respErr := handler.commitService.ListRepositoryCommitsByReference(ctx, repository.RepositoryID, req.Msg.GetReference(), pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), req.Msg.GetReverse())
 	if respErr != nil {
 		return nil, connect.NewError(respErr.Code(), respErr.Err())
 	}
@@ -76,7 +76,7 @@ func (handler *CommitServiceHandler) GetRepositoryCommitByReference(ctx context.
 	}
 
 	// 查询
-	commit, respErr := handler.commitService.GetRepositoryCommitByReference(repository.RepositoryID, req.Msg.GetReference())
+	commit, respErr := handler.commitService.GetRepositoryCommitByReference(ctx, repository.RepositoryID, req.Msg.GetReference())
 	if respErr != nil {
 		return nil, connect.NewError(respErr.Code(), respErr.Err())
 	}
@@ -110,7 +110,7 @@ func (handler *CommitServiceHandler) ListRepositoryDraftCommits(ctx context.Cont
 	}
 
 	// 查询
-	commits, respErr := handler.commitService.ListRepositoryDraftCommits(repository.RepositoryID, pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), req.Msg.GetReverse())
+	commits, respErr := handler.commitService.ListRepositoryDraftCommits(ctx, repository.RepositoryID, pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), req.Msg.GetReverse())
 	if respErr != nil {
 		return nil, connect.NewError(respErr.Code(), respErr.Err())
 	}
@@ -139,7 +139,7 @@ func (handler *CommitServiceHandler) DeleteRepositoryDraftCommit(ctx context.Con
 	}
 
 	// 删除
-	err := handler.commitService.DeleteRepositoryDraftCommit(repository.RepositoryID, req.Msg.GetDraftName())
+	err := handler.commitService.DeleteRepositoryDraftCommit(ctx, repository.RepositoryID, req.Msg.GetDraftName())
 	if err != nil {
 		return nil, connect.NewError(err.Code(), err.Err())
 	}

@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"errors"
 	"github.com/ProtobufMan/bufman-cli/private/gen/proto/connect/bufman/alpha/registry/v1alpha1/registryv1alpha1connect"
 	"github.com/ProtobufMan/bufman/internal/e"
@@ -10,10 +11,10 @@ import (
 )
 
 type CommitService interface {
-	ListRepositoryCommitsByReference(repositoryID, reference string, offset, limit int, reverse bool) (model.Commits, e.ResponseError)
-	GetRepositoryCommitByReference(repositoryID, reference string) (*model.Commit, e.ResponseError)
-	ListRepositoryDraftCommits(repositoryID string, offset, limit int, reverse bool) (model.Commits, e.ResponseError)
-	DeleteRepositoryDraftCommit(repositoryID, draftName string) e.ResponseError
+	ListRepositoryCommitsByReference(ctx context.Context, repositoryID, reference string, offset, limit int, reverse bool) (model.Commits, e.ResponseError)
+	GetRepositoryCommitByReference(ctx context.Context, repositoryID, reference string) (*model.Commit, e.ResponseError)
+	ListRepositoryDraftCommits(ctx context.Context, repositoryID string, offset, limit int, reverse bool) (model.Commits, e.ResponseError)
+	DeleteRepositoryDraftCommit(ctx context.Context, repositoryID, draftName string) e.ResponseError
 }
 
 type CommitServiceImpl struct {
@@ -28,7 +29,7 @@ func NewCommitService() CommitService {
 	}
 }
 
-func (commitService *CommitServiceImpl) ListRepositoryCommitsByReference(repositoryID, reference string, offset, limit int, reverse bool) (model.Commits, e.ResponseError) {
+func (commitService *CommitServiceImpl) ListRepositoryCommitsByReference(ctx context.Context, repositoryID, reference string, offset, limit int, reverse bool) (model.Commits, e.ResponseError) {
 	// 查询commits
 	commits, err := commitService.commitMapper.FindPageByRepositoryIDAndReference(repositoryID, reference, offset, limit, reverse)
 	if err != nil {
@@ -41,7 +42,7 @@ func (commitService *CommitServiceImpl) ListRepositoryCommitsByReference(reposit
 	return commits, nil
 }
 
-func (commitService *CommitServiceImpl) GetRepositoryCommitByReference(repositoryID, reference string) (*model.Commit, e.ResponseError) {
+func (commitService *CommitServiceImpl) GetRepositoryCommitByReference(ctx context.Context, repositoryID, reference string) (*model.Commit, e.ResponseError) {
 	// 查询commit
 	commit, err := commitService.commitMapper.FindByRepositoryIDAndReference(repositoryID, reference)
 	if err != nil {
@@ -55,7 +56,7 @@ func (commitService *CommitServiceImpl) GetRepositoryCommitByReference(repositor
 	return commit, nil
 }
 
-func (commitService *CommitServiceImpl) ListRepositoryDraftCommits(repositoryID string, offset, limit int, reverse bool) (model.Commits, e.ResponseError) {
+func (commitService *CommitServiceImpl) ListRepositoryDraftCommits(ctx context.Context, repositoryID string, offset, limit int, reverse bool) (model.Commits, e.ResponseError) {
 	var commits model.Commits
 	var err error
 	// 查询draft
@@ -67,7 +68,7 @@ func (commitService *CommitServiceImpl) ListRepositoryDraftCommits(repositoryID 
 	return commits, nil
 }
 
-func (commitService *CommitServiceImpl) DeleteRepositoryDraftCommit(repositoryID, draftName string) e.ResponseError {
+func (commitService *CommitServiceImpl) DeleteRepositoryDraftCommit(ctx context.Context, repositoryID, draftName string) e.ResponseError {
 	// 删除
 	err := commitService.commitMapper.DeleteByRepositoryIDAndDraftName(repositoryID, draftName)
 	if err != nil {
