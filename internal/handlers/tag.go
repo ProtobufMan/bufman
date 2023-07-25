@@ -40,7 +40,7 @@ func (handler *TagServiceHandler) CreateRepositoryTag(ctx context.Context, req *
 		return nil, connect.NewError(permissionErr.Code(), permissionErr.Err())
 	}
 
-	tag, err := handler.tagService.CreateRepositoryTag(req.Msg.GetRepositoryId(), req.Msg.GetName(), req.Msg.GetCommitName())
+	tag, err := handler.tagService.CreateRepositoryTag(ctx, req.Msg.GetRepositoryId(), req.Msg.GetName(), req.Msg.GetCommitName())
 	if err != nil {
 		return nil, connect.NewError(err.Code(), err.Err())
 	}
@@ -73,7 +73,7 @@ func (handler *TagServiceHandler) ListRepositoryTags(ctx context.Context, req *c
 		return nil, connect.NewError(permissionErr.Code(), permissionErr.Err())
 	}
 
-	tags, respErr := handler.tagService.ListRepositoryTags(req.Msg.GetRepositoryId(), pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), req.Msg.GetReverse())
+	tags, respErr := handler.tagService.ListRepositoryTags(ctx, req.Msg.GetRepositoryId(), pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), req.Msg.GetReverse())
 	if respErr != nil {
 		return nil, connect.NewError(respErr.Code(), respErr.Err())
 	}

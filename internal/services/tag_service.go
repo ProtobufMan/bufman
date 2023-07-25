@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"errors"
 	"github.com/ProtobufMan/bufman-cli/private/gen/proto/connect/bufman/alpha/registry/v1alpha1/registryv1alpha1connect"
 	"github.com/ProtobufMan/bufman/internal/e"
@@ -12,8 +13,8 @@ import (
 )
 
 type TagService interface {
-	CreateRepositoryTag(repositoryID, TagName, commitName string) (*model.Tag, e.ResponseError)
-	ListRepositoryTags(repositoryID string, offset, limit int, reverse bool) (model.Tags, e.ResponseError)
+	CreateRepositoryTag(ctx context.Context, repositoryID, TagName, commitName string) (*model.Tag, e.ResponseError)
+	ListRepositoryTags(ctx context.Context, repositoryID string, offset, limit int, reverse bool) (model.Tags, e.ResponseError)
 }
 
 func NewTagService() TagService {
@@ -32,7 +33,7 @@ type TagServiceImpl struct {
 	validator        validity.Validator
 }
 
-func (tagService *TagServiceImpl) CreateRepositoryTag(repositoryID, TagName, commitName string) (*model.Tag, e.ResponseError) {
+func (tagService *TagServiceImpl) CreateRepositoryTag(ctx context.Context, repositoryID, TagName, commitName string) (*model.Tag, e.ResponseError) {
 	// 查询commitName
 	commit, err := tagService.commitMapper.FindByRepositoryIDAndCommitName(repositoryID, commitName)
 	if err != nil {
@@ -58,7 +59,7 @@ func (tagService *TagServiceImpl) CreateRepositoryTag(repositoryID, TagName, com
 	return tag, nil
 }
 
-func (tagService *TagServiceImpl) ListRepositoryTags(repositoryID string, offset, limit int, reverse bool) (model.Tags, e.ResponseError) {
+func (tagService *TagServiceImpl) ListRepositoryTags(ctx context.Context, repositoryID string, offset, limit int, reverse bool) (model.Tags, e.ResponseError) {
 	tags, err := tagService.tagMapper.FindPageByRepositoryID(repositoryID, limit, offset, reverse)
 	if err != nil {
 		return nil, e.NewInternalError(registryv1alpha1connect.RepositoryTagServiceListRepositoryTagsProcedure)
