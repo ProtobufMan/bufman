@@ -41,7 +41,7 @@ func (handler *PluginServiceHandler) ListCuratedPlugins(ctx context.Context, req
 		return nil, connect.NewError(respErr.Code(), respErr)
 	}
 
-	plugins, err := handler.pluginService.ListPlugins(pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), req.Msg.GetReverse(), req.Msg.GetIncludeDeprecated())
+	plugins, err := handler.pluginService.ListPlugins(ctx, pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), req.Msg.GetReverse(), req.Msg.GetIncludeDeprecated())
 	if err != nil {
 		respErr := e.NewInvalidArgumentError("page token")
 		return nil, connect.NewError(respErr.Code(), respErr)
@@ -110,7 +110,7 @@ func (handler *PluginServiceHandler) CreateCuratedPlugin(ctx context.Context, re
 		Visibility:  uint8(req.Msg.GetVisibility()),
 	}
 
-	plugin, err := handler.pluginService.CreatePlugin(plugin, req.Msg.BinaryData)
+	plugin, err := handler.pluginService.CreatePlugin(ctx, plugin, req.Msg.BinaryData)
 	if err != nil {
 		resp := connect.NewResponse(&registryv1alpha1.CreateCuratedPluginResponse{
 			Configuration: plugin.ToProtoPlugin(),
@@ -132,13 +132,13 @@ func (handler *PluginServiceHandler) GetLatestCuratedPlugin(ctx context.Context,
 	var err e.ResponseError
 	if version != "" && reversion != 0 {
 		// version不为空，reversion不为空
-		plugin, err = handler.pluginService.GetLatestPluginWithVersionAndReversion(req.Msg.GetOwner(), req.Msg.GetName(), version, reversion)
+		plugin, err = handler.pluginService.GetLatestPluginWithVersionAndReversion(ctx, req.Msg.GetOwner(), req.Msg.GetName(), version, reversion)
 	} else if version == "" && reversion == 0 {
 		// version为空，reversion为空
-		plugin, err = handler.pluginService.GetLatestPlugin(req.Msg.GetOwner(), req.Msg.GetName())
+		plugin, err = handler.pluginService.GetLatestPlugin(ctx, req.Msg.GetOwner(), req.Msg.GetName())
 	} else if version != "" {
 		// version不为空，reversion为空
-		plugin, err = handler.pluginService.GetLatestPluginWithVersion(req.Msg.GetOwner(), req.Msg.GetName(), version)
+		plugin, err = handler.pluginService.GetLatestPluginWithVersion(ctx, req.Msg.GetOwner(), req.Msg.GetName(), version)
 	} else {
 		// version为空，reversion不为空，非法
 		err = e.NewInvalidArgumentError("version is empty but reversion is not empty")

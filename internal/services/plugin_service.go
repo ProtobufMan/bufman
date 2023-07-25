@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"errors"
 	"github.com/ProtobufMan/bufman-cli/private/gen/proto/connect/bufman/alpha/registry/v1alpha1/registryv1alpha1connect"
 	"github.com/ProtobufMan/bufman/internal/e"
@@ -11,11 +12,11 @@ import (
 )
 
 type PluginService interface {
-	ListPlugins(offset int, limit int, reverse bool, includeDeprecated bool) (model.Plugins, e.ResponseError)
-	CreatePlugin(plugin *model.Plugin, binaryData []byte) (*model.Plugin, e.ResponseError)
-	GetLatestPlugin(owner string, name string) (*model.Plugin, e.ResponseError)
-	GetLatestPluginWithVersion(owner string, name string, version string) (*model.Plugin, e.ResponseError)
-	GetLatestPluginWithVersionAndReversion(owner string, name string, version string, reversion uint32) (*model.Plugin, e.ResponseError)
+	ListPlugins(ctx context.Context, offset int, limit int, reverse bool, includeDeprecated bool) (model.Plugins, e.ResponseError)
+	CreatePlugin(ctx context.Context, plugin *model.Plugin, binaryData []byte) (*model.Plugin, e.ResponseError)
+	GetLatestPlugin(ctx context.Context, owner string, name string) (*model.Plugin, e.ResponseError)
+	GetLatestPluginWithVersion(ctx context.Context, owner string, name string, version string) (*model.Plugin, e.ResponseError)
+	GetLatestPluginWithVersionAndReversion(ctx context.Context, owner string, name string, version string, reversion uint32) (*model.Plugin, e.ResponseError)
 }
 
 type PluginServiceImpl struct {
@@ -30,7 +31,7 @@ func NewPluginService() PluginService {
 	}
 }
 
-func (pluginService *PluginServiceImpl) ListPlugins(offset int, limit int, reverse bool, includeDeprecated bool) (model.Plugins, e.ResponseError) {
+func (pluginService *PluginServiceImpl) ListPlugins(ctx context.Context, offset int, limit int, reverse bool, includeDeprecated bool) (model.Plugins, e.ResponseError) {
 	plugins, err := pluginService.pluginMapper.FindPage(offset, limit, reverse, includeDeprecated)
 	if err != nil {
 		return nil, e.NewInternalError("ListPlugins")
@@ -39,7 +40,7 @@ func (pluginService *PluginServiceImpl) ListPlugins(offset int, limit int, rever
 	return plugins, nil
 }
 
-func (pluginService *PluginServiceImpl) CreatePlugin(plugin *model.Plugin, binaryData []byte) (*model.Plugin, e.ResponseError) {
+func (pluginService *PluginServiceImpl) CreatePlugin(ctx context.Context, plugin *model.Plugin, binaryData []byte) (*model.Plugin, e.ResponseError) {
 	// 将二进制保存起来
 	binaryName, err := pluginService.storageHelper.StorePlugin(plugin.PluginName, plugin.Version, plugin.Reversion, binaryData)
 	if err != nil {
@@ -59,7 +60,7 @@ func (pluginService *PluginServiceImpl) CreatePlugin(plugin *model.Plugin, binar
 	return plugin, nil
 }
 
-func (pluginService *PluginServiceImpl) GetLatestPlugin(owner string, name string) (*model.Plugin, e.ResponseError) {
+func (pluginService *PluginServiceImpl) GetLatestPlugin(ctx context.Context, owner string, name string) (*model.Plugin, e.ResponseError) {
 	plugin, err := pluginService.pluginMapper.FindLastByName(owner, name)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -72,7 +73,7 @@ func (pluginService *PluginServiceImpl) GetLatestPlugin(owner string, name strin
 	return plugin, nil
 }
 
-func (pluginService *PluginServiceImpl) GetLatestPluginWithVersion(owner string, name string, version string) (*model.Plugin, e.ResponseError) {
+func (pluginService *PluginServiceImpl) GetLatestPluginWithVersion(ctx context.Context, owner string, name string, version string) (*model.Plugin, e.ResponseError) {
 	plugin, err := pluginService.pluginMapper.FindLastByNameAndVersion(owner, name, version)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -85,7 +86,7 @@ func (pluginService *PluginServiceImpl) GetLatestPluginWithVersion(owner string,
 	return plugin, nil
 }
 
-func (pluginService *PluginServiceImpl) GetLatestPluginWithVersionAndReversion(owner string, name string, version string, reversion uint32) (*model.Plugin, e.ResponseError) {
+func (pluginService *PluginServiceImpl) GetLatestPluginWithVersionAndReversion(ctx context.Context, owner string, name string, version string, reversion uint32) (*model.Plugin, e.ResponseError) {
 	plugin, err := pluginService.pluginMapper.FindByNameAndVersionReversion(owner, name, version, reversion)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
