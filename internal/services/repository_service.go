@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"errors"
 	"github.com/ProtobufMan/bufman-cli/private/gen/proto/connect/bufman/alpha/registry/v1alpha1/registryv1alpha1connect"
 	registryv1alpha1 "github.com/ProtobufMan/bufman-cli/private/gen/proto/go/bufman/alpha/registry/v1alpha1"
@@ -12,18 +13,18 @@ import (
 )
 
 type RepositoryService interface {
-	GetRepository(repositoryID string) (*model.Repository, e.ResponseError)
-	GetRepositoryByUserNameAndRepositoryName(userName, repositoryName string) (*model.Repository, e.ResponseError)
-	GetRepositoryCounts(repositoryID string) (*model.RepositoryCounts, e.ResponseError)
-	ListRepositories(offset, limit int, reverse bool) (model.Repositories, e.ResponseError)
-	ListUserRepositories(userID string, offset, limit int, reverse bool) (model.Repositories, e.ResponseError)
-	ListRepositoriesUserCanAccess(userID string, offset, limit int, reverse bool) (model.Repositories, e.ResponseError)
-	CreateRepositoryByUserNameAndRepositoryName(userID, userName, repositoryName string, visibility registryv1alpha1.Visibility) (*model.Repository, e.ResponseError)
-	DeleteRepository(repositoryID string) e.ResponseError
-	DeleteRepositoryByUserNameAndRepositoryName(userName, repositoryName string) e.ResponseError
-	DeprecateRepositoryByName(ownerName, repositoryName, deprecateMsg string) (*model.Repository, e.ResponseError)
-	UndeprecateRepositoryByName(ownerName, repositoryName string) (*model.Repository, e.ResponseError)
-	UpdateRepositorySettingsByName(ownerName, repositoryName string, visibility registryv1alpha1.Visibility, description string) e.ResponseError
+	GetRepository(ctx context.Context, repositoryID string) (*model.Repository, e.ResponseError)
+	GetRepositoryByUserNameAndRepositoryName(ctx context.Context, userName, repositoryName string) (*model.Repository, e.ResponseError)
+	GetRepositoryCounts(ctx context.Context, repositoryID string) (*model.RepositoryCounts, e.ResponseError)
+	ListRepositories(ctx context.Context, offset, limit int, reverse bool) (model.Repositories, e.ResponseError)
+	ListUserRepositories(ctx context.Context, userID string, offset, limit int, reverse bool) (model.Repositories, e.ResponseError)
+	ListRepositoriesUserCanAccess(ctx context.Context, userID string, offset, limit int, reverse bool) (model.Repositories, e.ResponseError)
+	CreateRepositoryByUserNameAndRepositoryName(ctx context.Context, userID, userName, repositoryName string, visibility registryv1alpha1.Visibility) (*model.Repository, e.ResponseError)
+	DeleteRepository(ctx context.Context, repositoryID string) e.ResponseError
+	DeleteRepositoryByUserNameAndRepositoryName(ctx context.Context, userName, repositoryName string) e.ResponseError
+	DeprecateRepositoryByName(ctx context.Context, ownerName, repositoryName, deprecateMsg string) (*model.Repository, e.ResponseError)
+	UndeprecateRepositoryByName(ctx context.Context, ownerName, repositoryName string) (*model.Repository, e.ResponseError)
+	UpdateRepositorySettingsByName(ctx context.Context, ownerName, repositoryName string, visibility registryv1alpha1.Visibility, description string) e.ResponseError
 }
 
 type RepositoryServiceImpl struct {
@@ -42,7 +43,7 @@ func NewRepositoryService() RepositoryService {
 	}
 }
 
-func (repositoryService *RepositoryServiceImpl) GetRepository(repositoryID string) (*model.Repository, e.ResponseError) {
+func (repositoryService *RepositoryServiceImpl) GetRepository(ctx context.Context, repositoryID string) (*model.Repository, e.ResponseError) {
 	// 查询
 	repository, err := repositoryService.repositoryMapper.FindByRepositoryID(repositoryID)
 	if err != nil {
@@ -55,7 +56,7 @@ func (repositoryService *RepositoryServiceImpl) GetRepository(repositoryID strin
 	return repository, nil
 }
 
-func (repositoryService *RepositoryServiceImpl) GetRepositoryByUserNameAndRepositoryName(userName, repositoryName string) (*model.Repository, e.ResponseError) {
+func (repositoryService *RepositoryServiceImpl) GetRepositoryByUserNameAndRepositoryName(ctx context.Context, userName, repositoryName string) (*model.Repository, e.ResponseError) {
 	// 查询
 	repository, err := repositoryService.repositoryMapper.FindByUserNameAndRepositoryName(userName, repositoryName)
 	if err != nil {
@@ -68,7 +69,7 @@ func (repositoryService *RepositoryServiceImpl) GetRepositoryByUserNameAndReposi
 	return repository, nil
 }
 
-func (repositoryService *RepositoryServiceImpl) GetRepositoryCounts(repositoryID string) (*model.RepositoryCounts, e.ResponseError) {
+func (repositoryService *RepositoryServiceImpl) GetRepositoryCounts(ctx context.Context, repositoryID string) (*model.RepositoryCounts, e.ResponseError) {
 	// 忽略错误
 	draftCounts, _ := repositoryService.commitMapper.GetDraftCountsByRepositoryID(repositoryID)
 	tagCounts, _ := repositoryService.tagMapper.GetCountsByRepositoryID(repositoryID)
@@ -80,7 +81,7 @@ func (repositoryService *RepositoryServiceImpl) GetRepositoryCounts(repositoryID
 	return repositoryCounts, nil
 }
 
-func (repositoryService *RepositoryServiceImpl) ListRepositories(offset, limit int, reverse bool) (model.Repositories, e.ResponseError) {
+func (repositoryService *RepositoryServiceImpl) ListRepositories(ctx context.Context, offset, limit int, reverse bool) (model.Repositories, e.ResponseError) {
 	repositories, err := repositoryService.repositoryMapper.FindPage(offset, limit, reverse)
 	if err != nil {
 		return nil, e.NewInternalError(registryv1alpha1connect.RepositoryServiceListRepositoriesProcedure)
@@ -89,7 +90,7 @@ func (repositoryService *RepositoryServiceImpl) ListRepositories(offset, limit i
 	return repositories, nil
 }
 
-func (repositoryService *RepositoryServiceImpl) ListUserRepositories(userID string, offset, limit int, reverse bool) (model.Repositories, e.ResponseError) {
+func (repositoryService *RepositoryServiceImpl) ListUserRepositories(ctx context.Context, userID string, offset, limit int, reverse bool) (model.Repositories, e.ResponseError) {
 	repositories, err := repositoryService.repositoryMapper.FindPageByUserID(userID, offset, limit, reverse)
 	if err != nil {
 		return nil, e.NewInternalError(registryv1alpha1connect.RepositoryServiceListUserRepositoriesProcedure)
@@ -98,7 +99,7 @@ func (repositoryService *RepositoryServiceImpl) ListUserRepositories(userID stri
 	return repositories, nil
 }
 
-func (repositoryService *RepositoryServiceImpl) ListRepositoriesUserCanAccess(userID string, offset, limit int, reverse bool) (model.Repositories, e.ResponseError) {
+func (repositoryService *RepositoryServiceImpl) ListRepositoriesUserCanAccess(ctx context.Context, userID string, offset, limit int, reverse bool) (model.Repositories, e.ResponseError) {
 	repositories, err := repositoryService.repositoryMapper.FindAccessiblePageByUserID(userID, offset, limit, reverse)
 	if err != nil {
 		return nil, e.NewInternalError(registryv1alpha1connect.RepositoryServiceListRepositoriesUserCanAccessProcedure)
@@ -107,7 +108,7 @@ func (repositoryService *RepositoryServiceImpl) ListRepositoriesUserCanAccess(us
 	return repositories, nil
 }
 
-func (repositoryService *RepositoryServiceImpl) CreateRepositoryByUserNameAndRepositoryName(userID, userName, repositoryName string, visibility registryv1alpha1.Visibility) (*model.Repository, e.ResponseError) {
+func (repositoryService *RepositoryServiceImpl) CreateRepositoryByUserNameAndRepositoryName(ctx context.Context, userID, userName, repositoryName string, visibility registryv1alpha1.Visibility) (*model.Repository, e.ResponseError) {
 	// 查询用户
 	user, err := repositoryService.userMapper.FindByUserName(userName)
 	if err != nil {
@@ -142,7 +143,7 @@ func (repositoryService *RepositoryServiceImpl) CreateRepositoryByUserNameAndRep
 	return repository, nil
 }
 
-func (repositoryService *RepositoryServiceImpl) DeleteRepository(repositoryID string) e.ResponseError {
+func (repositoryService *RepositoryServiceImpl) DeleteRepository(ctx context.Context, repositoryID string) e.ResponseError {
 	// 删除
 	err := repositoryService.repositoryMapper.DeleteByRepositoryID(repositoryID)
 	if err != nil {
@@ -152,7 +153,7 @@ func (repositoryService *RepositoryServiceImpl) DeleteRepository(repositoryID st
 	return nil
 }
 
-func (repositoryService *RepositoryServiceImpl) DeleteRepositoryByUserNameAndRepositoryName(userName, repositoryName string) e.ResponseError {
+func (repositoryService *RepositoryServiceImpl) DeleteRepositoryByUserNameAndRepositoryName(ctx context.Context, userName, repositoryName string) e.ResponseError {
 	err := repositoryService.repositoryMapper.DeleteByUserNameAndRepositoryName(userName, repositoryName)
 	if err != nil {
 		return e.NewInternalError(registryv1alpha1connect.RepositoryServiceDeleteRepositoryByFullNameProcedure)
@@ -161,7 +162,7 @@ func (repositoryService *RepositoryServiceImpl) DeleteRepositoryByUserNameAndRep
 	return nil
 }
 
-func (repositoryService *RepositoryServiceImpl) DeprecateRepositoryByName(ownerName, repositoryName, deprecateMsg string) (*model.Repository, e.ResponseError) {
+func (repositoryService *RepositoryServiceImpl) DeprecateRepositoryByName(ctx context.Context, ownerName, repositoryName, deprecateMsg string) (*model.Repository, e.ResponseError) {
 	// 修改数据库
 	updatedRepository := &model.Repository{
 		Deprecated:     true,
@@ -175,7 +176,7 @@ func (repositoryService *RepositoryServiceImpl) DeprecateRepositoryByName(ownerN
 	return updatedRepository, nil
 }
 
-func (repositoryService *RepositoryServiceImpl) UndeprecateRepositoryByName(ownerName, repositoryName string) (*model.Repository, e.ResponseError) {
+func (repositoryService *RepositoryServiceImpl) UndeprecateRepositoryByName(ctx context.Context, ownerName, repositoryName string) (*model.Repository, e.ResponseError) {
 	// 修改数据库
 	updatedRepository := &model.Repository{
 		Deprecated: false,
@@ -188,7 +189,7 @@ func (repositoryService *RepositoryServiceImpl) UndeprecateRepositoryByName(owne
 	return updatedRepository, nil
 }
 
-func (repositoryService *RepositoryServiceImpl) UpdateRepositorySettingsByName(ownerName, repositoryName string, visibility registryv1alpha1.Visibility, description string) e.ResponseError {
+func (repositoryService *RepositoryServiceImpl) UpdateRepositorySettingsByName(ctx context.Context, ownerName, repositoryName string, visibility registryv1alpha1.Visibility, description string) e.ResponseError {
 	// 修改数据库
 	updatedRepository := &model.Repository{
 		Visibility:  uint8(visibility),

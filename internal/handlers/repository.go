@@ -26,12 +26,12 @@ func NewRepositoryServiceHandler() *RepositoryServiceHandler {
 
 func (handler *RepositoryServiceHandler) GetRepository(ctx context.Context, req *connect.Request[registryv1alpha1.GetRepositoryRequest]) (*connect.Response[registryv1alpha1.GetRepositoryResponse], error) {
 	// 查询
-	repository, err := handler.repositoryService.GetRepository(req.Msg.GetId())
+	repository, err := handler.repositoryService.GetRepository(ctx, req.Msg.GetId())
 	if err != nil {
 		return nil, connect.NewError(err.Code(), err.Err())
 	}
 
-	repositoryCounts, err := handler.repositoryService.GetRepositoryCounts(repository.RepositoryID)
+	repositoryCounts, err := handler.repositoryService.GetRepositoryCounts(ctx, repository.RepositoryID)
 	if err != nil {
 		return nil, connect.NewError(err.Code(), err.Err())
 	}
@@ -52,12 +52,12 @@ func (handler *RepositoryServiceHandler) GetRepositoryByFullName(ctx context.Con
 	}
 
 	// 查询
-	repository, err := handler.repositoryService.GetRepositoryByUserNameAndRepositoryName(userName, repositoryName)
+	repository, err := handler.repositoryService.GetRepositoryByUserNameAndRepositoryName(ctx, userName, repositoryName)
 	if err != nil {
 		return nil, connect.NewError(err.Code(), err.Err())
 	}
 
-	repositoryCounts, err := handler.repositoryService.GetRepositoryCounts(repository.RepositoryID)
+	repositoryCounts, err := handler.repositoryService.GetRepositoryCounts(ctx, repository.RepositoryID)
 	if err != nil {
 		return nil, connect.NewError(err.Code(), err.Err())
 	}
@@ -83,7 +83,7 @@ func (handler *RepositoryServiceHandler) ListRepositories(ctx context.Context, r
 		return nil, e.NewInvalidArgumentError("page token")
 	}
 
-	repositories, listErr := handler.repositoryService.ListRepositories(pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), req.Msg.Reverse)
+	repositories, listErr := handler.repositoryService.ListRepositories(ctx, pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), req.Msg.Reverse)
 	if listErr != nil {
 		return nil, connect.NewError(listErr.Code(), listErr)
 	}
@@ -114,7 +114,7 @@ func (handler *RepositoryServiceHandler) ListUserRepositories(ctx context.Contex
 		return nil, e.NewInvalidArgumentError("page token")
 	}
 
-	repositories, listErr := handler.repositoryService.ListUserRepositories(req.Msg.GetUserId(), pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), req.Msg.GetReverse())
+	repositories, listErr := handler.repositoryService.ListUserRepositories(ctx, req.Msg.GetUserId(), pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), req.Msg.GetReverse())
 	if err != nil {
 		return nil, connect.NewError(listErr.Code(), listErr)
 	}
@@ -146,7 +146,7 @@ func (handler *RepositoryServiceHandler) ListRepositoriesUserCanAccess(ctx conte
 	}
 
 	userID := ctx.Value(constant.UserIDKey).(string)
-	repositories, ListErr := handler.repositoryService.ListRepositoriesUserCanAccess(userID, pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), req.Msg.GetReverse())
+	repositories, ListErr := handler.repositoryService.ListRepositoriesUserCanAccess(ctx, userID, pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), req.Msg.GetReverse())
 	if err != nil {
 		return nil, connect.NewError(ListErr.Code(), ListErr)
 	}
@@ -178,7 +178,7 @@ func (handler *RepositoryServiceHandler) CreateRepositoryByFullName(ctx context.
 	userID := ctx.Value(constant.UserIDKey).(string)
 
 	// 创建
-	repository, err := handler.repositoryService.CreateRepositoryByUserNameAndRepositoryName(userID, userName, repositoryName, req.Msg.GetVisibility())
+	repository, err := handler.repositoryService.CreateRepositoryByUserNameAndRepositoryName(ctx, userID, userName, repositoryName, req.Msg.GetVisibility())
 	if err != nil {
 		return nil, connect.NewError(err.Code(), err.Err())
 	}
@@ -200,7 +200,7 @@ func (handler *RepositoryServiceHandler) DeleteRepository(ctx context.Context, r
 	}
 
 	// 查询repository，检查是否可以删除
-	err := handler.repositoryService.DeleteRepository(req.Msg.GetId())
+	err := handler.repositoryService.DeleteRepository(ctx, req.Msg.GetId())
 	if err != nil {
 		return nil, connect.NewError(err.Code(), err.Err())
 	}
@@ -225,7 +225,7 @@ func (handler *RepositoryServiceHandler) DeleteRepositoryByFullName(ctx context.
 	}
 
 	// 删除
-	err := handler.repositoryService.DeleteRepositoryByUserNameAndRepositoryName(userName, repositoryName)
+	err := handler.repositoryService.DeleteRepositoryByUserNameAndRepositoryName(ctx, userName, repositoryName)
 	if err != nil {
 		return nil, connect.NewError(err.Code(), err.Err())
 	}
@@ -244,7 +244,7 @@ func (handler *RepositoryServiceHandler) DeprecateRepositoryByName(ctx context.C
 	}
 
 	// 修改数据库
-	updatedRepository, err := handler.repositoryService.DeprecateRepositoryByName(req.Msg.GetOwnerName(), req.Msg.GetRepositoryName(), req.Msg.GetDeprecationMessage())
+	updatedRepository, err := handler.repositoryService.DeprecateRepositoryByName(ctx, req.Msg.GetOwnerName(), req.Msg.GetRepositoryName(), req.Msg.GetDeprecationMessage())
 	if err != nil {
 		return nil, connect.NewError(err.Code(), err.Err())
 	}
@@ -265,7 +265,7 @@ func (handler *RepositoryServiceHandler) UndeprecateRepositoryByName(ctx context
 	}
 
 	// 修改数据库
-	updatedRepository, err := handler.repositoryService.UndeprecateRepositoryByName(req.Msg.GetOwnerName(), req.Msg.GetRepositoryName())
+	updatedRepository, err := handler.repositoryService.UndeprecateRepositoryByName(ctx, req.Msg.GetOwnerName(), req.Msg.GetRepositoryName())
 	if err != nil {
 		return nil, connect.NewError(err.Code(), err.Err())
 	}
@@ -286,7 +286,7 @@ func (handler *RepositoryServiceHandler) UpdateRepositorySettingsByName(ctx cont
 	}
 
 	// 修改数据库
-	err := handler.repositoryService.UpdateRepositorySettingsByName(req.Msg.GetOwnerName(), req.Msg.GetRepositoryName(), req.Msg.GetVisibility(), req.Msg.GetDescription())
+	err := handler.repositoryService.UpdateRepositorySettingsByName(ctx, req.Msg.GetOwnerName(), req.Msg.GetRepositoryName(), req.Msg.GetVisibility(), req.Msg.GetDescription())
 	if err != nil {
 		return nil, connect.NewError(err.Code(), err.Err())
 	}
@@ -311,7 +311,7 @@ func (handler *RepositoryServiceHandler) GetRepositoriesByFullName(ctx context.C
 		}
 
 		// 查询
-		repository, err := handler.repositoryService.GetRepositoryByUserNameAndRepositoryName(userName, repositoryName)
+		repository, err := handler.repositoryService.GetRepositoryByUserNameAndRepositoryName(ctx, userName, repositoryName)
 		if err != nil {
 			return nil, connect.NewError(err.Code(), err.Err())
 		}
