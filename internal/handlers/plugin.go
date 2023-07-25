@@ -83,7 +83,7 @@ func (handler *PluginServiceHandler) CreateCuratedPlugin(ctx context.Context, re
 	}
 
 	// 检查用户名称
-	user, checkErr := handler.userService.GetUser(userID)
+	user, checkErr := handler.userService.GetUser(ctx, userID)
 	if checkErr != nil {
 		return nil, connect.NewError(checkErr.Code(), checkErr)
 	}
