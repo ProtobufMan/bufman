@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"github.com/ProtobufMan/bufman-cli/private/bufpkg/bufconfig"
 	registryv1alpha1 "github.com/ProtobufMan/bufman-cli/private/gen/proto/go/bufman/alpha/registry/v1alpha1"
 	"github.com/ProtobufMan/bufman-cli/private/pkg/manifest"
 	"github.com/ProtobufMan/bufman/internal/constant"
@@ -13,6 +14,7 @@ import (
 	"github.com/ProtobufMan/bufman/internal/util/storage"
 	"github.com/ProtobufMan/bufman/internal/util/validity"
 	"github.com/bufbuild/connect-go"
+	"io"
 )
 
 type PushServiceHandler struct {
@@ -66,30 +68,50 @@ func (handler *PushServiceHandler) PushManifestAndBlobs(ctx context.Context, req
 	}
 
 	// 获取bufConfig
-	bufConfig, err := handler.storageHelper.GetBufConfigFromBlob(ctx, fileManifest, blobSet)
+	bufConfigBlob, err := handler.storageHelper.GetBufManConfigFromBlob(ctx, fileManifest, blobSet)
 	if err != nil {
 		configErr := e.NewInternalError(err.Error())
 		return nil, connect.NewError(configErr.Code(), configErr)
 	}
 
-	// 获取全部依赖commits
-	dependentCommits, dependenceErr := handler.resolver.GetAllDependenciesFromBufConfig(ctx, bufConfig)
-	if dependenceErr != nil {
-		return nil, connect.NewError(dependenceErr.Code(), dependenceErr)
-	}
-
-	// 读取依赖文件
-	dependentManifests := make([]*manifest.Manifest, 0, len(dependentCommits))
-	dependentBlobSets := make([]*manifest.BlobSet, 0, len(dependentCommits))
-	for i := 0; i < len(dependentCommits); i++ {
-		dependentCommit := dependentCommits[i]
-		dependentManifest, dependentBlobSet, getErr := handler.pushService.GetManifestAndBlobSet(ctx, dependentCommit.RepositoryID, dependentCommit.CommitName)
-		if getErr != nil {
-			return nil, connect.NewError(getErr.Code(), getErr)
+	var dependentManifests []*manifest.Manifest
+	var dependentBlobSets []*manifest.BlobSet
+	if bufConfigBlob != nil {
+		// 生成Config
+		reader, err := bufConfigBlob.Open(ctx)
+		if err != nil {
+			return nil, e.NewInternalError(err.Error())
+		}
+		defer reader.Close()
+		configData, err := io.ReadAll(reader)
+		if err != nil {
+			return nil, e.NewInternalError(err.Error())
+		}
+		bufConfig, err := bufconfig.GetConfigForData(ctx, configData)
+		if err != nil {
+			// 无法解析配置文件
+			return nil, e.NewInternalError(err.Error())
 		}
 
-		dependentManifests = append(dependentManifests, dependentManifest)
-		dependentBlobSets = append(dependentBlobSets, dependentBlobSet)
+		// 获取全部依赖commits
+		dependentCommits, dependenceErr := handler.resolver.GetAllDependenciesFromBufConfig(ctx, bufConfig)
+		if dependenceErr != nil {
+			return nil, connect.NewError(dependenceErr.Code(), dependenceErr)
+		}
+
+		// 读取依赖文件
+		dependentManifests = make([]*manifest.Manifest, 0, len(dependentCommits))
+		dependentBlobSets = make([]*manifest.BlobSet, 0, len(dependentCommits))
+		for i := 0; i < len(dependentCommits); i++ {
+			dependentCommit := dependentCommits[i]
+			dependentManifest, dependentBlobSet, getErr := handler.pushService.GetManifestAndBlobSet(ctx, dependentCommit.RepositoryID, dependentCommit.CommitName)
+			if getErr != nil {
+				return nil, connect.NewError(getErr.Code(), getErr)
+			}
+
+			dependentManifests = append(dependentManifests, dependentManifest)
+			dependentBlobSets = append(dependentBlobSets, dependentBlobSet)
+		}
 	}
 
 	// 编译检查

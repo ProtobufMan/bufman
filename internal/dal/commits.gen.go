@@ -37,6 +37,9 @@ func newCommit(db *gorm.DB, opts ...gen.DOOption) commit {
 	_commit.DraftName = field.NewString(tableName, "draft_name")
 	_commit.CreatedTime = field.NewTime(tableName, "created_time")
 	_commit.ManifestDigest = field.NewString(tableName, "manifest_digest")
+	_commit.BufManConfigDigest = field.NewString(tableName, "buf_man_config_digest")
+	_commit.DocumentDigest = field.NewString(tableName, "document_digest")
+	_commit.LicenseDigest = field.NewString(tableName, "license_digest")
 	_commit.SequenceID = field.NewInt64(tableName, "sequence_id")
 	_commit.FileManifest = commitHasOneFileManifest{
 		db: db.Session(&gorm.Session{}),
@@ -64,19 +67,22 @@ func newCommit(db *gorm.DB, opts ...gen.DOOption) commit {
 type commit struct {
 	commitDo
 
-	ALL            field.Asterisk
-	ID             field.Int64
-	UserID         field.String
-	UserName       field.String
-	RepositoryID   field.String
-	RepositoryName field.String
-	CommitID       field.String
-	CommitName     field.String
-	DraftName      field.String
-	CreatedTime    field.Time
-	ManifestDigest field.String
-	SequenceID     field.Int64
-	FileManifest   commitHasOneFileManifest
+	ALL                field.Asterisk
+	ID                 field.Int64
+	UserID             field.String
+	UserName           field.String
+	RepositoryID       field.String
+	RepositoryName     field.String
+	CommitID           field.String
+	CommitName         field.String
+	DraftName          field.String
+	CreatedTime        field.Time
+	ManifestDigest     field.String
+	BufManConfigDigest field.String
+	DocumentDigest     field.String
+	LicenseDigest      field.String
+	SequenceID         field.Int64
+	FileManifest       commitHasOneFileManifest
 
 	FileBlobs commitHasManyFileBlobs
 
@@ -107,6 +113,9 @@ func (c *commit) updateTableName(table string) *commit {
 	c.DraftName = field.NewString(table, "draft_name")
 	c.CreatedTime = field.NewTime(table, "created_time")
 	c.ManifestDigest = field.NewString(table, "manifest_digest")
+	c.BufManConfigDigest = field.NewString(table, "buf_man_config_digest")
+	c.DocumentDigest = field.NewString(table, "document_digest")
+	c.LicenseDigest = field.NewString(table, "license_digest")
 	c.SequenceID = field.NewInt64(table, "sequence_id")
 
 	c.fillFieldMap()
@@ -124,7 +133,7 @@ func (c *commit) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (c *commit) fillFieldMap() {
-	c.fieldMap = make(map[string]field.Expr, 14)
+	c.fieldMap = make(map[string]field.Expr, 17)
 	c.fieldMap["id"] = c.ID
 	c.fieldMap["user_id"] = c.UserID
 	c.fieldMap["user_name"] = c.UserName
@@ -135,6 +144,9 @@ func (c *commit) fillFieldMap() {
 	c.fieldMap["draft_name"] = c.DraftName
 	c.fieldMap["created_time"] = c.CreatedTime
 	c.fieldMap["manifest_digest"] = c.ManifestDigest
+	c.fieldMap["buf_man_config_digest"] = c.BufManConfigDigest
+	c.fieldMap["document_digest"] = c.DocumentDigest
+	c.fieldMap["license_digest"] = c.LicenseDigest
 	c.fieldMap["sequence_id"] = c.SequenceID
 
 }

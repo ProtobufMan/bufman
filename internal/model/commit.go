@@ -28,16 +28,19 @@ import (
 )
 
 type Commit struct {
-	ID             int64     `gorm:"primaryKey;autoIncrement"`
-	UserID         string    `gorm:"type:varchar(64);"`
-	UserName       string    `gorm:"type:varchar(200);not null"`
-	RepositoryID   string    `gorm:"type:varchar(64)"`
-	RepositoryName string    `gorm:"type:varchar(200)"`
-	CommitID       string    `gorm:"type:varchar(64);unique;not null"`
-	CommitName     string    `gorm:"type:varchar(64);unique"`
-	DraftName      string    `gorm:"type:varchar(20)"`
-	CreatedTime    time.Time `gorm:"autoCreateTime"`
-	ManifestDigest string    `gorm:"type:string;"`
+	ID                 int64     `gorm:"primaryKey;autoIncrement"`
+	UserID             string    `gorm:"type:varchar(64);"`
+	UserName           string    `gorm:"type:varchar(200);not null"`
+	RepositoryID       string    `gorm:"type:varchar(64)"`
+	RepositoryName     string    `gorm:"type:varchar(200)"`
+	CommitID           string    `gorm:"type:varchar(64);unique;not null"`
+	CommitName         string    `gorm:"type:varchar(64);unique"`
+	DraftName          string    `gorm:"type:varchar(20)"`
+	CreatedTime        time.Time `gorm:"autoCreateTime"`
+	ManifestDigest     string    `gorm:"type:string;"`
+	BufManConfigDigest string    `gorm:"not null"` // bufman配置文件digest
+	DocumentDigest     string    // README文档digest
+	LicenseDigest      string    // README文档digest
 
 	SequenceID int64
 

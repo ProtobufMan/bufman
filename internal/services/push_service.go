@@ -13,6 +13,7 @@ import (
 	"github.com/ProtobufMan/bufman/internal/util/storage"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+	"time"
 )
 
 type PushService interface {
@@ -75,7 +76,7 @@ func (pushService *PushServiceImpl) GetManifestAndBlobSet(ctx context.Context, r
 }
 
 func (pushService *PushServiceImpl) PushManifestAndBlobs(ctx context.Context, userID, ownerName, repositoryName string, fileManifest *manifest.Manifest, fileBlobs *manifest.BlobSet) (*model.Commit, e.ResponseError) {
-	commit, err := pushService.toCommit(userID, ownerName, repositoryName, fileManifest)
+	commit, err := pushService.toCommit(ctx, userID, ownerName, repositoryName, fileManifest, fileBlobs)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +104,7 @@ func (pushService *PushServiceImpl) PushManifestAndBlobs(ctx context.Context, us
 }
 
 func (pushService *PushServiceImpl) PushManifestAndBlobsWithTags(ctx context.Context, userID, ownerName, repositoryName string, fileManifest *manifest.Manifest, fileBlobs *manifest.BlobSet, tagNames []string) (*model.Commit, e.ResponseError) {
-	commit, err := pushService.toCommit(userID, ownerName, repositoryName, fileManifest)
+	commit, err := pushService.toCommit(ctx, userID, ownerName, repositoryName, fileManifest, fileBlobs)
 	if err != nil {
 		return nil, err
 	}
@@ -143,7 +144,7 @@ func (pushService *PushServiceImpl) PushManifestAndBlobsWithTags(ctx context.Con
 }
 
 func (pushService *PushServiceImpl) PushManifestAndBlobsWithDraft(ctx context.Context, userID, ownerName, repositoryName string, fileManifest *manifest.Manifest, fileBlobs *manifest.BlobSet, draftName string) (*model.Commit, e.ResponseError) {
-	commit, err := pushService.toCommit(userID, ownerName, repositoryName, fileManifest)
+	commit, err := pushService.toCommit(ctx, userID, ownerName, repositoryName, fileManifest, fileBlobs)
 	if err != nil {
 		return nil, err
 	}
@@ -170,7 +171,7 @@ func (pushService *PushServiceImpl) PushManifestAndBlobsWithDraft(ctx context.Co
 	return commit, nil
 }
 
-func (pushService *PushServiceImpl) toCommit(userID, ownerName, repositoryName string, fileManifest *manifest.Manifest) (*model.Commit, e.ResponseError) {
+func (pushService *PushServiceImpl) toCommit(ctx context.Context, userID, ownerName, repositoryName string, fileManifest *manifest.Manifest, fileBlobs *manifest.BlobSet) (*model.Commit, e.ResponseError) {
 	// 获取user
 	user, err := pushService.userMapper.FindByUserID(userID)
 	if err != nil || user.UserName != ownerName {
@@ -193,7 +194,6 @@ func (pushService *PushServiceImpl) toCommit(userID, ownerName, repositoryName s
 			CommitID: commitID,
 			FileName: path,
 		})
-
 		return nil
 	})
 	fileManifestBlob, err := fileManifest.Blob()
@@ -206,16 +206,36 @@ func (pushService *PushServiceImpl) toCommit(userID, ownerName, repositoryName s
 		CommitID: commitID,
 	}
 
+	// 获取bufman config blob
+	configBlob, err := pushService.storageHelper.GetBufManConfigFromBlob(ctx, fileManifest, fileBlobs)
+	if err != nil {
+		return nil, e.NewInternalError(err.Error())
+	}
+	// 获取README LICENSE
+	documentBlob, licenseBlob, err := pushService.storageHelper.GetDocumentAndLicenseFromBlob(ctx, fileManifest, fileBlobs)
+	if err != nil {
+		return nil, e.NewInternalError(err.Error())
+	}
+
 	commit := &model.Commit{
-		UserID:         user.UserID,
-		UserName:       user.UserName,
-		RepositoryID:   repository.RepositoryID,
-		RepositoryName: repositoryName,
-		CommitID:       commitID,
-		CommitName:     security.GenerateCommitName(user.UserName, repositoryName),
-		ManifestDigest: fileManifestBlob.Digest().Hex(),
-		FileManifest:   modelFileManifest,
-		FileBlobs:      modelBlobs,
+		UserID:             user.UserID,
+		UserName:           user.UserName,
+		RepositoryID:       repository.RepositoryID,
+		RepositoryName:     repositoryName,
+		CommitID:           commitID,
+		CommitName:         security.GenerateCommitName(user.UserName, repositoryName),
+		CreatedTime:        time.Time{},
+		ManifestDigest:     fileManifestBlob.Digest().Hex(),
+		BufManConfigDigest: configBlob.Digest().Hex(),
+		SequenceID:         0,
+		FileManifest:       modelFileManifest,
+		FileBlobs:          modelBlobs,
+	}
+	if documentBlob != nil {
+		commit.DocumentDigest = documentBlob.Digest().Hex()
+	}
+	if licenseBlob != nil {
+		commit.LicenseDigest = licenseBlob.Digest().Hex()
 	}
 
 	return commit, nil

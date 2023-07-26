@@ -7,9 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"github.com/ProtobufMan/bufman-cli/private/bufpkg/bufconfig"
-	"github.com/ProtobufMan/bufman-cli/private/bufpkg/bufmanifest"
 	"github.com/ProtobufMan/bufman-cli/private/bufpkg/bufmodule"
-	modulev1alpha1 "github.com/ProtobufMan/bufman-cli/private/gen/proto/go/bufman/alpha/module/v1alpha1"
 	"github.com/ProtobufMan/bufman-cli/private/pkg/manifest"
 	"github.com/ProtobufMan/bufman/internal/constant"
 	"github.com/ProtobufMan/bufman/internal/model"
@@ -27,11 +25,18 @@ type StorageHelper interface {
 	Store(digest string, readCloser io.ReadCloser) error // 存储内容
 	Read(digest string) (io.Reader, error)               // 读取内容
 	GetDocumentAndLicenseFromBlob(ctx context.Context, fileManifest *manifest.Manifest, blobSet *manifest.BlobSet) (manifest.Blob, manifest.Blob, error)
-	GetBufConfigFromBlob(ctx context.Context, fileManifest *manifest.Manifest, blobSet *manifest.BlobSet) (*bufconfig.Config, error)
-	GetBufConfigFromProto(ctx context.Context, protoManifest *modulev1alpha1.Blob, protoBlobs []*modulev1alpha1.Blob) (*bufconfig.Config, error)
+	GetBufManConfigFromBlob(ctx context.Context, fileManifest *manifest.Manifest, blobSet *manifest.BlobSet) (manifest.Blob, error)
+	GetDocumentFromBlob(ctx context.Context, fileManifest *manifest.Manifest, blobSet *manifest.BlobSet) (manifest.Blob, error)
+	GetLicenseFromBlob(ctx context.Context, fileManifest *manifest.Manifest, blobSet *manifest.BlobSet) (manifest.Blob, error)
 	ReadToManifestAndBlobSet(ctx context.Context, modelFileManifest *model.FileManifest, fileBlobs model.FileBlobs) (*manifest.Manifest, *manifest.BlobSet, error) // 读取为manifest和blob set
 
 	StorePlugin(pluginName string, version string, reversion uint32, binaryData []byte) (fileName string, err error) // 存储插件
+}
+
+type File struct {
+	FileName string
+	Digest   string
+	Content  []byte
 }
 
 type StorageHelperImpl struct {
@@ -74,12 +79,14 @@ func (helper *StorageHelperImpl) GetDocumentAndLicenseFromBlob(ctx context.Conte
 			}
 
 			if path == externalPath {
-
 				if path == bufmodule.LicenseFilePath {
 					// license文件
 					licenseBlob = blob
 					licenseExists = true
 				} else {
+					if documentDataExists {
+						break
+					}
 					// document文件
 					documentBlob = blob
 					documentDataExists = true
@@ -96,9 +103,9 @@ func (helper *StorageHelperImpl) GetDocumentAndLicenseFromBlob(ctx context.Conte
 	return documentBlob, licenseBlob, nil
 }
 
-func (helper *StorageHelperImpl) GetBufConfigFromBlob(ctx context.Context, fileManifest *manifest.Manifest, blobSet *manifest.BlobSet) (*bufconfig.Config, error) {
+func (helper *StorageHelperImpl) GetBufManConfigFromBlob(ctx context.Context, fileManifest *manifest.Manifest, blobSet *manifest.BlobSet) (manifest.Blob, error) {
 	var configFileExist bool
-	var configFileData []byte
+	var configFileBlob manifest.Blob
 
 	err := fileManifest.Range(func(path string, digest manifest.Digest) error {
 		blob, ok := blobSet.BlobFor(digest.String())
@@ -109,18 +116,12 @@ func (helper *StorageHelperImpl) GetBufConfigFromBlob(ctx context.Context, fileM
 
 		// 如果遇到配置文件，就记录下来
 		for _, configFilePath := range bufconfig.AllConfigFilePaths {
+			if configFileExist {
+				break
+			}
+
 			if path == configFilePath {
-				if configFileExist {
-					return errors.New("two config files")
-				}
-				reader, err := blob.Open(ctx)
-				if err != nil {
-					return err
-				}
-				configFileData, err = io.ReadAll(reader)
-				if err != nil {
-					return err
-				}
+				configFileBlob = blob
 				configFileExist = true
 			}
 		}
@@ -130,33 +131,70 @@ func (helper *StorageHelperImpl) GetBufConfigFromBlob(ctx context.Context, fileM
 	if err != nil {
 		return nil, err
 	}
-	if !configFileExist {
-		// 不存在配置文件
-		return nil, errors.New("no config file")
-	}
 
-	// 生成Config，并验证其中的依赖关系
-	bufConfig, err := bufconfig.GetConfigForData(ctx, configFileData)
-	if err != nil {
-		// 无法解析配置文件
-		return nil, err
-	}
-
-	return bufConfig, nil
+	return configFileBlob, nil
 }
 
-func (helper *StorageHelperImpl) GetBufConfigFromProto(ctx context.Context, protoManifest *modulev1alpha1.Blob, protoBlobs []*modulev1alpha1.Blob) (*bufconfig.Config, error) {
-	fileManifest, err := bufmanifest.NewManifestFromProto(ctx, protoManifest)
+func (helper *StorageHelperImpl) GetDocumentFromBlob(ctx context.Context, fileManifest *manifest.Manifest, blobSet *manifest.BlobSet) (manifest.Blob, error) {
+	var documentExist bool
+	var documentBlob manifest.Blob
+
+	err := fileManifest.Range(func(path string, digest manifest.Digest) error {
+		blob, ok := blobSet.BlobFor(digest.String())
+		if !ok {
+			// 文件清单中有的文件，在file blobs中没有
+			return errors.New("check manifest and file blobs failed")
+		}
+
+		// 如果遇到README文件，就记录下来
+		for _, documentationPath := range bufmodule.AllDocumentationPaths {
+			if documentExist {
+				break
+			}
+
+			if path == documentationPath {
+				documentBlob = blob
+				documentExist = true
+			}
+		}
+
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	blobSet, err := bufmanifest.NewBlobSetFromProto(ctx, protoBlobs)
+	return documentBlob, nil
+}
+
+func (helper *StorageHelperImpl) GetLicenseFromBlob(ctx context.Context, fileManifest *manifest.Manifest, blobSet *manifest.BlobSet) (manifest.Blob, error) {
+	var licenseExist bool
+	var licenseBlob manifest.Blob
+
+	err := fileManifest.Range(func(path string, digest manifest.Digest) error {
+		if licenseExist {
+			return nil
+		}
+
+		blob, ok := blobSet.BlobFor(digest.String())
+		if !ok {
+			// 文件清单中有的文件，在file blobs中没有
+			return errors.New("check manifest and file blobs failed")
+		}
+
+		// 如果遇到license，就记录下来
+		if path == bufmodule.LicenseFilePath {
+			licenseBlob = blob
+			licenseExist = true
+		}
+
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	return helper.GetBufConfigFromBlob(ctx, fileManifest, blobSet)
+	return licenseBlob, nil
 }
 
 func (helper *StorageHelperImpl) ReadToManifestAndBlobSet(ctx context.Context, modelFileManifest *model.FileManifest, fileBlobs model.FileBlobs) (*manifest.Manifest, *manifest.BlobSet, error) {
