@@ -35,12 +35,6 @@ type StorageHelper interface {
 	StorePlugin(pluginName string, version string, reversion uint32, binaryData []byte) (fileName string, err error) // 存储插件
 }
 
-type File struct {
-	FileName string
-	Digest   string
-	Content  []byte
-}
-
 type StorageHelperImpl struct {
 	mu     sync.Mutex
 	muDict map[string]*sync.RWMutex
