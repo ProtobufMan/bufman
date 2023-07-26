@@ -168,39 +168,64 @@ func (g *documentGeneratorImpl) GetMessage(messageDescriptor protoreflect.Messag
 	return message
 }
 
-func (g *documentGeneratorImpl) GetFields(fieldDescriptor protoreflect.FieldDescriptors) []*registryv1alpha1.Field {
-	fields := make([]*registryv1alpha1.Field, 0, fieldDescriptor.Len())
+func (g *documentGeneratorImpl) GetFields(fieldDescriptors protoreflect.FieldDescriptors) []*registryv1alpha1.Field {
+	fields := make([]*registryv1alpha1.Field, 0, fieldDescriptors.Len())
 
-	for i := 0; i < fieldDescriptor.Len(); i++ {
-		fieldDescriptor := fieldDescriptor.Get(i)
-		fieldLocation := fieldDescriptor.ParentFile().SourceLocations().ByDescriptor(fieldDescriptor)
-		fieldOptions := protoutil.ProtoFromFieldDescriptor(fieldDescriptor).GetOptions()
-
-		field := &registryv1alpha1.Field{
-			Name:        string(fieldDescriptor.Name()),
-			Description: fieldLocation.LeadingComments,
-			Label:       fieldDescriptor.Cardinality().String(),
-			NestedType:  fieldDescriptor.Kind().String(),
-			FullType:    fieldDescriptor.Kind().String(),
-			Tag:         uint32(fieldDescriptor.Number()),
-			// TODO MapEntry:    nil,
-			// TODO Extendee:        "",
-			FieldOptions: &registryv1alpha1.FieldOptions{
-				Deprecated: fieldOptions.GetDeprecated(),
-				Packed:     fieldOptions.Packed,
-				Ctype:      int32(fieldOptions.GetCtype()),
-				Jstype:     int32(fieldOptions.GetJstype()),
-			},
-		}
-
-		// TODO field kind is MapEntry
-		// TODO field kind is Message
-		// TODO field kind is Enum
-
-		fields = append(fields, field)
+	for i := 0; i < fieldDescriptors.Len(); i++ {
+		fieldDescriptor := fieldDescriptors.Get(i)
+		fields = append(fields, g.GetField(fieldDescriptor))
 	}
 
 	return fields
+}
+
+func (g *documentGeneratorImpl) GetField(fieldDescriptor protoreflect.FieldDescriptor) *registryv1alpha1.Field {
+	fieldLocation := fieldDescriptor.ParentFile().SourceLocations().ByDescriptor(fieldDescriptor)
+	fieldOptions := protoutil.ProtoFromFieldDescriptor(fieldDescriptor).GetOptions()
+
+	field := &registryv1alpha1.Field{
+		Name:        string(fieldDescriptor.Name()),
+		Description: fieldLocation.LeadingComments,
+		Label:       fieldDescriptor.Cardinality().String(),
+		NestedType:  fieldDescriptor.Kind().String(),
+		FullType:    fieldDescriptor.Kind().String(),
+		Tag:         uint32(fieldDescriptor.Number()),
+		// TODO Extendee:        "",
+		FieldOptions: &registryv1alpha1.FieldOptions{
+			Deprecated: fieldOptions.GetDeprecated(),
+			Packed:     fieldOptions.Packed,
+			Ctype:      int32(fieldOptions.GetCtype()),
+			Jstype:     int32(fieldOptions.GetJstype()),
+		},
+	}
+
+	// field kind is Message
+	if fieldMessageDescriptor := fieldDescriptor.Message(); fieldMessageDescriptor != nil {
+		field.FullType = string(fieldMessageDescriptor.FullName())
+		field.NestedType = g.getNestedName(string(fieldMessageDescriptor.FullName()))
+		field.ImportModuleRef = g.getImportModuleRef(fieldMessageDescriptor)
+	}
+	// field kind is Enum
+	if fieldEnumDescriptor := fieldDescriptor.Enum(); fieldEnumDescriptor != nil {
+		field.FullType = string(fieldEnumDescriptor.FullName())
+		field.NestedType = g.getNestedName(string(fieldEnumDescriptor.FullName()))
+	}
+
+	// field kind is MapEntry
+	if fieldDescriptor.IsMap() {
+		keyDescriptor := fieldDescriptor.MapKey()
+		valueField := g.GetField(fieldDescriptor.MapValue())
+		mapEntry := &registryv1alpha1.MapEntry{
+			KeyFullType:          keyDescriptor.Kind().String(),
+			ValueNestedType:      valueField.GetNestedType(),
+			ValueFullType:        valueField.GetFullType(),
+			ValueImportModuleRef: valueField.GetImportModuleRef(),
+		}
+
+		field.MapEntry = mapEntry
+	}
+
+	return field
 }
 
 func (g *documentGeneratorImpl) GetOneofs(oneofDescriptors protoreflect.OneofDescriptors) []*registryv1alpha1.Oneof {
@@ -378,6 +403,13 @@ func (g *documentGeneratorImpl) getMethodRequestResponse(streaming bool, descrip
 		Streaming:  streaming,
 		Message:    m,
 	}
+
+	r.ImportModuleRef = g.getImportModuleRef(descriptor)
+
+	return r
+}
+
+func (g *documentGeneratorImpl) getImportModuleRef(descriptor protoreflect.Descriptor) *registryv1alpha1.ImportModuleRef {
 	if g.isDependency(descriptor.ParentFile()) {
 		// 如果是外部依赖
 		fileDescriptor := descriptor.ParentFile()
@@ -389,8 +421,9 @@ func (g *documentGeneratorImpl) getMethodRequestResponse(streaming bool, descrip
 			Commit:      g.parserAccessorHandler.Commit(fileDescriptor.Path()),
 			PackageName: string(fileDescriptor.Package()),
 		}
-		r.ImportModuleRef = importModuleRef
+
+		return importModuleRef
 	}
 
-	return r
+	return nil
 }
