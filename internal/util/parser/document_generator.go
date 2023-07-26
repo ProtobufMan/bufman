@@ -193,10 +193,13 @@ func (g *documentGeneratorImpl) GetField(fieldDescriptor protoreflect.FieldDescr
 		// TODO Extendee:        "",
 		FieldOptions: &registryv1alpha1.FieldOptions{
 			Deprecated: fieldOptions.GetDeprecated(),
-			Packed:     fieldOptions.Packed,
 			Ctype:      int32(fieldOptions.GetCtype()),
 			Jstype:     int32(fieldOptions.GetJstype()),
 		},
+	}
+	if fieldOptions.GetPacked() {
+		packed := true
+		field.FieldOptions.Packed = &packed
 	}
 
 	// field kind is Message

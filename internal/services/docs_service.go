@@ -87,11 +87,7 @@ func (docsService *DocsServiceImpl) GetSourceFile(ctx context.Context, repositor
 	}
 
 	// 读取文件
-	reader, err := docsService.storageHelper.ReadToReader(fileBlob.Digest)
-	if err != nil {
-		return nil, e.NewInternalError(err.Error())
-	}
-	content, err := io.ReadAll(reader)
+	content, err := docsService.storageHelper.Read(fileBlob.Digest)
 	if err != nil {
 		return nil, e.NewInternalError(err.Error())
 	}
@@ -136,7 +132,7 @@ func (docsService *DocsServiceImpl) GetModuleDocumentation(ctx context.Context, 
 	// 读取document
 	var documentation string
 	if documentBlob != nil {
-		documentData, readErr := docsService.storageHelper.Read(documentBlob.Digest().String())
+		documentData, readErr := docsService.storageHelper.Read(documentBlob.Digest().Hex())
 		if readErr != nil {
 			return nil, e.NewInternalError(readErr.Error())
 		}
@@ -146,7 +142,7 @@ func (docsService *DocsServiceImpl) GetModuleDocumentation(ctx context.Context, 
 	// 读取license
 	var license string
 	if licenseBlob != nil {
-		licenceData, readErr := docsService.storageHelper.Read(documentBlob.Digest().String())
+		licenceData, readErr := docsService.storageHelper.Read(documentBlob.Digest().Hex())
 		if readErr != nil {
 			return nil, e.NewInternalError(readErr.Error())
 		}
