@@ -70,9 +70,9 @@ func (g *documentGeneratorImpl) GenerateDocument() *registryv1alpha1.PackageDocu
 
 	packageDocument := &registryv1alpha1.PackageDocumentation{
 		Name:     g.packageName,
-		Services: g.GetPackageServices(),
 		Enums:    g.GetPackageEnums(),
 		Messages: g.GetPackageMessages(),
+		Services: g.GetPackageServices(),
 		// TODO FileExtensions: nil,
 	}
 
