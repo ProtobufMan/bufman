@@ -87,7 +87,7 @@ func (docsService *DocsServiceImpl) GetSourceFile(ctx context.Context, repositor
 	}
 
 	// 读取文件
-	reader, err := docsService.storageHelper.Read(fileBlob.Digest)
+	reader, err := docsService.storageHelper.ReadToReader(fileBlob.Digest)
 	if err != nil {
 		return nil, e.NewInternalError(err.Error())
 	}
@@ -134,23 +134,23 @@ func (docsService *DocsServiceImpl) GetModuleDocumentation(ctx context.Context, 
 	}
 
 	// 读取document
-	documentReader, readErr := documentBlob.Open(ctx)
-	if readErr != nil {
-		return nil, e.NewInternalError(readErr.Error())
-	}
-	documentData, readErr := io.ReadAll(documentReader)
-	if readErr != nil {
-		return nil, e.NewInternalError(readErr.Error())
+	var documentation string
+	if documentBlob != nil {
+		documentData, readErr := docsService.storageHelper.Read(documentBlob.Digest().String())
+		if readErr != nil {
+			return nil, e.NewInternalError(readErr.Error())
+		}
+		documentation = string(documentData)
 	}
 
 	// 读取license
-	licenseReader, readErr := licenseBlob.Open(ctx)
-	if readErr != nil {
-		return nil, e.NewInternalError(readErr.Error())
-	}
-	licenseData, readErr := io.ReadAll(licenseReader)
-	if readErr != nil {
-		return nil, e.NewInternalError(readErr.Error())
+	var license string
+	if licenseBlob != nil {
+		licenceData, readErr := docsService.storageHelper.Read(documentBlob.Digest().String())
+		if readErr != nil {
+			return nil, e.NewInternalError(readErr.Error())
+		}
+		license = string(licenceData)
 	}
 
 	// 获取documentation path
@@ -158,8 +158,8 @@ func (docsService *DocsServiceImpl) GetModuleDocumentation(ctx context.Context, 
 	documentPath := paths[0]
 
 	return &registryv1alpha1.ModuleDocumentation{
-		Documentation:     string(documentData),
-		License:           string(licenseData),
+		Documentation:     documentation,
+		License:           license,
 		DocumentationPath: documentPath,
 	}, nil
 }

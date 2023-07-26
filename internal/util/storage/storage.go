@@ -22,8 +22,10 @@ import (
 )
 
 type StorageHelper interface {
-	Store(digest string, readCloser io.ReadCloser) error // 存储内容
-	Read(digest string) (io.Reader, error)               // 读取内容
+	StoreFromReader(digest string, readCloser io.ReadCloser) error // 存储内容
+	Store(digest string, content []byte) error
+	ReadToReader(digest string) (io.Reader, error) // 读取内容
+	Read(fileName string) ([]byte, error)
 	GetDocumentAndLicenseFromBlob(ctx context.Context, fileManifest *manifest.Manifest, blobSet *manifest.BlobSet) (manifest.Blob, manifest.Blob, error)
 	GetBufManConfigFromBlob(ctx context.Context, fileManifest *manifest.Manifest, blobSet *manifest.BlobSet) (manifest.Blob, error)
 	GetDocumentFromBlob(ctx context.Context, fileManifest *manifest.Manifest, blobSet *manifest.BlobSet) (manifest.Blob, error)
@@ -199,7 +201,7 @@ func (helper *StorageHelperImpl) GetLicenseFromBlob(ctx context.Context, fileMan
 
 func (helper *StorageHelperImpl) ReadToManifestAndBlobSet(ctx context.Context, modelFileManifest *model.FileManifest, fileBlobs model.FileBlobs) (*manifest.Manifest, *manifest.BlobSet, error) {
 	// 读取文件清单
-	reader, err := helper.Read(modelFileManifest.Digest)
+	reader, err := helper.ReadToReader(modelFileManifest.Digest)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -212,7 +214,7 @@ func (helper *StorageHelperImpl) ReadToManifestAndBlobSet(ctx context.Context, m
 	blobs := make([]manifest.Blob, 0, len(fileBlobs))
 	for i := 0; i < len(fileBlobs); i++ {
 		// 读取文件
-		reader, err := helper.Read(fileBlobs[i].Digest)
+		reader, err := helper.ReadToReader(fileBlobs[i].Digest)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -291,7 +293,7 @@ func (helper *StorageHelperImpl) GetPluginFileName(pluginName string, version st
 	return fileName
 }
 
-func (helper *StorageHelperImpl) Store(digest string, readCloser io.ReadCloser) error {
+func (helper *StorageHelperImpl) StoreFromReader(digest string, readCloser io.ReadCloser) error {
 	helper.mu.Lock()
 	defer helper.mu.Unlock()
 
@@ -323,7 +325,47 @@ func (helper *StorageHelperImpl) Store(digest string, readCloser io.ReadCloser) 
 	return readCloser.Close()
 }
 
-func (helper *StorageHelperImpl) Read(fileName string) (io.Reader, error) {
+func (helper *StorageHelperImpl) Store(digest string, content []byte) error {
+	helper.mu.Lock()
+	defer helper.mu.Unlock()
+
+	if _, ok := helper.muDict[digest]; !ok {
+		helper.muDict[digest] = &sync.RWMutex{}
+	}
+
+	// 上写锁
+	helper.muDict[digest].Lock()
+	defer helper.muDict[digest].Unlock()
+
+	// 打开文件
+	filePath := helper.GetFilePath(digest)
+	file, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_EXCL, 0666)
+	if os.IsExist(err) {
+		// 已经存在，直接返回
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+
+	_, err = file.Write(content)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (helper *StorageHelperImpl) ReadToReader(fileName string) (io.Reader, error) {
+	content, err := helper.Read(fileName)
+	if err != nil {
+		return nil, err
+	}
+
+	return bytes.NewReader(content), nil
+}
+
+func (helper *StorageHelperImpl) Read(fileName string) ([]byte, error) {
 	helper.mu.Lock()
 	defer helper.mu.Unlock()
 
@@ -342,7 +384,7 @@ func (helper *StorageHelperImpl) Read(fileName string) (io.Reader, error) {
 		return nil, err
 	}
 
-	return bytes.NewReader(content), nil
+	return content, nil
 }
 
 func (helper *StorageHelperImpl) GetFilePath(fileName string) string {

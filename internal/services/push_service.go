@@ -218,18 +218,20 @@ func (pushService *PushServiceImpl) toCommit(ctx context.Context, userID, ownerN
 	}
 
 	commit := &model.Commit{
-		UserID:             user.UserID,
-		UserName:           user.UserName,
-		RepositoryID:       repository.RepositoryID,
-		RepositoryName:     repositoryName,
-		CommitID:           commitID,
-		CommitName:         security.GenerateCommitName(user.UserName, repositoryName),
-		CreatedTime:        time.Time{},
-		ManifestDigest:     fileManifestBlob.Digest().Hex(),
-		BufManConfigDigest: configBlob.Digest().Hex(),
-		SequenceID:         0,
-		FileManifest:       modelFileManifest,
-		FileBlobs:          modelBlobs,
+		UserID:         user.UserID,
+		UserName:       user.UserName,
+		RepositoryID:   repository.RepositoryID,
+		RepositoryName: repositoryName,
+		CommitID:       commitID,
+		CommitName:     security.GenerateCommitName(user.UserName, repositoryName),
+		CreatedTime:    time.Time{},
+		ManifestDigest: fileManifestBlob.Digest().Hex(),
+		SequenceID:     0,
+		FileManifest:   modelFileManifest,
+		FileBlobs:      modelBlobs,
+	}
+	if configBlob != nil {
+		commit.BufManConfigDigest = configBlob.Digest().Hex()
 	}
 	if documentBlob != nil {
 		commit.DocumentDigest = documentBlob.Digest().Hex()
@@ -255,7 +257,7 @@ func (pushService *PushServiceImpl) saveFileManifestAndBlobs(ctx context.Context
 		}
 
 		// 写入文件
-		err = pushService.storageHelper.Store(digest.Hex(), readCloser)
+		err = pushService.storageHelper.StoreFromReader(digest.Hex(), readCloser)
 		if err != nil {
 			return e.NewInternalError(registryv1alpha1connect.PushServicePushManifestAndBlobsProcedure)
 		}
@@ -275,7 +277,7 @@ func (pushService *PushServiceImpl) saveFileManifestAndBlobs(ctx context.Context
 	if err != nil {
 		return e.NewInternalError(registryv1alpha1connect.PushServicePushManifestAndBlobsProcedure)
 	}
-	err = pushService.storageHelper.Store(blob.Digest().Hex(), readCloser)
+	err = pushService.storageHelper.StoreFromReader(blob.Digest().Hex(), readCloser)
 	if err != nil {
 		return e.NewInternalError(registryv1alpha1connect.PushServicePushManifestAndBlobsProcedure)
 	}
