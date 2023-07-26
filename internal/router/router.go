@@ -111,6 +111,18 @@ func InitRouter() *gin.Engine {
 	)
 	registerHandler(router, codeGenerateServicePath, codeGenerateServiceHandler)
 
+	// DocService
+	docServicePath, docsServiceHandler := registryv1alpha1connect.NewDocServiceHandler(handlers.NewDocServiceHandler(),
+		interceptors.WithOptionalAuthInterceptor(
+			registryv1alpha1connect.DocServiceGetSourceDirectoryInfoProcedure,
+			registryv1alpha1connect.DocServiceGetSourceFileProcedure,
+			registryv1alpha1connect.DocServiceGetModulePackagesProcedure,
+			registryv1alpha1connect.DocServiceGetPackageDocumentationProcedure,
+			registryv1alpha1connect.DocServiceGetModuleDocumentationProcedure,
+		),
+	)
+	registerHandler(router, docServicePath, docsServiceHandler)
+
 	return router
 }
 

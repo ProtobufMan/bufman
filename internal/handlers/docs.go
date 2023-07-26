@@ -10,19 +10,19 @@ import (
 	"github.com/bufbuild/connect-go"
 )
 
-type DocsServiceHandler struct {
+type DocServiceHandler struct {
 	docsService services.DocsService
 	validator   validity.Validator
 }
 
-func NewDocsServiceHandler() *DocsServiceHandler {
-	return &DocsServiceHandler{
+func NewDocServiceHandler() *DocServiceHandler {
+	return &DocServiceHandler{
 		docsService: services.NewDocsService(),
 		validator:   validity.NewValidator(),
 	}
 }
 
-func (handler *DocsServiceHandler) GetSourceDirectoryInfo(ctx context.Context, req *connect.Request[registryv1alpha1.GetSourceDirectoryInfoRequest]) (*connect.Response[registryv1alpha1.GetSourceDirectoryInfoResponse], error) {
+func (handler *DocServiceHandler) GetSourceDirectoryInfo(ctx context.Context, req *connect.Request[registryv1alpha1.GetSourceDirectoryInfoRequest]) (*connect.Response[registryv1alpha1.GetSourceDirectoryInfoResponse], error) {
 	userID, _ := ctx.Value(constant.UserIDKey).(string)
 
 	// 检查用户权限
@@ -43,7 +43,7 @@ func (handler *DocsServiceHandler) GetSourceDirectoryInfo(ctx context.Context, r
 	return resp, nil
 }
 
-func (handler *DocsServiceHandler) GetSourceFile(ctx context.Context, req *connect.Request[registryv1alpha1.GetSourceFileRequest]) (*connect.Response[registryv1alpha1.GetSourceFileResponse], error) {
+func (handler *DocServiceHandler) GetSourceFile(ctx context.Context, req *connect.Request[registryv1alpha1.GetSourceFileRequest]) (*connect.Response[registryv1alpha1.GetSourceFileResponse], error) {
 	userID, _ := ctx.Value(constant.UserIDKey).(string)
 
 	// 检查用户权限
@@ -64,7 +64,7 @@ func (handler *DocsServiceHandler) GetSourceFile(ctx context.Context, req *conne
 	return resp, nil
 }
 
-func (handler *DocsServiceHandler) GetModulePackages(ctx context.Context, req *connect.Request[registryv1alpha1.GetModulePackagesRequest]) (*connect.Response[registryv1alpha1.GetModulePackagesResponse], error) {
+func (handler *DocServiceHandler) GetModulePackages(ctx context.Context, req *connect.Request[registryv1alpha1.GetModulePackagesRequest]) (*connect.Response[registryv1alpha1.GetModulePackagesResponse], error) {
 	userID, _ := ctx.Value(constant.UserIDKey).(string)
 
 	// 检查用户权限
@@ -85,7 +85,7 @@ func (handler *DocsServiceHandler) GetModulePackages(ctx context.Context, req *c
 	return resp, nil
 }
 
-func (handler *DocsServiceHandler) GetModuleDocumentation(ctx context.Context, req *connect.Request[registryv1alpha1.GetModuleDocumentationRequest]) (*connect.Response[registryv1alpha1.GetModuleDocumentationResponse], error) {
+func (handler *DocServiceHandler) GetModuleDocumentation(ctx context.Context, req *connect.Request[registryv1alpha1.GetModuleDocumentationRequest]) (*connect.Response[registryv1alpha1.GetModuleDocumentationResponse], error) {
 	userID, _ := ctx.Value(constant.UserIDKey).(string)
 
 	// 检查用户权限
@@ -105,7 +105,7 @@ func (handler *DocsServiceHandler) GetModuleDocumentation(ctx context.Context, r
 	return resp, nil
 }
 
-func (handler *DocsServiceHandler) GetPackageDocumentation(ctx context.Context, req *connect.Request[registryv1alpha1.GetPackageDocumentationRequest]) (*connect.Response[registryv1alpha1.GetPackageDocumentationResponse], error) {
+func (handler *DocServiceHandler) GetPackageDocumentation(ctx context.Context, req *connect.Request[registryv1alpha1.GetPackageDocumentationRequest]) (*connect.Response[registryv1alpha1.GetPackageDocumentationResponse], error) {
 	userID, _ := ctx.Value(constant.UserIDKey).(string)
 
 	// 检查用户权限
