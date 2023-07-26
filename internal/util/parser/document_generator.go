@@ -132,9 +132,47 @@ func (g *documentGeneratorImpl) GetMessage(messageDescriptor protoreflect.Messag
 	}
 
 	// fill message fields
-	fields := make([]*registryv1alpha1.Field, 0, messageDescriptor.Fields().Len())
-	for i := 0; i < messageDescriptor.Fields().Len(); i++ {
-		fieldDescriptor := messageDescriptor.Fields().Get(i)
+	fields := g.GetFields(messageDescriptor.Fields())
+
+	// fill message one of
+	oneofs := g.GetOneofs(messageDescriptor.Oneofs())
+
+	messageFields := make([]*registryv1alpha1.MessageField, 0, len(fields)+len(oneofs))
+	for i := 0; i < len(fields); i++ {
+		field := fields[i]
+		messageFields = append(messageFields, &registryv1alpha1.MessageField{
+			MessageField: &registryv1alpha1.MessageField_Field{
+				Field: field,
+			},
+		})
+	}
+	for i := 0; i < len(oneofs); i++ {
+		oneof := oneofs[i]
+		messageFields = append(messageFields, &registryv1alpha1.MessageField{
+			MessageField: &registryv1alpha1.MessageField_Oneof{
+				Oneof: oneof,
+			},
+		})
+	}
+	message.Fields = messageFields
+
+	// TODO fill message extensions
+
+	// TODO handle message nested message
+
+	// TODO handle message nested enum
+
+	// 记录message
+	g.messageSet[string(messageDescriptor.FullName())] = message
+
+	return message
+}
+
+func (g *documentGeneratorImpl) GetFields(fieldDescriptor protoreflect.FieldDescriptors) []*registryv1alpha1.Field {
+	fields := make([]*registryv1alpha1.Field, 0, fieldDescriptor.Len())
+
+	for i := 0; i < fieldDescriptor.Len(); i++ {
+		fieldDescriptor := fieldDescriptor.Get(i)
 		fieldLocation := fieldDescriptor.ParentFile().SourceLocations().ByDescriptor(fieldDescriptor)
 		fieldOptions := protoutil.ProtoFromFieldDescriptor(fieldDescriptor).GetOptions()
 
@@ -155,20 +193,31 @@ func (g *documentGeneratorImpl) GetMessage(messageDescriptor protoreflect.Messag
 			},
 		}
 
-		// TODO field kind is MapEntry Message Enum
+		// TODO field kind is MapEntry
+		// TODO field kind is Message
+		// TODO field kind is Enum
 
 		fields = append(fields, field)
 	}
-	// TODO fill message extensions
 
-	// TODO handle message nested message
+	return fields
+}
 
-	// TODO handle message nested enum
+func (g *documentGeneratorImpl) GetOneofs(oneofDescriptors protoreflect.OneofDescriptors) []*registryv1alpha1.Oneof {
+	oneofs := make([]*registryv1alpha1.Oneof, 0, oneofDescriptors.Len())
 
-	// 记录message
-	g.messageSet[string(messageDescriptor.FullName())] = message
+	for i := 0; i < oneofDescriptors.Len(); i++ {
+		oneofDescriptor := oneofDescriptors.Get(i)
 
-	return message
+		oneof := &registryv1alpha1.Oneof{
+			Name:   string(oneofDescriptor.Name()),
+			Fields: g.GetFields(oneofDescriptor.Fields()),
+		}
+
+		oneofs = append(oneofs, oneof)
+	}
+
+	return oneofs
 }
 
 func (g *documentGeneratorImpl) GetPackageEnums() []*registryv1alpha1.Enum {
@@ -215,9 +264,16 @@ func (g *documentGeneratorImpl) GetEnum(enumDescriptor protoreflect.EnumDescript
 	}
 
 	// enum values
-	enumValues := make([]*registryv1alpha1.EnumValue, 0, enumDescriptor.Values().Len())
-	for i := 0; i < enumDescriptor.Values().Len(); i++ {
-		enumValueDescriptor := enumDescriptor.Values().Get(i)
+	enumValues := g.GetEnumValues(enumDescriptor.Values())
+	enum.Values = enumValues
+
+	return enum
+}
+
+func (g *documentGeneratorImpl) GetEnumValues(enumValueDescriptor protoreflect.EnumValueDescriptors) []*registryv1alpha1.EnumValue {
+	enumValues := make([]*registryv1alpha1.EnumValue, 0, enumValueDescriptor.Len())
+	for i := 0; i < enumValueDescriptor.Len(); i++ {
+		enumValueDescriptor := enumValueDescriptor.Get(i)
 		enumValueLocation := enumValueDescriptor.ParentFile().SourceLocations().ByDescriptor(enumValueDescriptor)
 		enumValueOptions := protoutil.ProtoFromEnumValueDescriptor(enumValueDescriptor).GetOptions()
 
@@ -232,9 +288,8 @@ func (g *documentGeneratorImpl) GetEnum(enumDescriptor protoreflect.EnumDescript
 
 		enumValues = append(enumValues, enumValue)
 	}
-	enum.Values = enumValues
 
-	return enum
+	return enumValues
 }
 
 func (g *documentGeneratorImpl) GetPackageServices() []*registryv1alpha1.Service {
@@ -280,10 +335,17 @@ func (g *documentGeneratorImpl) GetService(serviceDescriptor protoreflect.Servic
 	}
 
 	// methods
-	// enum values
-	methods := make([]*registryv1alpha1.Method, 0, serviceDescriptor.Methods().Len())
-	for i := 0; i < serviceDescriptor.Methods().Len(); i++ {
-		methodDescriptor := serviceDescriptor.Methods().Get(i)
+	methods := g.GetMethods(serviceDescriptor.Methods())
+	service.Methods = methods
+
+	return service
+}
+
+func (g *documentGeneratorImpl) GetMethods(methodDescriptors protoreflect.MethodDescriptors) []*registryv1alpha1.Method {
+	methods := make([]*registryv1alpha1.Method, 0, methodDescriptors.Len())
+
+	for i := 0; i < methodDescriptors.Len(); i++ {
+		methodDescriptor := methodDescriptors.Get(i)
 		methodLocation := methodDescriptor.ParentFile().SourceLocations().ByDescriptor(methodDescriptor)
 		methodOptions := protoutil.ProtoFromMethodDescriptor(methodDescriptor).GetOptions()
 		requestDescriptor := methodDescriptor.Input()
@@ -303,9 +365,8 @@ func (g *documentGeneratorImpl) GetService(serviceDescriptor protoreflect.Servic
 
 		methods = append(methods, method)
 	}
-	service.Methods = methods
 
-	return service
+	return methods
 }
 
 func (g *documentGeneratorImpl) getMethodRequestResponse(streaming bool, descriptor protoreflect.MessageDescriptor) *registryv1alpha1.MethodRequestResponse {
