@@ -34,6 +34,16 @@ type DocsServiceImpl struct {
 	resolver      resolve.Resolver
 }
 
+func NewDocsService() DocsService {
+	return &DocsServiceImpl{
+		commitMapper:  &mapper.CommitMapperImpl{},
+		fileMapper:    &mapper.FileMapperImpl{},
+		storageHelper: storage.NewStorageHelper(),
+		protoParser:   parser.NewProtoParser(),
+		resolver:      resolve.NewResolver(),
+	}
+}
+
 func (docsService *DocsServiceImpl) GetSourceDirectoryInfo(ctx context.Context, repositoryID, reference string) (model.FileBlobs, e.ResponseError) {
 	// 根据reference查询commit
 	commit, err := docsService.commitMapper.FindByRepositoryIDAndReference(repositoryID, reference)
