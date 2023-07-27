@@ -105,9 +105,9 @@ func (g *documentGeneratorImpl) doGenerateDocument() *registryv1alpha1.PackageDo
 	}
 }
 
-func (g *documentGeneratorImpl) getNestedName(fullName string) string {
+func (g *documentGeneratorImpl) getNestedName(fullName, packageName string) string {
 
-	return strings.Replace(fullName, g.packageName+".", "", 1)
+	return strings.Replace(fullName, packageName+".", "", 1)
 }
 
 func (g *documentGeneratorImpl) GetPackageMessages() []*registryv1alpha1.Message {
@@ -145,7 +145,7 @@ func (g *documentGeneratorImpl) GetMessage(messageDescriptor protoreflect.Messag
 
 	message := &registryv1alpha1.Message{
 		Name:        string(messageDescriptor.Name()),
-		NestedName:  g.getNestedName(string(messageDescriptor.FullName())),
+		NestedName:  g.getNestedName(string(messageDescriptor.FullName()), string(messageDescriptor.ParentFile().Package())),
 		FullName:    string(messageDescriptor.FullName()),
 		Description: messageLocation.LeadingComments,
 		FilePath:    messageDescriptor.ParentFile().Path(),
@@ -226,13 +226,13 @@ func (g *documentGeneratorImpl) GetField(fieldDescriptor protoreflect.FieldDescr
 	// field kind is Message
 	if fieldMessageDescriptor := fieldDescriptor.Message(); fieldMessageDescriptor != nil {
 		field.FullType = string(fieldMessageDescriptor.FullName())
-		field.NestedType = g.getNestedName(string(fieldMessageDescriptor.FullName()))
+		field.NestedType = g.getNestedName(string(fieldMessageDescriptor.FullName()), string(fieldMessageDescriptor.ParentFile().Package()))
 		field.ImportModuleRef = g.getImportModuleRef(fieldMessageDescriptor)
 	}
 	// field kind is Enum
 	if fieldEnumDescriptor := fieldDescriptor.Enum(); fieldEnumDescriptor != nil {
 		field.FullType = string(fieldEnumDescriptor.FullName())
-		field.NestedType = g.getNestedName(string(fieldEnumDescriptor.FullName()))
+		field.NestedType = g.getNestedName(string(fieldEnumDescriptor.FullName()), string(fieldEnumDescriptor.ParentFile().FullName()))
 	}
 
 	// field kind is MapEntry
@@ -300,7 +300,7 @@ func (g *documentGeneratorImpl) GetEnum(enumDescriptor protoreflect.EnumDescript
 
 	enum := &registryv1alpha1.Enum{
 		Name:        string(enumDescriptor.Name()),
-		NestedName:  g.getNestedName(string(enumDescriptor.FullName())),
+		NestedName:  g.getNestedName(string(enumDescriptor.FullName()), string(enumDescriptor.ParentFile().Package())),
 		FullName:    string(enumDescriptor.FullName()),
 		Description: enumLocation.LeadingComments,
 		FilePath:    enumDescriptor.ParentFile().Path(),
@@ -372,7 +372,7 @@ func (g *documentGeneratorImpl) GetService(serviceDescriptor protoreflect.Servic
 
 	service := &registryv1alpha1.Service{
 		Name:        string(serviceDescriptor.Name()),
-		NestedName:  g.getNestedName(string(serviceDescriptor.FullName())),
+		NestedName:  g.getNestedName(string(serviceDescriptor.FullName()), string(serviceDescriptor.ParentFile().Package())),
 		FullName:    string(serviceDescriptor.FullName()),
 		Description: serviceLocation.LeadingComments,
 		FilePath:    serviceDescriptor.ParentFile().Path(),
