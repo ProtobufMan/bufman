@@ -5,6 +5,7 @@ import (
 	registryv1alpha1 "github.com/ProtobufMan/bufman-cli/private/gen/proto/go/bufman/alpha/registry/v1alpha1"
 	"github.com/bufbuild/protocompile/linker"
 	"github.com/bufbuild/protocompile/protoutil"
+	"github.com/bufbuild/protocompile/walk"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"strings"
 )
@@ -67,16 +68,41 @@ func (g *documentGeneratorImpl) getPackageLinkers() linker.Files {
 }
 
 func (g *documentGeneratorImpl) GenerateDocument() *registryv1alpha1.PackageDocumentation {
+	g.messageSet = map[string]*registryv1alpha1.Message{}
 
-	packageDocument := &registryv1alpha1.PackageDocumentation{
-		Name:     g.packageName,
-		Enums:    g.GetPackageEnums(),
-		Messages: g.GetPackageMessages(),
-		Services: g.GetPackageServices(),
-		// TODO FileExtensions: nil,
+	return g.doGenerateDocument()
+}
+
+func (g *documentGeneratorImpl) doGenerateDocument() *registryv1alpha1.PackageDocumentation {
+	var messages []*registryv1alpha1.Message
+	var enums []*registryv1alpha1.Enum
+	var services []*registryv1alpha1.Service
+
+	for i := 0; i < len(g.packageLinkers); i++ {
+		packageLink := g.packageLinkers[i]
+
+		_ = walk.Descriptors(packageLink, func(descriptor protoreflect.Descriptor) error {
+			switch descriptor.(type) {
+			case protoreflect.MessageDescriptor:
+				messages = append(messages, g.GetMessage(descriptor.(protoreflect.MessageDescriptor)))
+			case protoreflect.EnumDescriptor:
+				enums = append(enums, g.GetEnum(descriptor.(protoreflect.EnumDescriptor)))
+			case protoreflect.ServiceDescriptor:
+				services = append(services, g.GetService(descriptor.(protoreflect.ServiceDescriptor)))
+			}
+
+			return nil
+		})
 	}
 
-	return packageDocument
+	return &registryv1alpha1.PackageDocumentation{
+		Name: g.packageName,
+		// TODO Description:    "",
+		Services: services,
+		Enums:    enums,
+		Messages: messages,
+		// TODO FileExtensions: nil,
+	}
 }
 
 func (g *documentGeneratorImpl) getNestedName(fullName string) string {
@@ -125,10 +151,11 @@ func (g *documentGeneratorImpl) GetMessage(messageDescriptor protoreflect.Messag
 		FilePath:    messageDescriptor.ParentFile().Path(),
 		IsMapEntry:  messageDescriptor.IsMapEntry(),
 		Location:    g.toProtoLocation(messageLocation),
+		// TODO MessageExtensions: nil,
 		MessageOptions: &registryv1alpha1.MessageOptions{
 			Deprecated: messageOptions.GetDeprecated(),
 		},
-		// TODO ImplicitlyDeprecated:
+		// TODO ImplicitlyDeprecated: false,
 	}
 
 	// fill message fields
@@ -155,12 +182,6 @@ func (g *documentGeneratorImpl) GetMessage(messageDescriptor protoreflect.Messag
 		})
 	}
 	message.Fields = messageFields
-
-	// TODO fill message extensions
-
-	// TODO handle message nested message
-
-	// TODO handle message nested enum
 
 	// 记录message
 	g.messageSet[string(messageDescriptor.FullName())] = message
