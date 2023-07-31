@@ -80,7 +80,8 @@ func (handler *RepositoryServiceHandler) ListRepositories(ctx context.Context, r
 	// 解析page token
 	pageTokenChaim, err := security.ParsePageToken(req.Msg.GetPageToken())
 	if err != nil {
-		return nil, e.NewInvalidArgumentError("page token")
+		respErr := e.NewInvalidArgumentError("page token")
+		return nil, connect.NewError(respErr.Code(), respErr)
 	}
 
 	repositories, listErr := handler.repositoryService.ListRepositories(ctx, pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), req.Msg.Reverse)
@@ -91,7 +92,8 @@ func (handler *RepositoryServiceHandler) ListRepositories(ctx context.Context, r
 	// 生成下一页token
 	nextPageToken, err := security.GenerateNextPageToken(pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), len(repositories))
 	if err != nil {
-		return nil, e.NewInternalError("generate next page token")
+		respErr := e.NewInternalError("generate next page token")
+		return nil, connect.NewError(respErr.Code(), respErr)
 	}
 
 	resp := connect.NewResponse(&registryv1alpha1.ListRepositoriesResponse{
@@ -111,7 +113,8 @@ func (handler *RepositoryServiceHandler) ListUserRepositories(ctx context.Contex
 	// 解析page token
 	pageTokenChaim, err := security.ParsePageToken(req.Msg.GetPageToken())
 	if err != nil {
-		return nil, e.NewInvalidArgumentError("page token")
+		respErr := e.NewInvalidArgumentError("page token")
+		return nil, connect.NewError(respErr.Code(), respErr)
 	}
 
 	repositories, listErr := handler.repositoryService.ListUserRepositories(ctx, req.Msg.GetUserId(), pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), req.Msg.GetReverse())
@@ -122,7 +125,8 @@ func (handler *RepositoryServiceHandler) ListUserRepositories(ctx context.Contex
 	// 生成下一页token
 	nextPageToken, err := security.GenerateNextPageToken(pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), len(repositories))
 	if err != nil {
-		return nil, e.NewInternalError("generate next page token")
+		respErr := e.NewInternalError("generate next page token")
+		return nil, connect.NewError(respErr.Code(), respErr)
 	}
 
 	resp := connect.NewResponse(&registryv1alpha1.ListUserRepositoriesResponse{
@@ -142,7 +146,8 @@ func (handler *RepositoryServiceHandler) ListRepositoriesUserCanAccess(ctx conte
 	// 解析page token
 	pageTokenChaim, err := security.ParsePageToken(req.Msg.GetPageToken())
 	if err != nil {
-		return nil, e.NewInvalidArgumentError("page token")
+		respErr := e.NewInvalidArgumentError("page token")
+		return nil, connect.NewError(respErr.Code(), respErr)
 	}
 
 	userID := ctx.Value(constant.UserIDKey).(string)
@@ -154,7 +159,8 @@ func (handler *RepositoryServiceHandler) ListRepositoriesUserCanAccess(ctx conte
 	// 生成下一页token
 	nextPageToken, err := security.GenerateNextPageToken(pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), len(repositories))
 	if err != nil {
-		return nil, e.NewInternalError("generate next page token")
+		respErr := e.NewInternalError("generate next page token")
+		return nil, connect.NewError(respErr.Code(), respErr)
 	}
 
 	resp := connect.NewResponse(&registryv1alpha1.ListRepositoriesUserCanAccessResponse{
