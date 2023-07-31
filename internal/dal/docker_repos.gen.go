@@ -34,6 +34,8 @@ func newDockerRepo(db *gorm.DB, opts ...gen.DOOption) dockerRepo {
 	_dockerRepo.UserName = field.NewString(tableName, "user_name")
 	_dockerRepo.Password = field.NewString(tableName, "password")
 	_dockerRepo.IsExpired = field.NewBool(tableName, "is_expired")
+	_dockerRepo.CreatedTime = field.NewTime(tableName, "created_time")
+	_dockerRepo.UpdateTime = field.NewTime(tableName, "update_time")
 	_dockerRepo.Note = field.NewString(tableName, "note")
 
 	_dockerRepo.fillFieldMap()
@@ -44,15 +46,17 @@ func newDockerRepo(db *gorm.DB, opts ...gen.DOOption) dockerRepo {
 type dockerRepo struct {
 	dockerRepoDo
 
-	ALL       field.Asterisk
-	ID        field.Int64
-	UserID    field.String
-	Name      field.String
-	Address   field.String
-	UserName  field.String
-	Password  field.String
-	IsExpired field.Bool
-	Note      field.String
+	ALL         field.Asterisk
+	ID          field.Int64
+	UserID      field.String
+	Name        field.String
+	Address     field.String
+	UserName    field.String
+	Password    field.String
+	IsExpired   field.Bool
+	CreatedTime field.Time
+	UpdateTime  field.Time
+	Note        field.String
 
 	fieldMap map[string]field.Expr
 }
@@ -76,6 +80,8 @@ func (d *dockerRepo) updateTableName(table string) *dockerRepo {
 	d.UserName = field.NewString(table, "user_name")
 	d.Password = field.NewString(table, "password")
 	d.IsExpired = field.NewBool(table, "is_expired")
+	d.CreatedTime = field.NewTime(table, "created_time")
+	d.UpdateTime = field.NewTime(table, "update_time")
 	d.Note = field.NewString(table, "note")
 
 	d.fillFieldMap()
@@ -93,7 +99,7 @@ func (d *dockerRepo) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (d *dockerRepo) fillFieldMap() {
-	d.fieldMap = make(map[string]field.Expr, 8)
+	d.fieldMap = make(map[string]field.Expr, 10)
 	d.fieldMap["id"] = d.ID
 	d.fieldMap["user_id"] = d.UserID
 	d.fieldMap["name"] = d.Name
@@ -101,6 +107,8 @@ func (d *dockerRepo) fillFieldMap() {
 	d.fieldMap["user_name"] = d.UserName
 	d.fieldMap["password"] = d.Password
 	d.fieldMap["is_expired"] = d.IsExpired
+	d.fieldMap["created_time"] = d.CreatedTime
+	d.fieldMap["update_time"] = d.UpdateTime
 	d.fieldMap["note"] = d.Note
 }
 
