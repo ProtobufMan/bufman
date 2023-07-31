@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	dsn := "root:123456@tcp(127.0.0.1:3306)/idl_manager?charset=utf8mb4&parseTime=True&loc=Local"
+	dsn := "root:qwas617.@tcp(127.0.0.1:3306)/idl_manager?charset=utf8mb4&parseTime=True&loc=Local"
 
 	// Initialize the generator with configuration
 	g := gen.NewGenerator(gen.Config{
@@ -27,7 +27,7 @@ func main() {
 	g.UseDB(db)
 
 	// Generate default DAO interface for those specified structs
-	g.ApplyBasic(model.User{}, model.Token{}, model.Repository{}, model.Tag{}, model.Commit{}, model.FileManifest{}, model.FileBlob{}, model.Plugin{}, model.DockerHub{})
+	g.ApplyBasic(model.User{}, model.Token{}, model.Repository{}, model.Tag{}, model.Commit{}, model.FileManifest{}, model.FileBlob{}, model.Plugin{}, model.DockerRepo{})
 
 	// Execute the generator
 	g.Execute()
