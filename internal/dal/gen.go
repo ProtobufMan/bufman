@@ -18,6 +18,7 @@ import (
 var (
 	Q            = new(Query)
 	Commit       *commit
+	DockerHub    *dockerHub
 	FileBlob     *fileBlob
 	FileManifest *fileManifest
 	Plugin       *plugin
@@ -30,6 +31,7 @@ var (
 func SetDefault(db *gorm.DB, opts ...gen.DOOption) {
 	*Q = *Use(db, opts...)
 	Commit = &Q.Commit
+	DockerHub = &Q.DockerHub
 	FileBlob = &Q.FileBlob
 	FileManifest = &Q.FileManifest
 	Plugin = &Q.Plugin
@@ -43,6 +45,7 @@ func Use(db *gorm.DB, opts ...gen.DOOption) *Query {
 	return &Query{
 		db:           db,
 		Commit:       newCommit(db, opts...),
+		DockerHub:    newDockerHub(db, opts...),
 		FileBlob:     newFileBlob(db, opts...),
 		FileManifest: newFileManifest(db, opts...),
 		Plugin:       newPlugin(db, opts...),
@@ -57,6 +60,7 @@ type Query struct {
 	db *gorm.DB
 
 	Commit       commit
+	DockerHub    dockerHub
 	FileBlob     fileBlob
 	FileManifest fileManifest
 	Plugin       plugin
@@ -72,6 +76,7 @@ func (q *Query) clone(db *gorm.DB) *Query {
 	return &Query{
 		db:           db,
 		Commit:       q.Commit.clone(db),
+		DockerHub:    q.DockerHub.clone(db),
 		FileBlob:     q.FileBlob.clone(db),
 		FileManifest: q.FileManifest.clone(db),
 		Plugin:       q.Plugin.clone(db),
@@ -94,6 +99,7 @@ func (q *Query) ReplaceDB(db *gorm.DB) *Query {
 	return &Query{
 		db:           db,
 		Commit:       q.Commit.replaceDB(db),
+		DockerHub:    q.DockerHub.replaceDB(db),
 		FileBlob:     q.FileBlob.replaceDB(db),
 		FileManifest: q.FileManifest.replaceDB(db),
 		Plugin:       q.Plugin.replaceDB(db),
@@ -106,6 +112,7 @@ func (q *Query) ReplaceDB(db *gorm.DB) *Query {
 
 type queryCtx struct {
 	Commit       ICommitDo
+	DockerHub    IDockerHubDo
 	FileBlob     IFileBlobDo
 	FileManifest IFileManifestDo
 	Plugin       IPluginDo
@@ -118,6 +125,7 @@ type queryCtx struct {
 func (q *Query) WithContext(ctx context.Context) *queryCtx {
 	return &queryCtx{
 		Commit:       q.Commit.WithContext(ctx),
+		DockerHub:    q.DockerHub.WithContext(ctx),
 		FileBlob:     q.FileBlob.WithContext(ctx),
 		FileManifest: q.FileManifest.WithContext(ctx),
 		Plugin:       q.Plugin.WithContext(ctx),

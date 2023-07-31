@@ -27,7 +27,7 @@ func main() {
 	g.UseDB(db)
 
 	// Generate default DAO interface for those specified structs
-	g.ApplyBasic(model.User{}, model.Token{}, model.Repository{}, model.Tag{}, model.Commit{}, model.FileManifest{}, model.FileBlob{}, model.Plugin{})
+	g.ApplyBasic(model.User{}, model.Token{}, model.Repository{}, model.Tag{}, model.Commit{}, model.FileManifest{}, model.FileBlob{}, model.Plugin{}, model.DockerHub{})
 
 	// Execute the generator
 	g.Execute()
