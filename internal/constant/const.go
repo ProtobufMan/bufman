@@ -50,4 +50,8 @@ const (
 
 	MinPageSize = 1
 	MaxPageSize = 50
+
+	MinDockerRepoNameLength = 1
+	MaxDockerRepoNameLength = 200
+	DockerRepoNamePattern   = "^[a-zA-Z][a-zA-Z0-9_-]*[a-zA-Z0-9]$"
 )

@@ -1,6 +1,10 @@
 package model
 
-import "time"
+import (
+	registryv1alpha1 "github.com/ProtobufMan/bufman-cli/private/gen/proto/go/bufman/alpha/registry/v1alpha1"
+	"google.golang.org/protobuf/types/known/timestamppb"
+	"time"
+)
 
 type DockerRepo struct {
 	ID             int64     `gorm:"primaryKey;autoIncrement"`
@@ -15,4 +19,30 @@ type DockerRepo struct {
 	Note           string
 }
 
+func (dockerRepo *DockerRepo) ToProtoDockerRepo() *registryv1alpha1.DockerRepo {
+	if dockerRepo == nil {
+		return (&DockerRepo{}).ToProtoDockerRepo()
+	}
+
+	return &registryv1alpha1.DockerRepo{
+		Id:         dockerRepo.DockerRepoID,
+		Name:       dockerRepo.DockerRepoName,
+		Address:    dockerRepo.Address,
+		Username:   dockerRepo.UserName,
+		CreateTime: timestamppb.New(dockerRepo.CreatedTime),
+		UpdateTime: timestamppb.New(dockerRepo.UpdateTime),
+		Note:       dockerRepo.Note,
+	}
+}
+
 type DockerRepos []*DockerRepo
+
+func (dockerRepos *DockerRepos) ToProtoDockerRepos() []*registryv1alpha1.DockerRepo {
+	protoDockerRepos := make([]*registryv1alpha1.DockerRepo, 0, len(*dockerRepos))
+
+	for i := 0; i < len(*dockerRepos); i++ {
+		protoDockerRepos = append(protoDockerRepos, (*dockerRepos)[i].ToProtoDockerRepo())
+	}
+
+	return protoDockerRepos
+}

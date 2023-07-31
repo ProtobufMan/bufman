@@ -4,6 +4,10 @@ github.com/ProtobufMan/bufman-cli v0.0.0-20230719030041-0aa66bf1cadb h1:YVwG/tuc
 github.com/ProtobufMan/bufman-cli v0.0.0-20230719030041-0aa66bf1cadb/go.mod h1:89kqgr/aByBU6ZdGsnZnGgYjc6OV9JIM1PNkiU6DVLQ=
 github.com/ProtobufMan/bufman-cli v0.0.0-20230731081229-cd3e591c8c0b h1:BP6YFoGuYUDJFrjYWEO46dg9ErNQjh6XlybwE7btaRQ=
 github.com/ProtobufMan/bufman-cli v0.0.0-20230731081229-cd3e591c8c0b/go.mod h1:89kqgr/aByBU6ZdGsnZnGgYjc6OV9JIM1PNkiU6DVLQ=
+github.com/ProtobufMan/bufman-cli v0.0.0-20230731085009-84d5f1099f8e h1:D6CffsLFY1mKpj1DvBzAQ4vTKXc/uH+EVsPeufgDMXw=
+github.com/ProtobufMan/bufman-cli v0.0.0-20230731085009-84d5f1099f8e/go.mod h1:89kqgr/aByBU6ZdGsnZnGgYjc6OV9JIM1PNkiU6DVLQ=
+github.com/ProtobufMan/bufman-cli v0.0.0-20230731085317-299bafb65c62 h1:E191+j6NqDy6astoI2xG2tPb8VdBV4PuttE4bf9Y25s=
+github.com/ProtobufMan/bufman-cli v0.0.0-20230731085317-299bafb65c62/go.mod h1:89kqgr/aByBU6ZdGsnZnGgYjc6OV9JIM1PNkiU6DVLQ=
 github.com/benbjohnson/clock v1.3.5 h1:VvXlSJBzZpA/zum6Sj74hxwYI2DIxRWuNIoXAzHZz5o=
 github.com/bufbuild/connect-go v1.9.0 h1:JIgAeNuFpo+SUPfU19Yt5TcWlznsN5Bv10/gI/6Pjoc=
 github.com/bufbuild/connect-go v1.9.0/go.mod h1:CAIePUgkDR5pAFaylSMtNK45ANQjp9JvpluG20rhpV8=

@@ -3,7 +3,7 @@ module github.com/ProtobufMan/bufman
 go 1.19
 
 require (
-	github.com/ProtobufMan/bufman-cli v0.0.0-20230731081229-cd3e591c8c0b
+	github.com/ProtobufMan/bufman-cli v0.0.0-20230731085317-299bafb65c62
 	github.com/bufbuild/connect-go v1.9.0
 	github.com/bufbuild/protocompile v0.5.1
 	github.com/docker/docker v24.0.4+incompatible

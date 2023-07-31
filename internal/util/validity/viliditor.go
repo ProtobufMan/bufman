@@ -27,6 +27,7 @@ type Validator interface {
 	CheckRepositoryName(repositoryName string) e.ResponseError                                // 检查repo name合法性
 	CheckTagName(tagName string) e.ResponseError                                              // 检查tag name合法性
 	CheckPluginName(pluginName string) e.ResponseError                                        // 检查插件名称合法性
+	CheckDockerRepoName(dockerRepoName string) e.ResponseError                                // 检查docker repo name合法性
 	CheckVersion(version string) e.ResponseError                                              // 检查版本号是否合法
 	CheckDraftName(draftName string) e.ResponseError                                          // 检查draft name合法性
 	CheckPageSize(pageSize uint32) e.ResponseError                                            // 检查page size合法性
@@ -93,6 +94,15 @@ func (validator *ValidatorImpl) CheckPluginName(pluginName string) e.ResponseErr
 	err := validator.doCheckByLengthAndPattern(pluginName, constant.MinPluginLength, constant.MaxPluginLength, constant.PluginNamePattern)
 	if err != nil {
 		return e.NewInvalidArgumentError("plugin name:" + err.Error())
+	}
+
+	return nil
+}
+
+func (validator *ValidatorImpl) CheckDockerRepoName(dockerRepoName string) e.ResponseError {
+	err := validator.doCheckByLengthAndPattern(dockerRepoName, constant.MinDockerRepoNameLength, constant.MaxDockerRepoNameLength, constant.DockerRepoNamePattern)
+	if err != nil {
+		return e.NewInvalidArgumentError("docker repo name:" + err.Error())
 	}
 
 	return nil
