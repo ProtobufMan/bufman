@@ -11,11 +11,12 @@ import (
 )
 
 type DocumentGenerator interface {
-	GenerateDocument() *registryv1alpha1.PackageDocumentation
+	GetModulePackages() []string
+	GenerateDocument(packageName string) *registryv1alpha1.PackageDocumentation
 }
 
 type documentGeneratorImpl struct {
-	packageName           string
+	modulePackageSet      map[string]struct{}
 	commitName            string // 当前的commitName，用于判断是否是外部依赖
 	packageLinkerMap      map[string]linker.Files
 	linkers               linker.Files
@@ -24,16 +25,21 @@ type documentGeneratorImpl struct {
 	messageSet            map[string]*registryv1alpha1.Message
 }
 
-func NewDocumentGenerator(packageName, commitName string, linkers linker.Files, parserAccessorHandler bufmoduleprotocompile.ParserAccessorHandler) DocumentGenerator {
+func NewDocumentGenerator(commitName string, linkers linker.Files, parserAccessorHandler bufmoduleprotocompile.ParserAccessorHandler) DocumentGenerator {
 	g := &documentGeneratorImpl{
-		packageName:           packageName,
 		commitName:            commitName,
 		linkers:               linkers,
 		parserAccessorHandler: parserAccessorHandler,
 		packageLinkerMap:      map[string]linker.Files{},
 		messageSet:            map[string]*registryv1alpha1.Message{},
 	}
-	g.packageLinkers = g.getPackageLinkers()
+
+	// 生成module packages Set
+	packagesSet := map[string]struct{}{}
+	for _, link := range linkers {
+		packagesSet[string(link.Package())] = struct{}{}
+	}
+	g.modulePackageSet = packagesSet
 
 	return g
 }
@@ -52,28 +58,39 @@ func (g *documentGeneratorImpl) toProtoLocation(loc protoreflect.SourceLocation)
 	}
 }
 
-func (g *documentGeneratorImpl) getPackageLinkers() linker.Files {
-	if packageLinkers, ok := g.packageLinkerMap[g.packageName]; ok {
+func (g *documentGeneratorImpl) getPackageLinkers(packageName string) linker.Files {
+	if packageLinkers, ok := g.packageLinkerMap[packageName]; ok {
 		return packageLinkers
 	}
 
 	packageLinkers := make(linker.Files, 0, len(g.linkers))
 	for i := 0; i < len(g.linkers); i++ {
-		if string(g.linkers[i].Package()) == g.packageName {
+		if string(g.linkers[i].Package()) == packageName {
 			packageLinkers = append(packageLinkers, g.linkers[i])
 		}
 	}
-	g.packageLinkerMap[g.packageName] = packageLinkers
+	g.packageLinkerMap[packageName] = packageLinkers
 	return packageLinkers
 }
 
-func (g *documentGeneratorImpl) GenerateDocument() *registryv1alpha1.PackageDocumentation {
-	g.messageSet = map[string]*registryv1alpha1.Message{}
+func (g *documentGeneratorImpl) GetModulePackages() []string {
+	modulePackages := make([]string, 0, len(g.modulePackageSet))
+	for packageName := range g.modulePackageSet {
+		modulePackages = append(modulePackages, packageName)
+	}
 
-	return g.doGenerateDocument()
+	return modulePackages
 }
 
-func (g *documentGeneratorImpl) doGenerateDocument() *registryv1alpha1.PackageDocumentation {
+func (g *documentGeneratorImpl) GenerateDocument(packageName string) *registryv1alpha1.PackageDocumentation {
+	g.messageSet = map[string]*registryv1alpha1.Message{}
+
+	g.packageLinkers = g.getPackageLinkers(packageName)
+
+	return g.doGenerateDocument(packageName)
+}
+
+func (g *documentGeneratorImpl) doGenerateDocument(packageName string) *registryv1alpha1.PackageDocumentation {
 	var messages []*registryv1alpha1.Message
 	var enums []*registryv1alpha1.Enum
 	var services []*registryv1alpha1.Service
@@ -96,7 +113,7 @@ func (g *documentGeneratorImpl) doGenerateDocument() *registryv1alpha1.PackageDo
 	}
 
 	return &registryv1alpha1.PackageDocumentation{
-		Name: g.packageName,
+		Name: packageName,
 		// TODO Description:    "",
 		Services: services,
 		Enums:    enums,
