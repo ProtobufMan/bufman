@@ -123,6 +123,19 @@ func InitRouter() *gin.Engine {
 	)
 	registerHandler(router, docServicePath, docsServiceHandler)
 
+	// DockerRepoService
+	dockerRepoServicePath, dockerRepoServiceHandler := registryv1alpha1connect.NewDockerRepoServiceHandler(handlers.NewDockerRepoServiceHandler(),
+		interceptors.WithAuthInterceptor(
+			registryv1alpha1connect.DockerRepoServiceCreateDockerRepoProcedure,
+			registryv1alpha1connect.DockerRepoServiceGetDockerRepoProcedure,
+			registryv1alpha1connect.DockerRepoServiceGetDockerRepoByNameProcedure,
+			registryv1alpha1connect.DockerRepoServiceListDockerReposProcedure,
+			registryv1alpha1connect.DockerRepoServiceUpdateDockerRepoByIDProcedure,
+			registryv1alpha1connect.DockerRepoServiceUpdateDockerRepoByNameProcedure,
+		),
+	)
+	registerHandler(router, dockerRepoServicePath, dockerRepoServiceHandler)
+
 	return router
 }
 
