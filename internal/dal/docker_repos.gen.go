@@ -29,11 +29,11 @@ func newDockerRepo(db *gorm.DB, opts ...gen.DOOption) dockerRepo {
 	_dockerRepo.ALL = field.NewAsterisk(tableName)
 	_dockerRepo.ID = field.NewInt64(tableName, "id")
 	_dockerRepo.UserID = field.NewString(tableName, "user_id")
-	_dockerRepo.Name = field.NewString(tableName, "name")
+	_dockerRepo.DockerRepoID = field.NewString(tableName, "docker_repo_id")
+	_dockerRepo.DockerRepoName = field.NewString(tableName, "docker_repo_name")
 	_dockerRepo.Address = field.NewString(tableName, "address")
 	_dockerRepo.UserName = field.NewString(tableName, "user_name")
 	_dockerRepo.Password = field.NewString(tableName, "password")
-	_dockerRepo.IsExpired = field.NewBool(tableName, "is_expired")
 	_dockerRepo.CreatedTime = field.NewTime(tableName, "created_time")
 	_dockerRepo.UpdateTime = field.NewTime(tableName, "update_time")
 	_dockerRepo.Note = field.NewString(tableName, "note")
@@ -46,17 +46,17 @@ func newDockerRepo(db *gorm.DB, opts ...gen.DOOption) dockerRepo {
 type dockerRepo struct {
 	dockerRepoDo
 
-	ALL         field.Asterisk
-	ID          field.Int64
-	UserID      field.String
-	Name        field.String
-	Address     field.String
-	UserName    field.String
-	Password    field.String
-	IsExpired   field.Bool
-	CreatedTime field.Time
-	UpdateTime  field.Time
-	Note        field.String
+	ALL            field.Asterisk
+	ID             field.Int64
+	UserID         field.String
+	DockerRepoID   field.String
+	DockerRepoName field.String
+	Address        field.String
+	UserName       field.String
+	Password       field.String
+	CreatedTime    field.Time
+	UpdateTime     field.Time
+	Note           field.String
 
 	fieldMap map[string]field.Expr
 }
@@ -75,11 +75,11 @@ func (d *dockerRepo) updateTableName(table string) *dockerRepo {
 	d.ALL = field.NewAsterisk(table)
 	d.ID = field.NewInt64(table, "id")
 	d.UserID = field.NewString(table, "user_id")
-	d.Name = field.NewString(table, "name")
+	d.DockerRepoID = field.NewString(table, "docker_repo_id")
+	d.DockerRepoName = field.NewString(table, "docker_repo_name")
 	d.Address = field.NewString(table, "address")
 	d.UserName = field.NewString(table, "user_name")
 	d.Password = field.NewString(table, "password")
-	d.IsExpired = field.NewBool(table, "is_expired")
 	d.CreatedTime = field.NewTime(table, "created_time")
 	d.UpdateTime = field.NewTime(table, "update_time")
 	d.Note = field.NewString(table, "note")
@@ -102,11 +102,11 @@ func (d *dockerRepo) fillFieldMap() {
 	d.fieldMap = make(map[string]field.Expr, 10)
 	d.fieldMap["id"] = d.ID
 	d.fieldMap["user_id"] = d.UserID
-	d.fieldMap["name"] = d.Name
+	d.fieldMap["docker_repo_id"] = d.DockerRepoID
+	d.fieldMap["docker_repo_name"] = d.DockerRepoName
 	d.fieldMap["address"] = d.Address
 	d.fieldMap["user_name"] = d.UserName
 	d.fieldMap["password"] = d.Password
-	d.fieldMap["is_expired"] = d.IsExpired
 	d.fieldMap["created_time"] = d.CreatedTime
 	d.fieldMap["update_time"] = d.UpdateTime
 	d.fieldMap["note"] = d.Note

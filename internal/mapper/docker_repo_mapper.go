@@ -7,9 +7,11 @@ import (
 
 type DockerRepoMapper interface {
 	Create(dockerRepo *model.DockerRepo) error
-	FindByUserIDAndName(userID string, name string) (*model.DockerRepo, error)
+	FindByDockerRepoID(dockerRepoID string) (*model.DockerRepo, error)
+	FindByUserIDAndName(userID string, dockerRepoName string) (*model.DockerRepo, error)
 	FindPageByUserID(userID string, offset int, limit int, reverse bool) (model.DockerRepos, error)
-	UpdateByUserIDAndName(userID, name string, dockerRepo *model.DockerRepo) error
+	UpdateByUserIDAndName(userID, dockerRepoName string, dockerRepo *model.DockerRepo) error
+	UpdateByDockerRepoID(dockerRepoID string, dockerRepo *model.DockerRepo) error
 }
 
 type DockerRepoMapperImpl struct{}
@@ -18,8 +20,12 @@ func (d *DockerRepoMapperImpl) Create(dockerRepo *model.DockerRepo) error {
 	return dal.DockerRepo.Create(dockerRepo)
 }
 
-func (d *DockerRepoMapperImpl) FindByUserIDAndName(userID string, name string) (*model.DockerRepo, error) {
-	return dal.DockerRepo.Where(dal.DockerRepo.UserID.Eq(userID), dal.DockerRepo.Name.Eq(name)).First()
+func (d *DockerRepoMapperImpl) FindByDockerRepoID(dockerRepoID string) (*model.DockerRepo, error) {
+	return dal.DockerRepo.Where(dal.DockerRepo.DockerRepoID.Eq(dockerRepoID)).First()
+}
+
+func (d *DockerRepoMapperImpl) FindByUserIDAndName(userID string, dockerRepoName string) (*model.DockerRepo, error) {
+	return dal.DockerRepo.Where(dal.DockerRepo.UserID.Eq(userID), dal.DockerRepo.DockerRepoName.Eq(dockerRepoName)).First()
 }
 
 func (d *DockerRepoMapperImpl) FindPageByUserID(userID string, offset int, limit int, reverse bool) (model.DockerRepos, error) {
@@ -31,7 +37,12 @@ func (d *DockerRepoMapperImpl) FindPageByUserID(userID string, offset int, limit
 	return stmt.Find()
 }
 
-func (d *DockerRepoMapperImpl) UpdateByUserIDAndName(userID, name string, dockerRepo *model.DockerRepo) error {
-	_, err := dal.DockerRepo.Select(dal.DockerRepo.Address, dal.DockerRepo.UserName, dal.DockerRepo.Password).Where(dal.DockerRepo.UserID.Eq(userID), dal.DockerRepo.Name.Eq(name)).Updates(dockerRepo)
+func (d *DockerRepoMapperImpl) UpdateByUserIDAndName(userID, dockerRepoName string, dockerRepo *model.DockerRepo) error {
+	_, err := dal.DockerRepo.Select(dal.DockerRepo.Address, dal.DockerRepo.UserName, dal.DockerRepo.Password).Where(dal.DockerRepo.UserID.Eq(userID), dal.DockerRepo.DockerRepoName.Eq(dockerRepoName)).Updates(dockerRepo)
+	return err
+}
+
+func (d *DockerRepoMapperImpl) UpdateByDockerRepoID(dockerRepoID string, dockerRepo *model.DockerRepo) error {
+	_, err := dal.DockerRepo.Select(dal.DockerRepo.Address, dal.DockerRepo.UserName, dal.DockerRepo.Password).Where(dal.DockerRepo.DockerRepoID.Eq(dockerRepoID)).Updates(dockerRepo)
 	return err
 }
