@@ -2,6 +2,7 @@ package config
 
 import (
 	"github.com/ProtobufMan/bufman/internal/constant"
+	"github.com/docker/docker/client"
 	"gorm.io/gorm"
 	"os"
 	"time"
@@ -17,6 +18,7 @@ const (
 
 type Config struct {
 	BufMan BufMan
+	Docker Docker
 }
 
 type BufMan struct {
@@ -27,9 +29,18 @@ type BufMan struct {
 	PageTokenSecret     string
 }
 
+type Docker struct {
+	Host       string
+	Timeout    time.Duration
+	CACertPath string
+	CertPath   string
+	KeyPath    string
+}
+
 var (
-	DataBase   *gorm.DB
-	Properties *Config
+	DataBase     *gorm.DB
+	Properties   *Config
+	DockerClient *client.Client
 )
 
 func LoadConfig() {
@@ -39,6 +50,13 @@ func LoadConfig() {
 
 			PageTokenExpireTime: time.Minute * 10, // 默认过期时间为10分钟
 			PageTokenSecret:     "123456",
+		},
+		Docker: Docker{
+			Host:       client.DefaultDockerHost,
+			Timeout:    time.Second * 10,
+			CACertPath: "",
+			CertPath:   "",
+			KeyPath:    "",
 		},
 	}
 
@@ -55,4 +73,23 @@ func LoadConfig() {
 	if err := os.MkdirAll(constant.PluginSaveDir, 0666); err != nil {
 		panic(err)
 	}
+
+	// load docker cli
+	DockerClient = loadDockerCli()
+}
+
+func loadDockerCli() *client.Client {
+	options := make([]client.Opt, 0, 4)
+	options = append(options, client.WithAPIVersionNegotiation())
+	options = append(options, client.WithHost(Properties.Docker.Host))
+	options = append(options, client.WithTimeout(Properties.Docker.Timeout))
+	if Properties.Docker.CACertPath != "" {
+		options = append(options, client.WithTLSClientConfig(Properties.Docker.CACertPath, Properties.Docker.CertPath, Properties.Docker.KeyPath))
+	}
+	cli, err := client.NewClientWithOpts(options...)
+	if err != nil {
+		panic(err)
+	}
+
+	return cli
 }
