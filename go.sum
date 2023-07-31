@@ -2,6 +2,8 @@ github.com/Microsoft/go-winio v0.6.1 h1:9/kr64B9VUZrLm5YYwbGtUJnMgqWVOdUAXu6Migc
 github.com/Microsoft/go-winio v0.6.1/go.mod h1:LRdKpFKfdobln8UmuiYcKPot9D2v6svN5+sAH+4kjUM=
 github.com/ProtobufMan/bufman-cli v0.0.0-20230719030041-0aa66bf1cadb h1:YVwG/tucBMmK3hc4xrMQm12GtG8qGbOJpJfJ7tAG6Ww=
 github.com/ProtobufMan/bufman-cli v0.0.0-20230719030041-0aa66bf1cadb/go.mod h1:89kqgr/aByBU6ZdGsnZnGgYjc6OV9JIM1PNkiU6DVLQ=
+github.com/ProtobufMan/bufman-cli v0.0.0-20230731081229-cd3e591c8c0b h1:BP6YFoGuYUDJFrjYWEO46dg9ErNQjh6XlybwE7btaRQ=
+github.com/ProtobufMan/bufman-cli v0.0.0-20230731081229-cd3e591c8c0b/go.mod h1:89kqgr/aByBU6ZdGsnZnGgYjc6OV9JIM1PNkiU6DVLQ=
 github.com/benbjohnson/clock v1.3.5 h1:VvXlSJBzZpA/zum6Sj74hxwYI2DIxRWuNIoXAzHZz5o=
 github.com/bufbuild/connect-go v1.9.0 h1:JIgAeNuFpo+SUPfU19Yt5TcWlznsN5Bv10/gI/6Pjoc=
 github.com/bufbuild/connect-go v1.9.0/go.mod h1:CAIePUgkDR5pAFaylSMtNK45ANQjp9JvpluG20rhpV8=
