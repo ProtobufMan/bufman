@@ -121,7 +121,7 @@ func (r *RepositoryMapperImpl) DeleteByUserNameAndRepositoryName(userName, Repos
 }
 
 func (r *RepositoryMapperImpl) UpdateByUserNameAndRepositoryName(userName, RepositoryName string, repository *model.Repository) error {
-	_, err := dal.Repository.Where(dal.Repository.UserName.Eq(userName), dal.Repository.RepositoryName.Eq(RepositoryName)).Updates(repository)
+	_, err := dal.Repository.Select(dal.Repository.Visibility, dal.Repository.Description).Where(dal.Repository.UserName.Eq(userName), dal.Repository.RepositoryName.Eq(RepositoryName)).Updates(repository)
 
 	return err
 }
