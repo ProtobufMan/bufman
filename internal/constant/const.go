@@ -19,8 +19,7 @@ const (
 )
 
 const (
-	PluginSaveDir = "plugins"
-	FileSavaDir   = "blobs"
+	FileSavaDir = "blobs"
 )
 
 const (

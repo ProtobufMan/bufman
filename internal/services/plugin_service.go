@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	"errors"
-	"github.com/ProtobufMan/bufman-cli/private/gen/proto/connect/bufman/alpha/registry/v1alpha1/registryv1alpha1connect"
 	"github.com/ProtobufMan/bufman/internal/e"
 	"github.com/ProtobufMan/bufman/internal/mapper"
 	"github.com/ProtobufMan/bufman/internal/model"
@@ -13,21 +12,23 @@ import (
 
 type PluginService interface {
 	ListPlugins(ctx context.Context, offset int, limit int, reverse bool, includeDeprecated bool) (model.Plugins, e.ResponseError)
-	CreatePlugin(ctx context.Context, plugin *model.Plugin, binaryData []byte) (*model.Plugin, e.ResponseError)
+	CreatePlugin(ctx context.Context, plugin *model.Plugin, dockerRepoName string) (*model.Plugin, e.ResponseError)
 	GetLatestPlugin(ctx context.Context, owner string, name string) (*model.Plugin, e.ResponseError)
 	GetLatestPluginWithVersion(ctx context.Context, owner string, name string, version string) (*model.Plugin, e.ResponseError)
 	GetLatestPluginWithVersionAndReversion(ctx context.Context, owner string, name string, version string, reversion uint32) (*model.Plugin, e.ResponseError)
 }
 
 type PluginServiceImpl struct {
-	pluginMapper  mapper.PluginMapper
-	storageHelper storage.StorageHelper
+	pluginMapper     mapper.PluginMapper
+	dockerRepoMapper mapper.DockerRepoMapper
+	storageHelper    storage.StorageHelper
 }
 
 func NewPluginService() PluginService {
 	return &PluginServiceImpl{
-		pluginMapper:  &mapper.PluginMapperImpl{},
-		storageHelper: storage.NewStorageHelper(),
+		pluginMapper:     &mapper.PluginMapperImpl{},
+		dockerRepoMapper: &mapper.DockerRepoMapperImpl{},
+		storageHelper:    storage.NewStorageHelper(),
 	}
 }
 
@@ -40,21 +41,25 @@ func (pluginService *PluginServiceImpl) ListPlugins(ctx context.Context, offset 
 	return plugins, nil
 }
 
-func (pluginService *PluginServiceImpl) CreatePlugin(ctx context.Context, plugin *model.Plugin, binaryData []byte) (*model.Plugin, e.ResponseError) {
-	// 将二进制保存起来
-	binaryName, err := pluginService.storageHelper.StorePlugin(plugin.PluginName, plugin.Version, plugin.Reversion, binaryData)
+func (pluginService *PluginServiceImpl) CreatePlugin(ctx context.Context, plugin *model.Plugin, dockerRepoName string) (*model.Plugin, e.ResponseError) {
+	// 查询docker repo
+	dockerRepo, err := pluginService.dockerRepoMapper.FindByUserIDAndName(plugin.UserID, dockerRepoName)
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, e.NewNotFoundError("docker repo name")
+		}
+
 		return nil, e.NewInternalError(err.Error())
 	}
 
 	// 记录在数据库中
-	plugin.BinaryName = binaryName
+	plugin.DockerRepoID = dockerRepo.DockerRepoID
 	err = pluginService.pluginMapper.Create(plugin)
 	if err != nil {
 		if errors.Is(err, gorm.ErrDuplicatedKey) {
 			return plugin, e.NewAlreadyExistsError("plugin")
 		}
-		return nil, e.NewInternalError(registryv1alpha1connect.PluginCurationServiceCreateCuratedPluginProcedure)
+		return nil, e.NewInternalError(err.Error())
 	}
 
 	return plugin, nil

@@ -3,8 +3,6 @@ package storage
 import (
 	"bytes"
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"errors"
 	"github.com/ProtobufMan/bufman-cli/private/bufpkg/bufconfig"
 	"github.com/ProtobufMan/bufman-cli/private/bufpkg/bufmodule"
@@ -14,10 +12,6 @@ import (
 	"io"
 	"os"
 	"path"
-	"path/filepath"
-	"runtime"
-	"strconv"
-	"strings"
 	"sync"
 )
 
@@ -31,8 +25,6 @@ type StorageHelper interface {
 	GetDocumentFromBlob(ctx context.Context, fileManifest *manifest.Manifest, blobSet *manifest.BlobSet) (manifest.Blob, error)
 	GetLicenseFromBlob(ctx context.Context, fileManifest *manifest.Manifest, blobSet *manifest.BlobSet) (manifest.Blob, error)
 	ReadToManifestAndBlobSet(ctx context.Context, modelFileManifest *model.FileManifest, fileBlobs model.FileBlobs) (*manifest.Manifest, *manifest.BlobSet, error) // 读取为manifest和blob set
-
-	StorePlugin(pluginName string, version string, reversion uint32, binaryData []byte) (fileName string, err error) // 存储插件
 }
 
 type StorageHelperImpl struct {
@@ -227,64 +219,6 @@ func (helper *StorageHelperImpl) ReadToManifestAndBlobSet(ctx context.Context, m
 	}
 
 	return fileManifest, blobSet, nil
-}
-
-func (helper *StorageHelperImpl) StorePlugin(pluginName string, version string, reversion uint32, binaryData []byte) (fileName string, err error) {
-	fileName = helper.GetPluginFileName(pluginName, version, reversion, binaryData)
-
-	helper.pluginMu.Lock()
-	defer helper.pluginMu.Unlock()
-
-	if _, ok := helper.pluginMuDict[fileName]; !ok {
-		helper.pluginMuDict[fileName] = &sync.RWMutex{}
-	}
-
-	// 上写锁
-	helper.pluginMuDict[fileName].Lock()
-	defer helper.pluginMuDict[fileName].Unlock()
-
-	// 打开文件
-	if !strings.HasSuffix(pluginName, ".wasm") {
-		fileName = "proto-gen-" + fileName
-		if runtime.GOOS == "windows" {
-			fileName = fileName + ".exe"
-		}
-	}
-
-	filePath := filepath.Join(constant.PluginSaveDir, fileName)
-	file, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_EXCL, 0666)
-	defer file.Close()
-	if os.IsExist(err) {
-		// 已经存在，直接返回
-		return fileName, nil
-	}
-	if err != nil {
-		return "", err
-	}
-
-	// 写入文件
-
-	_, err = file.Write(binaryData)
-	if err != nil {
-		return "", err
-	}
-
-	return fileName, nil
-}
-
-func (helper *StorageHelperImpl) GetPluginFileName(pluginName string, version string, reversion uint32, binaryData []byte) string {
-	sha := sha256.New()
-	sha.Write([]byte(pluginName))
-	sha.Write([]byte(version))
-	sha.Write([]byte(strconv.Itoa(int(reversion))))
-	sha.Write(binaryData)
-	fileName := hex.EncodeToString(sha.Sum(nil))
-
-	if strings.HasSuffix(pluginName, ".wasm") {
-		fileName = fileName + ".wasm"
-	}
-
-	return fileName
 }
 
 func (helper *StorageHelperImpl) StoreFromReader(digest string, readCloser io.ReadCloser) error {

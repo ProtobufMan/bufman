@@ -94,23 +94,21 @@ func (handler *PluginServiceHandler) CreateCuratedPlugin(ctx context.Context, re
 	}
 
 	// 检查插件数据
-	if len(req.Msg.GetBinaryData()) <= 0 {
-		checkErr = e.NewInvalidArgumentError("data is empty")
-		return nil, connect.NewError(checkErr.Code(), checkErr)
-	}
-
 	plugin := &model.Plugin{
+		ID:          0,
 		UserID:      userID,
 		UserName:    user.UserName,
 		PluginID:    uuid.NewString(),
 		PluginName:  req.Msg.GetName(),
 		Version:     req.Msg.GetVersion(),
 		Reversion:   req.Msg.GetRevision(),
+		ImageName:   req.Msg.GetImageName(),
+		ImageDigest: req.Msg.GetImageDigest(),
 		Description: req.Msg.GetDescription(),
 		Visibility:  uint8(req.Msg.GetVisibility()),
 	}
 
-	plugin, err := handler.pluginService.CreatePlugin(ctx, plugin, req.Msg.BinaryData)
+	plugin, err := handler.pluginService.CreatePlugin(ctx, plugin, req.Msg.GetDockerRepoName())
 	if err != nil {
 		resp := connect.NewResponse(&registryv1alpha1.CreateCuratedPluginResponse{
 			Configuration: plugin.ToProtoPlugin(),

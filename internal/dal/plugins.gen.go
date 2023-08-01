@@ -34,7 +34,9 @@ func newPlugin(db *gorm.DB, opts ...gen.DOOption) plugin {
 	_plugin.PluginName = field.NewString(tableName, "plugin_name")
 	_plugin.Version = field.NewString(tableName, "version")
 	_plugin.Reversion = field.NewUint32(tableName, "reversion")
-	_plugin.BinaryName = field.NewString(tableName, "binary_name")
+	_plugin.ImageName = field.NewString(tableName, "image_name")
+	_plugin.ImageDigest = field.NewString(tableName, "image_digest")
+	_plugin.DockerRepoID = field.NewString(tableName, "docker_repo_id")
 	_plugin.Description = field.NewString(tableName, "description")
 	_plugin.Visibility = field.NewUint8(tableName, "visibility")
 	_plugin.Deprecated = field.NewBool(tableName, "deprecated")
@@ -58,7 +60,9 @@ type plugin struct {
 	PluginName     field.String
 	Version        field.String
 	Reversion      field.Uint32
-	BinaryName     field.String
+	ImageName      field.String
+	ImageDigest    field.String
+	DockerRepoID   field.String
 	Description    field.String
 	Visibility     field.Uint8
 	Deprecated     field.Bool
@@ -88,7 +92,9 @@ func (p *plugin) updateTableName(table string) *plugin {
 	p.PluginName = field.NewString(table, "plugin_name")
 	p.Version = field.NewString(table, "version")
 	p.Reversion = field.NewUint32(table, "reversion")
-	p.BinaryName = field.NewString(table, "binary_name")
+	p.ImageName = field.NewString(table, "image_name")
+	p.ImageDigest = field.NewString(table, "image_digest")
+	p.DockerRepoID = field.NewString(table, "docker_repo_id")
 	p.Description = field.NewString(table, "description")
 	p.Visibility = field.NewUint8(table, "visibility")
 	p.Deprecated = field.NewBool(table, "deprecated")
@@ -111,7 +117,7 @@ func (p *plugin) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (p *plugin) fillFieldMap() {
-	p.fieldMap = make(map[string]field.Expr, 14)
+	p.fieldMap = make(map[string]field.Expr, 16)
 	p.fieldMap["id"] = p.ID
 	p.fieldMap["user_id"] = p.UserID
 	p.fieldMap["user_name"] = p.UserName
@@ -119,7 +125,9 @@ func (p *plugin) fillFieldMap() {
 	p.fieldMap["plugin_name"] = p.PluginName
 	p.fieldMap["version"] = p.Version
 	p.fieldMap["reversion"] = p.Reversion
-	p.fieldMap["binary_name"] = p.BinaryName
+	p.fieldMap["image_name"] = p.ImageName
+	p.fieldMap["image_digest"] = p.ImageDigest
+	p.fieldMap["docker_repo_id"] = p.DockerRepoID
 	p.fieldMap["description"] = p.Description
 	p.fieldMap["visibility"] = p.Visibility
 	p.fieldMap["deprecated"] = p.Deprecated

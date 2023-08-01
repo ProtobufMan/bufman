@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/ProtobufMan/bufman-cli/private/bufpkg/bufimage"
 	registryv1alpha1 "github.com/ProtobufMan/bufman-cli/private/gen/proto/go/bufman/alpha/registry/v1alpha1"
-	"github.com/ProtobufMan/bufman-cli/private/pkg/app"
 	"github.com/ProtobufMan/bufman/internal/e"
 	"github.com/ProtobufMan/bufman/internal/mapper"
 	"github.com/ProtobufMan/bufman/internal/model"
@@ -21,24 +20,19 @@ type CodeGenerateService interface {
 }
 
 type CodeGenerateServiceImpl struct {
-	pluginMapper       mapper.PluginMapper
-	codeGenerateHelper plugin.CodeGenerateHelper
+	pluginMapper     mapper.PluginMapper
+	dockerRepoMapper mapper.DockerRepoMapper
 }
 
 func NewCodeGenerateService() CodeGenerateService {
 	return &CodeGenerateServiceImpl{
-		pluginMapper:       &mapper.PluginMapperImpl{},
-		codeGenerateHelper: plugin.NewCodeGenerateHelper(),
+		pluginMapper:     &mapper.PluginMapperImpl{},
+		dockerRepoMapper: &mapper.DockerRepoMapperImpl{},
 	}
 }
 
 func (codeGenerateService *CodeGenerateServiceImpl) PluginCodeGenerate(ctx context.Context, userID string, req *connect.Request[registryv1alpha1.GenerateCodeRequest]) ([]*pluginpb.CodeGeneratorResponse, e.ResponseError) {
 	image, err := bufimage.NewImageForProto(req.Msg.GetImage())
-	if err != nil {
-		return nil, e.NewInternalError(err.Error())
-	}
-
-	container, err := app.NewContainerForOS()
 	if err != nil {
 		return nil, e.NewInternalError(err.Error())
 	}
@@ -76,6 +70,12 @@ func (codeGenerateService *CodeGenerateServiceImpl) PluginCodeGenerate(ctx conte
 			return nil, e.NewPermissionDeniedError(fmt.Sprintf("plugin %s/%s is private", owner, name))
 		}
 
+		// get docker repo
+		dockerRepo, err := codeGenerateService.dockerRepoMapper.FindByDockerRepoID(pluginModel.DockerRepoID)
+		if err != nil {
+			return nil, e.NewInternalError(err.Error())
+		}
+
 		// options
 		options := pluginGenerationRequest.GetOptions()
 		if len(options) != 1 {
@@ -93,11 +93,12 @@ func (codeGenerateService *CodeGenerateServiceImpl) PluginCodeGenerate(ctx conte
 			includeWellKnownTypes = pluginGenerationRequest.GetIncludeWellKnownTypes()
 		}
 
+		codeGenerateHelper := plugin.NewCodeGenerateHelper(dockerRepo.Address, dockerRepo.UserName, dockerRepo.Password)
 		// get CodeGeneratorRequest
-		codeGeneratorRequest := codeGenerateService.codeGenerateHelper.GetGeneratorRequest(image, option, includeImports, includeWellKnownTypes)
+		codeGeneratorRequest := codeGenerateHelper.GetGeneratorRequest(image, option, includeImports, includeWellKnownTypes)
 		// generate code
-		pluginName := pluginModel.BinaryName
-		codeGeneratorResponse, err := codeGenerateService.codeGenerateHelper.Generate(ctx, container, pluginName, codeGeneratorRequest)
+		imageName := fmt.Sprintf("%s@%s", pluginModel.ImageName, pluginModel.ImageDigest)
+		codeGeneratorResponse, err := codeGenerateHelper.Generate(ctx, pluginModel.PluginName, imageName, codeGeneratorRequest)
 		if err != nil {
 			return nil, e.NewInternalError(err.Error())
 		}

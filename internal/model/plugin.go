@@ -7,14 +7,16 @@ import (
 )
 
 type Plugin struct {
-	ID         int64  `gorm:"primaryKey;autoIncrement"`
-	UserID     string `gorm:"type:varchar(64);uniqueIndex:uni_plugin"` // 插件名，用户ID、插件名、版本、修订版本组成唯一索引
-	UserName   string `gorm:"type:varchar(200);not null"`
-	PluginID   string `gorm:"type:varchar(64);unique;not null"`
-	PluginName string `gorm:"type:varchar(200);uniqueIndex:uni_plugin"` // 插件名，用户ID、插件名、版本、修订版本组成唯一索引
-	Version    string `gorm:"type:varchar(200);uniqueIndex:uni_plugin"` // 插件版本
-	Reversion  uint32 `gorm:"uniqueIndex:uni_plugin"`                   // 修订版本
-	BinaryName string `gorm:"not null"`                                 // 插件二进制执行文件名称
+	ID           int64  `gorm:"primaryKey;autoIncrement"`
+	UserID       string `gorm:"type:varchar(64);uniqueIndex:uni_plugin"` // 插件名，用户ID、插件名、版本、修订版本组成唯一索引
+	UserName     string `gorm:"type:varchar(200);not null"`
+	PluginID     string `gorm:"type:varchar(64);unique;not null"`
+	PluginName   string `gorm:"type:varchar(200);uniqueIndex:uni_plugin"` // 插件名，用户ID、插件名、版本、修订版本组成唯一索引
+	Version      string `gorm:"type:varchar(200);uniqueIndex:uni_plugin"` // 插件版本
+	Reversion    uint32 `gorm:"uniqueIndex:uni_plugin"`                   // 修订版本
+	ImageName    string // 镜像名称
+	ImageDigest  string // 镜像digest
+	DockerRepoID string `gorm:"type:varchar(64)"` // docker repo id
 
 	Description    string    // 插件描述信息
 	Visibility     uint8     `gorm:"default:1"` // 可见性，1:public 2:private

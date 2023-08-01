@@ -2,47 +2,43 @@ package plugin
 
 import (
 	"context"
-	"github.com/ProtobufMan/bufman-cli/private/buf/bufcli"
 	"github.com/ProtobufMan/bufman-cli/private/bufpkg/bufimage"
-	"github.com/ProtobufMan/bufman-cli/private/bufpkg/bufpluginexec"
-	"github.com/ProtobufMan/bufman-cli/private/bufpkg/bufwasm"
-	"github.com/ProtobufMan/bufman-cli/private/pkg/app"
-	"github.com/ProtobufMan/bufman-cli/private/pkg/command"
-	"github.com/ProtobufMan/bufman/internal/constant"
 	"google.golang.org/protobuf/types/pluginpb"
-	"path/filepath"
 )
 
 type CodeGenerateHelper interface {
 	GetGeneratorRequest(image bufimage.Image, option string, includeImports, includeWellKnownTypes bool) *pluginpb.CodeGeneratorRequest
-	Generate(ctx context.Context, container app.Container, pluginName string, codeGeneratorRequest *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorResponse, error)
+	Generate(ctx context.Context, pluginName, image string, codeGeneratorRequest *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorResponse, error)
 }
 
-func NewCodeGenerateHelper() CodeGenerateHelper {
-	return &CodeGenerateHelperImpl{}
+func NewCodeGenerateHelper(address, username, password string) CodeGenerateHelper {
+	return &CodeGenerateHelperImpl{
+		address:  address,
+		username: username,
+		password: password,
+	}
 }
 
 type CodeGenerateHelperImpl struct {
+	address  string
+	username string
+	password string
 }
 
 func (helper *CodeGenerateHelperImpl) GetGeneratorRequest(image bufimage.Image, option string, includeImports, includeWellKnownTypes bool) *pluginpb.CodeGeneratorRequest {
 	return bufimage.ImageToCodeGeneratorRequest(image, option, nil, includeImports, includeWellKnownTypes)
 }
 
-func (helper *CodeGenerateHelperImpl) Generate(ctx context.Context, container app.Container, pluginName string, codeGeneratorRequest *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorResponse, error) {
-	storageosProvider := bufcli.NewStorageosProvider(false)
-	runner := command.NewRunner()
-	wasmPluginExecutor, err := bufwasm.NewPluginExecutor("")
+func (helper *CodeGenerateHelperImpl) Generate(ctx context.Context, pluginName, image string, codeGeneratorRequest *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorResponse, error) {
+
+	// 连接docker repo
+	d, err := NewDocker(helper.address, helper.username, helper.password)
 	if err != nil {
 		return nil, err
 	}
+	defer d.Close()
 
-	// generate
-	pluginPath := filepath.Join(constant.PluginSaveDir, pluginName)
-	var generateOptions []bufpluginexec.GenerateOption
-	generateOptions = append(generateOptions, bufpluginexec.GenerateWithPluginPath(pluginPath))
-	generateOptions = append(generateOptions, bufpluginexec.GenerateWithWASMEnabled())
-	codeGeneratorResponse, err := bufpluginexec.NewGenerator(nil, storageosProvider, runner, wasmPluginExecutor).Generate(ctx, container, pluginName, []*pluginpb.CodeGeneratorRequest{codeGeneratorRequest}, generateOptions...)
+	codeGeneratorResponse, err := d.GenerateCode(ctx, pluginName, image, codeGeneratorRequest)
 	if err != nil {
 		return nil, err
 	}

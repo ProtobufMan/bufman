@@ -31,16 +31,14 @@ type BufMan struct {
 
 type Docker struct {
 	Host       string
-	Timeout    time.Duration
 	CACertPath string
 	CertPath   string
 	KeyPath    string
 }
 
 var (
-	DataBase     *gorm.DB
-	Properties   *Config
-	DockerClient *client.Client
+	DataBase   *gorm.DB
+	Properties *Config
 )
 
 func LoadConfig() {
@@ -53,7 +51,6 @@ func LoadConfig() {
 		},
 		Docker: Docker{
 			Host:       client.DefaultDockerHost,
-			Timeout:    time.Second * 10,
 			CACertPath: "",
 			CertPath:   "",
 			KeyPath:    "",
@@ -70,26 +67,26 @@ func LoadConfig() {
 	if err := os.MkdirAll(constant.FileSavaDir, 0666); err != nil {
 		panic(err)
 	}
-	if err := os.MkdirAll(constant.PluginSaveDir, 0666); err != nil {
+
+	// test docker config
+	cli, err := NewDockerClient()
+	if err != nil {
 		panic(err)
 	}
-
-	// load docker cli
-	DockerClient = loadDockerCli()
+	defer cli.Close()
 }
 
-func loadDockerCli() *client.Client {
+func NewDockerClient() (*client.Client, error) {
 	options := make([]client.Opt, 0, 4)
 	options = append(options, client.WithAPIVersionNegotiation())
 	options = append(options, client.WithHost(Properties.Docker.Host))
-	options = append(options, client.WithTimeout(Properties.Docker.Timeout))
 	if Properties.Docker.CACertPath != "" {
 		options = append(options, client.WithTLSClientConfig(Properties.Docker.CACertPath, Properties.Docker.CertPath, Properties.Docker.KeyPath))
 	}
 	cli, err := client.NewClientWithOpts(options...)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	return cli
+	return cli, nil
 }

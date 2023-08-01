@@ -29,6 +29,7 @@ func InitDB() {
 			&FileManifest{},
 			&FileBlob{},
 			&Plugin{},
+			&DockerRepo{},
 		)
 		if initErr != nil {
 			panic(initErr)
