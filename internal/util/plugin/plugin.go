@@ -8,7 +8,7 @@ import (
 
 type CodeGenerateHelper interface {
 	GetGeneratorRequest(image bufimage.Image, option string, includeImports, includeWellKnownTypes bool) *pluginpb.CodeGeneratorRequest
-	Generate(ctx context.Context, pluginName, image string, codeGeneratorRequest *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorResponse, error)
+	Generate(ctx context.Context, pluginName, imageName, imageDigest string, codeGeneratorRequest *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorResponse, error)
 }
 
 func NewCodeGenerateHelper(address, username, password string) CodeGenerateHelper {
@@ -29,7 +29,7 @@ func (helper *CodeGenerateHelperImpl) GetGeneratorRequest(image bufimage.Image, 
 	return bufimage.ImageToCodeGeneratorRequest(image, option, nil, includeImports, includeWellKnownTypes)
 }
 
-func (helper *CodeGenerateHelperImpl) Generate(ctx context.Context, pluginName, image string, codeGeneratorRequest *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorResponse, error) {
+func (helper *CodeGenerateHelperImpl) Generate(ctx context.Context, pluginName, imageName, imageDigest string, codeGeneratorRequest *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorResponse, error) {
 
 	// 连接docker repo
 	d, err := NewDocker(helper.address, helper.username, helper.password)
@@ -38,7 +38,7 @@ func (helper *CodeGenerateHelperImpl) Generate(ctx context.Context, pluginName, 
 	}
 	defer d.Close()
 
-	codeGeneratorResponse, err := d.GenerateCode(ctx, pluginName, image, codeGeneratorRequest)
+	codeGeneratorResponse, err := d.GenerateCode(ctx, pluginName, imageName, imageDigest, codeGeneratorRequest)
 	if err != nil {
 		return nil, err
 	}

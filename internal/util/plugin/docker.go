@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"github.com/ProtobufMan/bufman-cli/private/pkg/protoencoding"
 	"github.com/ProtobufMan/bufman/internal/config"
 	"github.com/docker/cli/cli/streams"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/registry"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/jsonmessage"
@@ -21,8 +21,8 @@ import (
 
 type Docker interface {
 	Close() error
-	PullImage(ctx context.Context, refStr string) error
-	GenerateCode(ctx context.Context, pluginName, refStr string, request *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorResponse, error)
+	TryPullImage(ctx context.Context, imageName, imageDigest string) error // 尝试拉取镜像，如果已经存在，则不会拉取
+	GenerateCode(ctx context.Context, pluginName, imageName, imageDigest string, request *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorResponse, error)
 }
 
 type docker struct {
@@ -54,37 +54,21 @@ func (d *docker) Close() error {
 	return nil
 }
 
-func (d *docker) GenerateCode(ctx context.Context, pluginName, refStr string, request *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorResponse, error) {
+func (d *docker) GenerateCode(ctx context.Context, pluginName, imageName, imageDigest string, request *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorResponse, error) {
+	refStr := d.GetImageIdentifier(imageName, imageDigest)
+
 	// 查询镜像是否已经拉取
-	imageList, err := d.ListImage(ctx, refStr)
+	err := d.TryPullImage(ctx, imageName, imageDigest)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(imageList) == 0 {
-		// 拉取镜像
-		err = d.PullImage(ctx, refStr)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// 查询容器
-	var containerID string
-	containerList, err := d.ListContainer(ctx, refStr)
+	// 创造container
+	containerID, err := d.CreateContainer(ctx, pluginName, refStr)
 	if err != nil {
 		return nil, err
 	}
-	if len(containerList) == 0 {
-		// 创造container
-		containerID, err = d.CreateContainer(ctx, pluginName, refStr)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		// 已有容器
-		containerID = containerList[0].ID
-	}
+	defer d.DeleteContainer(ctx, containerID)
 
 	// 接管输入输出
 	hijackedResponse, err := d.AttachContainer(ctx, containerID)
@@ -102,30 +86,25 @@ func (d *docker) GenerateCode(ctx context.Context, pluginName, refStr string, re
 	return response, nil
 }
 
-func (d *docker) ListImage(ctx context.Context, refStr string) ([]types.ImageSummary, error) {
-	return d.cli.ImageList(ctx, types.ImageListOptions{
-		All:     true,
-		Filters: filters.NewArgs(filters.Arg("reference", refStr)),
-	})
-}
-
-func (d *docker) ListContainer(ctx context.Context, refStr string) ([]types.Container, error) {
-	containerList, err := d.cli.ContainerList(ctx, types.ContainerListOptions{
-		All:     true,
-		Filters: filters.NewArgs(filters.Arg("ancestor", refStr), filters.Arg("status", "created")),
+func (d *docker) FindImageByDigest(ctx context.Context, imageDigest string) (types.ImageSummary, bool) {
+	images, err := d.cli.ImageList(ctx, types.ImageListOptions{
+		All: true,
+		//Filters: filters.NewArgs(filters.Arg("reference", refStr)),
 	})
 	if err != nil {
-		return nil, err
+		return types.ImageSummary{}, false
 	}
 
-	if len(containerList) > 0 {
-		return containerList, nil
+	for i := 0; i < len(images); i++ {
+		image := images[i]
+		for j := 0; j < len(image.RepoDigests); j++ {
+			if image.RepoDigests[j] == imageDigest {
+				return image, true
+			}
+		}
 	}
 
-	return d.cli.ContainerList(ctx, types.ContainerListOptions{
-		All:     true,
-		Filters: filters.NewArgs(filters.Arg("ancestor", refStr), filters.Arg("status", "exited")),
-	})
+	return types.ImageSummary{}, false
 }
 
 func (d *docker) PullImage(ctx context.Context, refStr string) error {
@@ -156,6 +135,22 @@ func (d *docker) PullImage(ctx context.Context, refStr string) error {
 	return nil
 }
 
+func (d *docker) TryPullImage(ctx context.Context, imageName, imageDigest string) error {
+	refStr := d.GetImageIdentifier(imageName, imageDigest)
+
+	// 查询镜像是否已经拉取
+	_, ok := d.FindImageByDigest(ctx, imageDigest)
+	if !ok {
+		// 拉取镜像
+		err := d.PullImage(ctx, refStr)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (d *docker) CreateContainer(ctx context.Context, pluginName, image string) (string, error) {
 	createResponse, err := d.cli.ContainerCreate(ctx, &container.Config{
 		AttachStderr: true,
@@ -180,6 +175,14 @@ func (d *docker) AttachContainer(ctx context.Context, containerID string) (types
 		Stdout: true,
 		Stderr: true,
 		// DetachKeys: containerID,
+	})
+}
+
+func (d *docker) DeleteContainer(ctx context.Context, containerID string) error {
+	return d.cli.ContainerRemove(ctx, containerID, types.ContainerRemoveOptions{
+		RemoveVolumes: true,
+		RemoveLinks:   true,
+		Force:         true,
 	})
 }
 
@@ -222,4 +225,8 @@ func (d *docker) startContainer(ctx context.Context, containerID string, hijacke
 	}
 
 	return response, nil
+}
+
+func (d *docker) GetImageIdentifier(imageName, imageDigest string) string {
+	return fmt.Sprintf("%s@%s", imageName, imageDigest)
 }

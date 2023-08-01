@@ -6,6 +6,7 @@ import (
 	"github.com/ProtobufMan/bufman/internal/e"
 	"github.com/ProtobufMan/bufman/internal/mapper"
 	"github.com/ProtobufMan/bufman/internal/model"
+	"github.com/ProtobufMan/bufman/internal/util/plugin"
 	"github.com/ProtobufMan/bufman/internal/util/storage"
 	"gorm.io/gorm"
 )
@@ -41,9 +42,9 @@ func (pluginService *PluginServiceImpl) ListPlugins(ctx context.Context, offset 
 	return plugins, nil
 }
 
-func (pluginService *PluginServiceImpl) CreatePlugin(ctx context.Context, plugin *model.Plugin, dockerRepoName string) (*model.Plugin, e.ResponseError) {
+func (pluginService *PluginServiceImpl) CreatePlugin(ctx context.Context, pluginModel *model.Plugin, dockerRepoName string) (*model.Plugin, e.ResponseError) {
 	// 查询docker repo
-	dockerRepo, err := pluginService.dockerRepoMapper.FindByUserIDAndName(plugin.UserID, dockerRepoName)
+	dockerRepo, err := pluginService.dockerRepoMapper.FindByUserIDAndName(pluginModel.UserID, dockerRepoName)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, e.NewNotFoundError("docker repo name")
@@ -52,17 +53,27 @@ func (pluginService *PluginServiceImpl) CreatePlugin(ctx context.Context, plugin
 		return nil, e.NewInternalError(err.Error())
 	}
 
+	// try pull
+	docker, err := plugin.NewDocker(dockerRepo.Address, dockerRepo.UserName, dockerRepo.Password)
+	if err != nil {
+		return nil, e.NewInternalError(err.Error())
+	}
+	err = docker.TryPullImage(ctx, pluginModel.ImageName, pluginModel.ImageDigest)
+	if err != nil {
+		return nil, e.NewInternalError(err.Error())
+	}
+
 	// 记录在数据库中
-	plugin.DockerRepoID = dockerRepo.DockerRepoID
-	err = pluginService.pluginMapper.Create(plugin)
+	pluginModel.DockerRepoID = dockerRepo.DockerRepoID
+	err = pluginService.pluginMapper.Create(pluginModel)
 	if err != nil {
 		if errors.Is(err, gorm.ErrDuplicatedKey) {
-			return plugin, e.NewAlreadyExistsError("plugin")
+			return pluginModel, e.NewAlreadyExistsError("plugin")
 		}
 		return nil, e.NewInternalError(err.Error())
 	}
 
-	return plugin, nil
+	return pluginModel, nil
 }
 
 func (pluginService *PluginServiceImpl) GetLatestPlugin(ctx context.Context, owner string, name string) (*model.Plugin, e.ResponseError) {

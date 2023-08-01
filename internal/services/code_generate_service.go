@@ -97,8 +97,7 @@ func (codeGenerateService *CodeGenerateServiceImpl) PluginCodeGenerate(ctx conte
 		// get CodeGeneratorRequest
 		codeGeneratorRequest := codeGenerateHelper.GetGeneratorRequest(image, option, includeImports, includeWellKnownTypes)
 		// generate code
-		imageName := fmt.Sprintf("%s@%s", pluginModel.ImageName, pluginModel.ImageDigest)
-		codeGeneratorResponse, err := codeGenerateHelper.Generate(ctx, pluginModel.PluginName, imageName, codeGeneratorRequest)
+		codeGeneratorResponse, err := codeGenerateHelper.Generate(ctx, pluginModel.PluginName, pluginModel.ImageName, pluginModel.ImageDigest, codeGeneratorRequest)
 		if err != nil {
 			return nil, e.NewInternalError(err.Error())
 		}
