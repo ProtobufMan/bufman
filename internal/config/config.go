@@ -17,8 +17,9 @@ const (
 )
 
 type Config struct {
-	BufMan BufMan
-	Docker Docker
+	BufMan        BufMan
+	Docker        Docker
+	ElasticSearch ElasticSearch
 }
 
 type BufMan struct {
@@ -34,6 +35,12 @@ type Docker struct {
 	CACertPath string
 	CertPath   string
 	KeyPath    string
+}
+
+type ElasticSearch struct {
+	Urls     []string
+	Username string
+	Password string
 }
 
 var (

@@ -257,7 +257,7 @@ func (pushService *PushServiceImpl) saveFileManifestAndBlobs(ctx context.Context
 		}
 
 		// 写入文件
-		err = pushService.storageHelper.StoreFromReader(digest.Hex(), readCloser)
+		err = pushService.storageHelper.StoreBlobFromReader(ctx, digest.Hex(), readCloser)
 		if err != nil {
 			return e.NewInternalError(registryv1alpha1connect.PushServicePushManifestAndBlobsProcedure)
 		}
@@ -277,7 +277,7 @@ func (pushService *PushServiceImpl) saveFileManifestAndBlobs(ctx context.Context
 	if err != nil {
 		return e.NewInternalError(registryv1alpha1connect.PushServicePushManifestAndBlobsProcedure)
 	}
-	err = pushService.storageHelper.StoreFromReader(blob.Digest().Hex(), readCloser)
+	err = pushService.storageHelper.StoreManifestFromReader(ctx, blob.Digest().Hex(), readCloser)
 	if err != nil {
 		return e.NewInternalError(registryv1alpha1connect.PushServicePushManifestAndBlobsProcedure)
 	}

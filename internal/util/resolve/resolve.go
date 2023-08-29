@@ -114,7 +114,7 @@ func (resolver *ResolverImpl) GetBufConfigFromCommitID(ctx context.Context, comm
 	}
 
 	// 读取manifest
-	reader, err := resolver.storageHelper.ReadToReader(manifestModel.Digest)
+	reader, err := resolver.storageHelper.ReadManifestToReader(ctx, manifestModel.Digest)
 	if err != nil {
 		return nil, nil
 	}
@@ -134,7 +134,7 @@ func (resolver *ResolverImpl) GetBufConfigFromCommitID(ctx context.Context, comm
 					return errors.New("two config files")
 				}
 
-				reader, err := resolver.storageHelper.ReadToReader(digest.Hex())
+				reader, err := resolver.storageHelper.ReadBlobToReader(ctx, digest.Hex())
 				if err != nil {
 					return err
 				}

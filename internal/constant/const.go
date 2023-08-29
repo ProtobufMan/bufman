@@ -20,6 +20,9 @@ const (
 
 const (
 	FileSavaDir = "blobs"
+
+	ESFileBlobIndex = "blobs"
+	ESManifestIndex = "manifest"
 )
 
 const (

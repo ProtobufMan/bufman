@@ -1,47 +1,109 @@
 package storage
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"github.com/ProtobufMan/bufman-cli/private/bufpkg/bufconfig"
 	"github.com/ProtobufMan/bufman-cli/private/bufpkg/bufmodule"
 	"github.com/ProtobufMan/bufman-cli/private/pkg/manifest"
-	"github.com/ProtobufMan/bufman/internal/constant"
+	"github.com/ProtobufMan/bufman/internal/config"
 	"github.com/ProtobufMan/bufman/internal/model"
+	"github.com/ProtobufMan/bufman/internal/util/es"
 	"io"
-	"os"
-	"path"
 	"sync"
 )
 
+type BaseStorageHelper interface {
+	StoreBlobFromReader(ctx context.Context, digest string, readCloser io.ReadCloser) error // 存储内容
+	StoreBlob(ctx context.Context, digest string, content []byte) error
+	StoreManifestFromReader(ctx context.Context, digest string, readCloser io.ReadCloser) error
+	StoreManifest(ctx context.Context, digest string, content []byte) error
+	ReadBlobToReader(ctx context.Context, digest string) (io.Reader, error) // 读取内容
+	ReadBlob(ctx context.Context, fileName string) ([]byte, error)
+	ReadManifestToReader(ctx context.Context, fileName string) (io.Reader, error)
+	ReadManifest(ctx context.Context, fileName string) ([]byte, error)
+}
+
 type StorageHelper interface {
-	StoreFromReader(digest string, readCloser io.ReadCloser) error // 存储内容
-	Store(digest string, content []byte) error
-	ReadToReader(digest string) (io.Reader, error) // 读取内容
-	Read(fileName string) ([]byte, error)
+	BaseStorageHelper
+	ReadToManifestAndBlobSet(ctx context.Context, modelFileManifest *model.FileManifest, fileBlobs model.FileBlobs) (*manifest.Manifest, *manifest.BlobSet, error) // 读取为manifest和blob set
 	GetDocumentAndLicenseFromBlob(ctx context.Context, fileManifest *manifest.Manifest, blobSet *manifest.BlobSet) (manifest.Blob, manifest.Blob, error)
 	GetBufManConfigFromBlob(ctx context.Context, fileManifest *manifest.Manifest, blobSet *manifest.BlobSet) (manifest.Blob, error)
 	GetDocumentFromBlob(ctx context.Context, fileManifest *manifest.Manifest, blobSet *manifest.BlobSet) (manifest.Blob, error)
 	GetLicenseFromBlob(ctx context.Context, fileManifest *manifest.Manifest, blobSet *manifest.BlobSet) (manifest.Blob, error)
-	ReadToManifestAndBlobSet(ctx context.Context, modelFileManifest *model.FileManifest, fileBlobs model.FileBlobs) (*manifest.Manifest, *manifest.BlobSet, error) // 读取为manifest和blob set
 }
 
 type StorageHelperImpl struct {
-	mu     sync.Mutex
-	muDict map[string]*sync.RWMutex
-
-	pluginMu     sync.Mutex
-	pluginMuDict map[string]*sync.RWMutex
+	BaseStorageHelper
 }
 
-var storageHelperImpl = &StorageHelperImpl{
-	muDict:       map[string]*sync.RWMutex{},
-	pluginMuDict: map[string]*sync.RWMutex{},
-}
+// 单例模式
+var storageHelperImpl *StorageHelperImpl
+var once sync.Once
 
 func NewStorageHelper() StorageHelper {
+	if storageHelperImpl == nil {
+		// 对象初始化
+		once.Do(func() {
+			if len(config.Properties.ElasticSearch.Urls) == 0 {
+				storageHelperImpl = &StorageHelperImpl{
+					BaseStorageHelper: &DiskStorageHelperImpl{
+						muDict:       map[string]*sync.RWMutex{},
+						pluginMuDict: map[string]*sync.RWMutex{},
+					},
+				}
+			} else {
+				esClient, err := es.NewEsClient(config.Properties.ElasticSearch.Username, config.Properties.ElasticSearch.Password, config.Properties.ElasticSearch.Urls...)
+				if err != nil {
+					panic(err)
+				}
+
+				storageHelperImpl = &StorageHelperImpl{
+					BaseStorageHelper: &ESStorageHelperImpl{
+						EsClient: esClient,
+					},
+				}
+			}
+		})
+	}
+
 	return storageHelperImpl
+}
+
+func (helper *StorageHelperImpl) ReadToManifestAndBlobSet(ctx context.Context, modelFileManifest *model.FileManifest, fileBlobs model.FileBlobs) (*manifest.Manifest, *manifest.BlobSet, error) {
+	// 读取文件清单
+	reader, err := helper.ReadManifestToReader(ctx, modelFileManifest.Digest)
+	if err != nil {
+		return nil, nil, err
+	}
+	fileManifest, err := manifest.NewFromReader(reader)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// 读取文件blobs
+	blobs := make([]manifest.Blob, 0, len(fileBlobs))
+	for i := 0; i < len(fileBlobs); i++ {
+		// 读取文件
+		reader, err := helper.ReadBlobToReader(ctx, fileBlobs[i].Digest)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		// 生成blob
+		blob, err := manifest.NewMemoryBlobFromReader(reader)
+		if err != nil {
+			return nil, nil, err
+		}
+		blobs = append(blobs, blob)
+	}
+
+	blobSet, err := manifest.NewBlobSet(ctx, blobs)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return fileManifest, blobSet, nil
 }
 
 func (helper *StorageHelperImpl) GetDocumentAndLicenseFromBlob(ctx context.Context, fileManifest *manifest.Manifest, blobSet *manifest.BlobSet) (manifest.Blob, manifest.Blob, error) {
@@ -183,138 +245,4 @@ func (helper *StorageHelperImpl) GetLicenseFromBlob(ctx context.Context, fileMan
 	}
 
 	return licenseBlob, nil
-}
-
-func (helper *StorageHelperImpl) ReadToManifestAndBlobSet(ctx context.Context, modelFileManifest *model.FileManifest, fileBlobs model.FileBlobs) (*manifest.Manifest, *manifest.BlobSet, error) {
-	// 读取文件清单
-	reader, err := helper.ReadToReader(modelFileManifest.Digest)
-	if err != nil {
-		return nil, nil, err
-	}
-	fileManifest, err := manifest.NewFromReader(reader)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// 读取文件blobs
-	blobs := make([]manifest.Blob, 0, len(fileBlobs))
-	for i := 0; i < len(fileBlobs); i++ {
-		// 读取文件
-		reader, err := helper.ReadToReader(fileBlobs[i].Digest)
-		if err != nil {
-			return nil, nil, err
-		}
-
-		// 生成blob
-		blob, err := manifest.NewMemoryBlobFromReader(reader)
-		if err != nil {
-			return nil, nil, err
-		}
-		blobs = append(blobs, blob)
-	}
-
-	blobSet, err := manifest.NewBlobSet(ctx, blobs)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return fileManifest, blobSet, nil
-}
-
-func (helper *StorageHelperImpl) StoreFromReader(digest string, readCloser io.ReadCloser) error {
-	helper.mu.Lock()
-	defer helper.mu.Unlock()
-
-	if _, ok := helper.muDict[digest]; !ok {
-		helper.muDict[digest] = &sync.RWMutex{}
-	}
-
-	// 上写锁
-	helper.muDict[digest].Lock()
-	defer helper.muDict[digest].Unlock()
-
-	// 打开文件
-	filePath := helper.GetFilePath(digest)
-	file, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_EXCL, 0666)
-	if os.IsExist(err) {
-		// 已经存在，直接返回
-		return nil
-	}
-	if err != nil {
-		return err
-	}
-
-	// 写入文件
-	_, err = io.Copy(file, readCloser)
-	if err != nil {
-		return err
-	}
-
-	return readCloser.Close()
-}
-
-func (helper *StorageHelperImpl) Store(digest string, content []byte) error {
-	helper.mu.Lock()
-	defer helper.mu.Unlock()
-
-	if _, ok := helper.muDict[digest]; !ok {
-		helper.muDict[digest] = &sync.RWMutex{}
-	}
-
-	// 上写锁
-	helper.muDict[digest].Lock()
-	defer helper.muDict[digest].Unlock()
-
-	// 打开文件
-	filePath := helper.GetFilePath(digest)
-	file, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_EXCL, 0666)
-	if os.IsExist(err) {
-		// 已经存在，直接返回
-		return nil
-	}
-	if err != nil {
-		return err
-	}
-
-	_, err = file.Write(content)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (helper *StorageHelperImpl) ReadToReader(fileName string) (io.Reader, error) {
-	content, err := helper.Read(fileName)
-	if err != nil {
-		return nil, err
-	}
-
-	return bytes.NewReader(content), nil
-}
-
-func (helper *StorageHelperImpl) Read(fileName string) ([]byte, error) {
-	helper.mu.Lock()
-	defer helper.mu.Unlock()
-
-	if _, ok := helper.muDict[fileName]; !ok {
-		helper.muDict[fileName] = &sync.RWMutex{}
-	}
-
-	// 上读锁
-	helper.muDict[fileName].RLock()
-	defer helper.muDict[fileName].RUnlock()
-
-	// 读取文件
-	filePath := helper.GetFilePath(fileName)
-	content, err := os.ReadFile(filePath)
-	if err != nil {
-		return nil, err
-	}
-
-	return content, nil
-}
-
-func (helper *StorageHelperImpl) GetFilePath(fileName string) string {
-	return path.Join(constant.FileSavaDir, fileName)
 }
