@@ -10,11 +10,13 @@ import (
 type SearchService interface {
 	SearchUser(ctx context.Context, query string, offset, limit int, reverse bool) (model.Users, e.ResponseError)
 	SearchTag(ctx context.Context, repositoryID, query string, offset, limit int, reverse bool) (model.Tags, e.ResponseError)
+	SearchDraft(ctx context.Context, repositoryID, query string, offset, limit int, reverse bool) (model.Commits, e.ResponseError)
 }
 
 type SearchServiceImpl struct {
-	userMapper mapper.UserMapper
-	tagMapper  mapper.TagMapper
+	userMapper   mapper.UserMapper
+	commitMapper mapper.CommitMapper
+	tagMapper    mapper.TagMapper
 }
 
 func (searchService *SearchServiceImpl) SearchUser(ctx context.Context, query string, offset, limit int, reverse bool) (model.Users, e.ResponseError) {
@@ -33,4 +35,13 @@ func (searchService *SearchServiceImpl) SearchTag(ctx context.Context, repositor
 	}
 
 	return tags, nil
+}
+
+func (searchService *SearchServiceImpl) SearchDraft(ctx context.Context, repositoryID, query string, offset, limit int, reverse bool) (model.Commits, e.ResponseError) {
+	commits, err := searchService.commitMapper.FindDraftPageByRepositoryIDAndQuery(repositoryID, query, offset, limit, reverse)
+	if err != nil {
+		return nil, e.NewInternalError(err.Error())
+	}
+
+	return commits, nil
 }

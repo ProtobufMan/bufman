@@ -115,6 +115,46 @@ func (handler *SearchServiceHandler) SearchTag(ctx context.Context, req *connect
 }
 
 func (handler *SearchServiceHandler) SearchDraft(ctx context.Context, req *connect.Request[registryv1alpha1.SearchDraftRequest]) (*connect.Response[registryv1alpha1.SearchDraftResponse], error) {
-	//TODO implement me
-	panic("implement me")
+	userID, _ := ctx.Value(constant.UserIDKey).(string)
+
+	// 验证参数
+	argErr := handler.validator.CheckPageSize(req.Msg.GetPageSize())
+	if argErr != nil {
+		return nil, connect.NewError(argErr.Code(), argErr.Err())
+	}
+	argErr = handler.validator.CheckQuery(req.Msg.GetQuery())
+	if argErr != nil {
+		return nil, connect.NewError(argErr.Code(), argErr.Err())
+	}
+
+	// 查询权限
+	repository, checkErr := handler.validator.CheckRepositoryCanAccess(userID, req.Msg.GetRepositoryOwner(), req.Msg.GetRepositoryName(), registryv1alpha1connect.SearchServiceSearchTagProcedure)
+	if checkErr != nil {
+		return nil, connect.NewError(checkErr.Code(), checkErr)
+	}
+
+	// 解析page token
+	pageTokenChaim, err := security.ParsePageToken(req.Msg.GetPageToken())
+	if err != nil {
+		return nil, e.NewInvalidArgumentError("page token")
+	}
+
+	// 查询结果
+	commits, respErr := handler.searchService.SearchDraft(ctx, repository.RepositoryID, req.Msg.GetQuery(), pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), req.Msg.GetReverse())
+	if respErr != nil {
+		return nil, connect.NewError(respErr.Code(), respErr)
+	}
+
+	// 生成下一页token
+	nextPageToken, err := security.GenerateNextPageToken(pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), len(commits))
+	if err != nil {
+		return nil, e.NewInternalError("generate next page token")
+	}
+
+	resp := connect.NewResponse(&registryv1alpha1.SearchDraftResponse{
+		RepositoryCommits: commits.ToProtoRepositoryCommits(),
+		NextPageToken:     nextPageToken,
+	})
+
+	return resp, nil
 }

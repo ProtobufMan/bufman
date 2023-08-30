@@ -22,6 +22,7 @@ type CommitMapper interface {
 	FindPageByRepositoryIDAndCommitName(repositoryID string, commitName string, offset, limit int, reverse bool) (model.Commits, error)
 	FindPageByRepositoryIDAndReference(repositoryID string, reference string, offset, limit int, reverse bool) (model.Commits, error)
 	FindDraftPageByRepositoryID(repositoryID string, offset, limit int, reverse bool) (model.Commits, error)
+	FindDraftPageByRepositoryIDAndQuery(repositoryID, query string, offset, limit int, reverse bool) (model.Commits, error)
 	DeleteByRepositoryIDAndDraftName(repositoryID string, draftName string) error
 }
 
@@ -275,6 +276,15 @@ func (c *CommitMapperImpl) FindPageByRepositoryIDAndReference(repositoryID strin
 
 func (c *CommitMapperImpl) FindDraftPageByRepositoryID(repositoryID string, offset, limit int, reverse bool) (model.Commits, error) {
 	stmt := dal.Commit.Where(dal.Commit.RepositoryID.Eq(repositoryID), dal.Commit.DraftName.Neq("")).Offset(offset).Limit(limit)
+	if reverse {
+		stmt = stmt.Order(dal.Commit.ID.Desc())
+	}
+
+	return stmt.Find()
+}
+
+func (c *CommitMapperImpl) FindDraftPageByRepositoryIDAndQuery(repositoryID, query string, offset, limit int, reverse bool) (model.Commits, error) {
+	stmt := dal.Commit.Where(dal.Commit.RepositoryID.Eq(repositoryID), dal.Commit.DraftName.Neq(""), dal.Commit.DraftName.Like("%"+query+"%")).Offset(offset).Limit(limit)
 	if reverse {
 		stmt = stmt.Order(dal.Commit.ID.Desc())
 	}
