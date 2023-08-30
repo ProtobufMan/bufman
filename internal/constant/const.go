@@ -23,6 +23,7 @@ const (
 
 	ESFileBlobIndex = "blobs"
 	ESManifestIndex = "manifest"
+	ESDocumentIndex = "documentation"
 )
 
 const (
