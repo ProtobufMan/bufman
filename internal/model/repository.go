@@ -68,6 +68,20 @@ func (repository *Repository) ToProtoRepository() *registryv1alpha1.Repository {
 	}
 }
 
+func (repository *Repository) ToProtoSearchResult() *registryv1alpha1.RepositorySearchResult {
+	if repository == nil {
+		return (&Repository{}).ToProtoSearchResult()
+	}
+
+	return &registryv1alpha1.RepositorySearchResult{
+		Id:         repository.RepositoryID,
+		Name:       repository.RepositoryName,
+		Owner:      repository.UserName,
+		Visibility: registryv1alpha1.Visibility(repository.Visibility),
+		Deprecated: repository.Deprecated,
+	}
+}
+
 type Repositories []*Repository
 
 func (repositoryEntities *Repositories) ToProtoRepositories() []*registryv1alpha1.Repository {
@@ -78,6 +92,16 @@ func (repositoryEntities *Repositories) ToProtoRepositories() []*registryv1alpha
 	}
 
 	return repositories
+}
+
+func (repositoryEntities *Repositories) ToProtoSearchResults() []*registryv1alpha1.RepositorySearchResult {
+	repositorySearchResults := make([]*registryv1alpha1.RepositorySearchResult, 0, len(*repositoryEntities))
+
+	for i := 0; i < len(*repositoryEntities); i++ {
+		repositorySearchResults = append(repositorySearchResults, (*repositoryEntities)[i].ToProtoSearchResult())
+	}
+
+	return repositorySearchResults
 }
 
 type RepositoryCounts struct {

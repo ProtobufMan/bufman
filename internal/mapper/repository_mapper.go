@@ -12,6 +12,7 @@ type RepositoryMapper interface {
 	FindByRepositoryID(repositoryID string) (*model.Repository, error)
 	FindByUserNameAndRepositoryName(userName, RepositoryName string) (*model.Repository, error)
 	FindPage(offset, limit int, reverse bool) (model.Repositories, error)
+	FindPageByQuery(query string, offset, limit int, reverse bool) (model.Repositories, error)
 	FindPageByUserID(userID string, offset, limit int, reverse bool) (model.Repositories, error)
 	FindAccessiblePageByUserID(userID string, offset, limit int, reverse bool) (model.Repositories, error)
 	DeleteByRepositoryID(repositoryID string) error
@@ -45,6 +46,15 @@ func (r *RepositoryMapperImpl) FindByUserNameAndRepositoryName(userName, Reposit
 
 func (r *RepositoryMapperImpl) FindPage(offset, limit int, reverse bool) (model.Repositories, error) {
 	stmt := dal.Repository.Offset(offset).Limit(limit)
+	if reverse {
+		stmt = stmt.Order(dal.Repository.ID.Desc())
+	}
+
+	return stmt.Find()
+}
+
+func (r *RepositoryMapperImpl) FindPageByQuery(query string, offset, limit int, reverse bool) (model.Repositories, error) {
+	stmt := dal.Repository.Where(dal.Repository.RepositoryName.Like("%" + query + "%")).Or(dal.Repository.Description.Like("%" + query + "%")).Offset(offset).Limit(limit)
 	if reverse {
 		stmt = stmt.Order(dal.Repository.ID.Desc())
 	}
