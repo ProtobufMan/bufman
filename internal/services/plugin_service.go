@@ -58,6 +58,8 @@ func (pluginService *PluginServiceImpl) CreatePlugin(ctx context.Context, plugin
 	if err != nil {
 		return nil, e.NewInternalError(err.Error())
 	}
+	defer docker.Close()
+
 	err = docker.TryPullImage(ctx, pluginModel.ImageName, pluginModel.ImageDigest)
 	if err != nil {
 		return nil, e.NewInternalError(err.Error())
