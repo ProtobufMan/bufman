@@ -56,7 +56,13 @@ func (helper *ESStorageHelperImpl) ReadBlobToReader(ctx context.Context, digest 
 }
 
 func (helper *ESStorageHelperImpl) ReadBlob(ctx context.Context, digest string) ([]byte, error) {
-	return helper.read(ctx, constant.ESFileBlobIndex, digest)
+	b := &model.FileBlob{}
+	err := helper.read(ctx, constant.ESManifestIndex, digest, b)
+	if err != nil {
+		return nil, err
+	}
+
+	return b.Content, nil
 }
 
 func (helper *ESStorageHelperImpl) ReadManifestToReader(ctx context.Context, digest string) (io.Reader, error) {
@@ -68,22 +74,27 @@ func (helper *ESStorageHelperImpl) ReadManifestToReader(ctx context.Context, dig
 	return bytes.NewReader(content), nil
 }
 
-func (helper *ESStorageHelperImpl) ReadManifest(ctx context.Context, fileName string) ([]byte, error) {
-	return helper.read(ctx, constant.ESManifestIndex, fileName)
+func (helper *ESStorageHelperImpl) ReadManifest(ctx context.Context, digest string) ([]byte, error) {
+	m := &model.FileManifest{}
+	err := helper.read(ctx, constant.ESManifestIndex, digest, m)
+	if err != nil {
+		return nil, err
+	}
+
+	return m.Content, nil
 }
 
-func (helper *ESStorageHelperImpl) read(ctx context.Context, index string, digest string) ([]byte, error) {
+func (helper *ESStorageHelperImpl) read(ctx context.Context, index string, digest string, v interface{}) error {
 	// 存储在es中
 	data, err := helper.EsClient.Find(ctx, index, digest)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	mapping := &FileMapping{}
-	err = json.Unmarshal(data, mapping)
+	err = json.Unmarshal(data, &v)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return mapping.Content, nil
+	return nil
 }
