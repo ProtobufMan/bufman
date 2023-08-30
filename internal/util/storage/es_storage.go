@@ -31,14 +31,8 @@ func (helper *ESStorageHelperImpl) StoreDocumentation(ctx context.Context, blob 
 }
 
 func (helper *ESStorageHelperImpl) store(ctx context.Context, index, digest string, v interface{}) error {
-	// 转为json
-	jsonBody, err := json.Marshal(&v)
-	if err != nil {
-		return err
-	}
-
 	// 存储在es中
-	err = helper.EsClient.Create(ctx, index, digest, jsonBody)
+	err := helper.EsClient.Create(ctx, index, digest, v)
 	if err != nil {
 		return err
 	}
@@ -57,7 +51,7 @@ func (helper *ESStorageHelperImpl) ReadBlobToReader(ctx context.Context, digest 
 
 func (helper *ESStorageHelperImpl) ReadBlob(ctx context.Context, digest string) ([]byte, error) {
 	b := &model.FileBlob{}
-	err := helper.read(ctx, constant.ESManifestIndex, digest, b)
+	err := helper.read(ctx, constant.ESFileBlobIndex, digest, b)
 	if err != nil {
 		return nil, err
 	}

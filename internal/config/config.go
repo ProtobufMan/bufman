@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"github.com/ProtobufMan/bufman/internal/constant"
 	"github.com/docker/docker/client"
 	"github.com/olivere/elastic/v7"
@@ -63,6 +64,11 @@ func LoadConfig() {
 			CertPath:   "",
 			KeyPath:    "",
 		},
+		ElasticSearch: ElasticSearch{
+			Urls:     []string{elastic.DefaultURL},
+			Username: "",
+			Password: "",
+		},
 	}
 
 	if mysqlDSNENV := os.Getenv(mysqlDSNKey); mysqlDSNENV != "" {
@@ -100,6 +106,10 @@ func NewDockerClient() (*client.Client, error) {
 }
 
 func NewEsClient() (*elastic.Client, error) {
+	if len(Properties.ElasticSearch.Urls) == 0 {
+		return nil, errors.New("no elastic search config")
+	}
+
 	c, err := elastic.NewClient(elastic.SetURL(Properties.ElasticSearch.Urls...), elastic.SetBasicAuth(Properties.ElasticSearch.Username, Properties.ElasticSearch.Password))
 	if err != nil {
 		return nil, err

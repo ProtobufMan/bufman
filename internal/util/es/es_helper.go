@@ -7,7 +7,7 @@ import (
 )
 
 type Client interface {
-	Create(ctx context.Context, index string, id string, data []byte) error
+	Create(ctx context.Context, index string, id string, body interface{}) error
 	Delete(ctx context.Context, index string, id string) error
 	Find(ctx context.Context, index string, id string) ([]byte, error)
 	Query(ctx context.Context, index string, query string, offset, limit int) ([][]byte, error)
@@ -28,11 +28,11 @@ type clientImpl struct {
 	client *elastic.Client
 }
 
-func (c *clientImpl) Create(ctx context.Context, index string, id string, data []byte) error {
+func (c *clientImpl) Create(ctx context.Context, index string, id string, body interface{}) error {
 	_, err := c.client.Index().
-		Index("megacorp").
+		Index(index).
 		Id(id).
-		BodyJson(data).
+		BodyJson(body).
 		Do(ctx)
 	if err != nil {
 		return err
@@ -56,7 +56,7 @@ func (c *clientImpl) Find(ctx context.Context, index string, id string) ([]byte,
 }
 
 func (c *clientImpl) Query(ctx context.Context, index string, query string, offset, limit int) ([][]byte, error) {
-	q := elastic.NewQueryStringQuery(query)
+	q := elastic.NewMatchQuery("content", query)
 	res, err := c.client.Search(index).Query(q).Size(limit).From(offset).Do(ctx)
 	if err != nil {
 		return nil, err
