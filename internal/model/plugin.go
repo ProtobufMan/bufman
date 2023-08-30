@@ -45,6 +45,19 @@ func (plugin *Plugin) ToProtoPlugin() *registryv1alpha1.CuratedPlugin {
 	}
 }
 
+func (plugin *Plugin) ToProtoSearchResult() *registryv1alpha1.CuratedPluginSearchResult {
+	if plugin == nil {
+		return (&Plugin{}).ToProtoSearchResult()
+	}
+
+	return &registryv1alpha1.CuratedPluginSearchResult{
+		Id:         plugin.PluginID,
+		Name:       plugin.PluginName,
+		Owner:      plugin.UserName,
+		Deprecated: plugin.Deprecated,
+	}
+}
+
 type Plugins []*Plugin
 
 func (plugins *Plugins) ToProtoPlugins() []*registryv1alpha1.CuratedPlugin {
@@ -54,4 +67,13 @@ func (plugins *Plugins) ToProtoPlugins() []*registryv1alpha1.CuratedPlugin {
 	}
 
 	return protoPlugins
+}
+
+func (plugins *Plugins) ToProtoSearchResults() []*registryv1alpha1.CuratedPluginSearchResult {
+	pluginSearchResults := make([]*registryv1alpha1.CuratedPluginSearchResult, 0, len(*plugins))
+	for i := 0; i < len(*plugins); i++ {
+		pluginSearchResults[i] = (*plugins)[i].ToProtoSearchResult()
+	}
+
+	return pluginSearchResults
 }

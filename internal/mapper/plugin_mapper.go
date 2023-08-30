@@ -11,6 +11,7 @@ type PluginMapper interface {
 	FindLastByName(userName, pluginName string) (*model.Plugin, error)
 	FindLastByNameAndVersion(userName, pluginName string, version string) (*model.Plugin, error)
 	FindPage(offset int, limit int, reverse bool, includeDeprecated bool) ([]*model.Plugin, error)
+	FindPageByQuery(query string, offset int, limit int, reverse bool) ([]*model.Plugin, error)
 }
 
 type PluginMapperImpl struct{}
@@ -42,6 +43,16 @@ func (p *PluginMapperImpl) FindPage(offset int, limit int, reverse bool, include
 	if !includeDeprecated {
 		// 不包括已经被丢弃的
 		stmt = stmt.Where(dal.Plugin.Deprecated.Not())
+	}
+
+	return stmt.Find()
+}
+
+func (p *PluginMapperImpl) FindPageByQuery(query string, offset int, limit int, reverse bool) ([]*model.Plugin, error) {
+	stmt := dal.Plugin.Where(dal.Plugin.PluginName.Like("%" + query + "%")).Or(dal.Plugin.Description.Like("%" + query + "%")).Offset(offset).Limit(limit)
+	if reverse {
+		// 反转
+		stmt = stmt.Order(dal.Plugin.ID.Desc())
 	}
 
 	return stmt.Find()

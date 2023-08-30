@@ -9,6 +9,7 @@ import (
 
 type SearchService interface {
 	SearchUser(ctx context.Context, query string, offset, limit int, reverse bool) (model.Users, e.ResponseError)
+	SearchCurationPlugin(ctx context.Context, query string, offset, limit int, reverse bool) (model.Plugins, e.ResponseError)
 	SearchTag(ctx context.Context, repositoryID, query string, offset, limit int, reverse bool) (model.Tags, e.ResponseError)
 	SearchDraft(ctx context.Context, repositoryID, query string, offset, limit int, reverse bool) (model.Commits, e.ResponseError)
 }
@@ -17,6 +18,7 @@ type SearchServiceImpl struct {
 	userMapper   mapper.UserMapper
 	commitMapper mapper.CommitMapper
 	tagMapper    mapper.TagMapper
+	pluginMapper mapper.PluginMapper
 }
 
 func (searchService *SearchServiceImpl) SearchUser(ctx context.Context, query string, offset, limit int, reverse bool) (model.Users, e.ResponseError) {
@@ -26,6 +28,15 @@ func (searchService *SearchServiceImpl) SearchUser(ctx context.Context, query st
 	}
 
 	return users, nil
+}
+
+func (searchService *SearchServiceImpl) SearchCurationPlugin(ctx context.Context, query string, offset, limit int, reverse bool) (model.Plugins, e.ResponseError) {
+	plugins, err := searchService.pluginMapper.FindPageByQuery(query, offset, limit, reverse)
+	if err != nil {
+		return nil, e.NewInternalError(err.Error())
+	}
+
+	return plugins, nil
 }
 
 func (searchService *SearchServiceImpl) SearchTag(ctx context.Context, repositoryID, query string, offset, limit int, reverse bool) (model.Tags, e.ResponseError) {
