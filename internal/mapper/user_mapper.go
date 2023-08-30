@@ -10,6 +10,7 @@ type UserMapper interface {
 	FindByUserID(userID string) (*model.User, error)
 	FindByUserName(userName string) (*model.User, error)
 	FindPage(offset int, limit int, reverse bool) (model.Users, error)
+	FindPageByQuery(query string, offset int, limit int, reverse bool) (model.Users, error)
 }
 
 type UserMapperImpl struct{}
@@ -28,6 +29,16 @@ func (u *UserMapperImpl) FindByUserName(userName string) (*model.User, error) {
 
 func (u *UserMapperImpl) FindPage(offset int, limit int, reverse bool) (model.Users, error) {
 	stmt := dal.User
+	if reverse {
+		stmt.Order(dal.User.ID.Desc())
+	}
+
+	users, _, err := stmt.FindByPage(offset, limit)
+	return users, err
+}
+
+func (u *UserMapperImpl) FindPageByQuery(query string, offset int, limit int, reverse bool) (model.Users, error) {
+	stmt := dal.User.Where(dal.User.UserName.Like("%" + query + "%"))
 	if reverse {
 		stmt.Order(dal.User.ID.Desc())
 	}

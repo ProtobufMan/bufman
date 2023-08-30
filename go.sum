@@ -4,6 +4,12 @@ github.com/Microsoft/go-winio v0.6.1 h1:9/kr64B9VUZrLm5YYwbGtUJnMgqWVOdUAXu6Migc
 github.com/Microsoft/go-winio v0.6.1/go.mod h1:LRdKpFKfdobln8UmuiYcKPot9D2v6svN5+sAH+4kjUM=
 github.com/ProtobufMan/bufman-cli v0.0.0-20230801031048-789f751110b0 h1:RR8bCruS0c5vPvC3IhE4SYIJYIGf0HsKI69zBf8yaTI=
 github.com/ProtobufMan/bufman-cli v0.0.0-20230801031048-789f751110b0/go.mod h1:89kqgr/aByBU6ZdGsnZnGgYjc6OV9JIM1PNkiU6DVLQ=
+github.com/ProtobufMan/bufman-cli v0.0.0-20230829105810-ac775bc2e2e8 h1:1AsRquSsjwwUyrvAL4YFg7bu2MlA2L4I3OLBsO9+D+8=
+github.com/ProtobufMan/bufman-cli v0.0.0-20230829105810-ac775bc2e2e8/go.mod h1:89kqgr/aByBU6ZdGsnZnGgYjc6OV9JIM1PNkiU6DVLQ=
+github.com/ProtobufMan/bufman-cli v0.0.0-20230830050210-d136c3b79fdc h1:f9GVUusJed9mH428pVAnXfRlL9zuxaqNmc44eEHT7ms=
+github.com/ProtobufMan/bufman-cli v0.0.0-20230830050210-d136c3b79fdc/go.mod h1:89kqgr/aByBU6ZdGsnZnGgYjc6OV9JIM1PNkiU6DVLQ=
+github.com/ProtobufMan/bufman-cli v0.0.0-20230830050438-d60c604a54a0 h1:JeTlSn+SMvHRUvYJ0MJlNGLy+37T+VhP4BNn08qJKSg=
+github.com/ProtobufMan/bufman-cli v0.0.0-20230830050438-d60c604a54a0/go.mod h1:89kqgr/aByBU6ZdGsnZnGgYjc6OV9JIM1PNkiU6DVLQ=
 github.com/bufbuild/connect-go v1.9.0 h1:JIgAeNuFpo+SUPfU19Yt5TcWlznsN5Bv10/gI/6Pjoc=
 github.com/bufbuild/connect-go v1.9.0/go.mod h1:CAIePUgkDR5pAFaylSMtNK45ANQjp9JvpluG20rhpV8=
 github.com/bufbuild/protocompile v0.5.1 h1:mixz5lJX4Hiz4FpqFREJHIXLfaLBntfaJv1h+/jS+Qg=

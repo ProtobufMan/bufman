@@ -57,4 +57,8 @@ const (
 	MinDockerRepoNameLength = 1
 	MaxDockerRepoNameLength = 200
 	DockerRepoNamePattern   = "^[a-zA-Z][a-zA-Z0-9_-]*[a-zA-Z0-9]$"
+
+	MinQueryLength = 1
+	MaxQueryLength = 200
+	QueryPattern   = "^[a-zA-Z][a-zA-Z0-9_-]*[a-zA-Z0-9]$"
 )
