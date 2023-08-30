@@ -47,7 +47,7 @@ type FileBlob struct {
 	Digest         string // 文件哈希
 	CommitID       string `gorm:"type:varchar(64);index"`
 	FileName       string
-	Content        []byte    `gorm:"文件内容"`
+	Content        []byte    `gorm:"-"`
 	UserID         string    `gorm:"-"`
 	UserName       string    `gorm:"-"`
 	RepositoryID   string    `gorm:"-"`
