@@ -13,6 +13,7 @@ import (
 	"github.com/ProtobufMan/bufman/internal/util/storage"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+	"io"
 	"time"
 )
 
@@ -82,7 +83,7 @@ func (pushService *PushServiceImpl) PushManifestAndBlobs(ctx context.Context, us
 	}
 
 	// 写入文件
-	err = pushService.saveFileManifestAndBlobs(ctx, fileManifest, fileBlobs)
+	err = pushService.saveFileManifestAndBlobs(ctx, commit)
 	if err != nil {
 		return nil, err
 	}
@@ -123,7 +124,7 @@ func (pushService *PushServiceImpl) PushManifestAndBlobsWithTags(ctx context.Con
 	commit.Tags = tags
 
 	// 写入文件
-	err = pushService.saveFileManifestAndBlobs(ctx, fileManifest, fileBlobs)
+	err = pushService.saveFileManifestAndBlobs(ctx, commit)
 	if err != nil {
 		return nil, err
 	}
@@ -151,7 +152,7 @@ func (pushService *PushServiceImpl) PushManifestAndBlobsWithDraft(ctx context.Co
 	commit.DraftName = draftName
 
 	// 写入文件
-	err = pushService.saveFileManifestAndBlobs(ctx, fileManifest, fileBlobs)
+	err = pushService.saveFileManifestAndBlobs(ctx, commit)
 	if err != nil {
 		return nil, err
 	}
@@ -185,25 +186,70 @@ func (pushService *PushServiceImpl) toCommit(ctx context.Context, userID, ownerN
 	}
 
 	commitID := uuid.NewString()
+	commitName := security.GenerateCommitName(user.UserName, repositoryName)
+	createTime := time.Now()
 
 	// 生成file blobs
 	modelBlobs := make([]*model.FileBlob, 0, len(fileManifest.Paths()))
-	_ = fileManifest.Range(func(path string, digest manifest.Digest) error {
+	err = fileManifest.Range(func(path string, digest manifest.Digest) error {
+		// 读取文件内容
+		blob, ok := fileBlobs.BlobFor(digest.String())
+		if !ok {
+			return e.NewInvalidArgumentError("file blobs")
+		}
+
+		readCloser, err := blob.Open(ctx)
+		if err != nil {
+			return e.NewInternalError(err.Error())
+		}
+
+		content, err := io.ReadAll(readCloser)
+		if err != nil {
+			return e.NewInternalError(err.Error())
+		}
+
 		modelBlobs = append(modelBlobs, &model.FileBlob{
-			Digest:   digest.Hex(),
-			CommitID: commitID,
-			FileName: path,
+			Digest:         digest.Hex(),
+			CommitID:       commitID,
+			FileName:       path,
+			Content:        content,
+			UserID:         user.UserID,
+			UserName:       user.UserName,
+			RepositoryID:   repository.RepositoryID,
+			RepositoryName: repository.RepositoryName,
+			CommitName:     commitName,
+			CreatedTime:    createTime,
 		})
 		return nil
 	})
+	if err != nil {
+		return nil, e.NewInternalError(err.Error())
+	}
+
+	// 生成manifest
 	fileManifestBlob, err := fileManifest.Blob()
 	if err != nil {
 		return nil, e.NewInternalError(err.Error())
 	}
+	readCloser, err := fileManifestBlob.Open(ctx)
+	if err != nil {
+		return nil, e.NewInternalError(err.Error())
+	}
+	content, err := io.ReadAll(readCloser)
+	if err != nil {
+		return nil, e.NewInternalError(err.Error())
+	}
 	modelFileManifest := &model.FileManifest{
-		ID:       0,
-		Digest:   fileManifestBlob.Digest().Hex(),
-		CommitID: commitID,
+		ID:             0,
+		Digest:         fileManifestBlob.Digest().Hex(),
+		CommitID:       commitID,
+		Content:        content,
+		UserID:         user.UserID,
+		UserName:       user.UserName,
+		RepositoryID:   repository.RepositoryID,
+		RepositoryName: repository.RepositoryName,
+		CommitName:     commitName,
+		CreatedTime:    createTime,
 	}
 
 	// 获取bufman config blob
@@ -223,8 +269,8 @@ func (pushService *PushServiceImpl) toCommit(ctx context.Context, userID, ownerN
 		RepositoryID:   repository.RepositoryID,
 		RepositoryName: repositoryName,
 		CommitID:       commitID,
-		CommitName:     security.GenerateCommitName(user.UserName, repositoryName),
-		CreatedTime:    time.Time{},
+		CommitName:     commitName,
+		CreatedTime:    createTime,
 		ManifestDigest: fileManifestBlob.Digest().Hex(),
 		SequenceID:     0,
 		FileManifest:   modelFileManifest,
@@ -243,43 +289,31 @@ func (pushService *PushServiceImpl) toCommit(ctx context.Context, userID, ownerN
 	return commit, nil
 }
 
-func (pushService *PushServiceImpl) saveFileManifestAndBlobs(ctx context.Context, fileManifest *manifest.Manifest, fileBlobs *manifest.BlobSet) e.ResponseError {
+func (pushService *PushServiceImpl) saveFileManifestAndBlobs(ctx context.Context, commit *model.Commit) e.ResponseError {
 	// 保存file blobs
-	err := fileManifest.Range(func(path string, digest manifest.Digest) error {
-		blob, ok := fileBlobs.BlobFor(digest.String())
-		if !ok {
-			return e.NewInvalidArgumentError("file blobs")
+	for i := 0; i < len(commit.FileBlobs); i++ {
+		fileBlob := commit.FileBlobs[i]
+
+		// 如果是README文件
+		if fileBlob.Digest == commit.DocumentDigest {
+			err := pushService.storageHelper.StoreDocumentation(ctx, fileBlob)
+			if err != nil {
+				return e.NewInternalError(err.Error())
+			}
+
 		}
 
-		readCloser, err := blob.Open(ctx)
+		// 普通文件
+		err := pushService.storageHelper.StoreBlob(ctx, fileBlob)
 		if err != nil {
-			return e.NewInternalError(registryv1alpha1connect.PushServicePushManifestAndBlobsProcedure)
+			return e.NewInternalError(err.Error())
 		}
-
-		// 写入文件
-		err = pushService.storageHelper.StoreBlobFromReader(ctx, digest.Hex(), readCloser)
-		if err != nil {
-			return e.NewInternalError(registryv1alpha1connect.PushServicePushManifestAndBlobsProcedure)
-		}
-
-		return nil
-	})
-	if err != nil {
-		return e.NewInternalError(registryv1alpha1connect.PushServicePushManifestAndBlobsProcedure)
 	}
 
 	// 保存file manifest
-	blob, err := fileManifest.Blob()
+	err := pushService.storageHelper.StoreManifest(ctx, commit.FileManifest)
 	if err != nil {
-		return e.NewInternalError(registryv1alpha1connect.PushServicePushManifestAndBlobsProcedure)
-	}
-	readCloser, err := blob.Open(ctx)
-	if err != nil {
-		return e.NewInternalError(registryv1alpha1connect.PushServicePushManifestAndBlobsProcedure)
-	}
-	err = pushService.storageHelper.StoreManifestFromReader(ctx, blob.Digest().Hex(), readCloser)
-	if err != nil {
-		return e.NewInternalError(registryv1alpha1connect.PushServicePushManifestAndBlobsProcedure)
+		return e.NewInternalError(err.Error())
 	}
 
 	return nil

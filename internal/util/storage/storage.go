@@ -14,10 +14,9 @@ import (
 )
 
 type BaseStorageHelper interface {
-	StoreBlobFromReader(ctx context.Context, digest string, readCloser io.ReadCloser) error // 存储内容
-	StoreBlob(ctx context.Context, digest string, content []byte) error
-	StoreManifestFromReader(ctx context.Context, digest string, readCloser io.ReadCloser) error
-	StoreManifest(ctx context.Context, digest string, content []byte) error
+	StoreBlob(ctx context.Context, blob *model.FileBlob) error
+	StoreManifest(ctx context.Context, manifest *model.FileManifest) error
+	StoreDocumentation(ctx context.Context, blob *model.FileBlob) error
 	ReadBlobToReader(ctx context.Context, digest string) (io.Reader, error) // 读取内容
 	ReadBlob(ctx context.Context, fileName string) ([]byte, error)
 	ReadManifestToReader(ctx context.Context, fileName string) (io.Reader, error)

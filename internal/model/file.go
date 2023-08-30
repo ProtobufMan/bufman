@@ -21,23 +21,39 @@ import (
 	registryv1alpha1 "github.com/ProtobufMan/bufman-cli/private/gen/proto/go/bufman/alpha/registry/v1alpha1"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 // FileManifest 保存文件清单，记录每一次提交的所有文件
 type FileManifest struct {
-	ID       int64  `gorm:"primaryKey;autoIncrement"`
-	Digest   string // 文件清单哈希
-	CommitID string `gorm:"type:varchar(64), unique"`
+	ID             int64     `gorm:"primaryKey;autoIncrement"`
+	Digest         string    // 文件清单哈希
+	CommitID       string    `gorm:"type:varchar(64), unique"`
+	Content        []byte    `gorm:"-"` // 文件清单内容
+	UserID         string    `gorm:"-"`
+	UserName       string    `gorm:"-"`
+	RepositoryID   string    `gorm:"-"`
+	RepositoryName string    `gorm:"-"`
+	CommitName     string    `gorm:"-"`
+	DraftName      string    `gorm:"-"`
+	CreatedTime    time.Time `gorm:"-"`
 }
 
 type FileManifests []*FileManifest
 
 // FileBlob 保存文件blob
 type FileBlob struct {
-	ID       int64  `gorm:"primaryKey;autoIncrement"`
-	Digest   string // 文件哈希
-	CommitID string `gorm:"type:varchar(64);index"`
-	FileName string
+	ID             int64  `gorm:"primaryKey;autoIncrement"`
+	Digest         string // 文件哈希
+	CommitID       string `gorm:"type:varchar(64);index"`
+	FileName       string
+	Content        []byte    `gorm:"文件内容"`
+	UserID         string    `gorm:"-"`
+	UserName       string    `gorm:"-"`
+	RepositoryID   string    `gorm:"-"`
+	RepositoryName string    `gorm:"-"`
+	CommitName     string    `gorm:"-"`
+	CreatedTime    time.Time `gorm:"-"`
 }
 
 type FileBlobs []*FileBlob

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"github.com/ProtobufMan/bufman/internal/constant"
+	"github.com/ProtobufMan/bufman/internal/model"
 	"io"
 	"os"
 	"path"
@@ -18,18 +19,8 @@ type DiskStorageHelperImpl struct {
 	pluginMuDict map[string]*sync.RWMutex
 }
 
-func (helper *DiskStorageHelperImpl) StoreBlobFromReader(ctx context.Context, digest string, readCloser io.ReadCloser) error {
-	content, err := io.ReadAll(readCloser)
-	defer readCloser.Close()
-	if err != nil {
-		return err
-	}
-
-	return helper.StoreBlob(ctx, digest, content)
-}
-
-func (helper *DiskStorageHelperImpl) StoreBlob(ctx context.Context, digest string, content []byte) error {
-	return helper.store(ctx, digest, content)
+func (helper *DiskStorageHelperImpl) StoreBlob(ctx context.Context, blob *model.FileBlob) error {
+	return helper.store(ctx, blob.Digest, blob.Content)
 }
 
 func (helper *DiskStorageHelperImpl) store(ctx context.Context, digest string, content []byte) error {
@@ -63,18 +54,12 @@ func (helper *DiskStorageHelperImpl) store(ctx context.Context, digest string, c
 	return nil
 }
 
-func (helper *DiskStorageHelperImpl) StoreManifestFromReader(ctx context.Context, digest string, readCloser io.ReadCloser) error {
-	content, err := io.ReadAll(readCloser)
-	defer readCloser.Close()
-	if err != nil {
-		return err
-	}
-
-	return helper.StoreManifest(ctx, digest, content)
+func (helper *DiskStorageHelperImpl) StoreManifest(ctx context.Context, manifest *model.FileManifest) error {
+	return helper.store(ctx, manifest.Digest, manifest.Content)
 }
 
-func (helper *DiskStorageHelperImpl) StoreManifest(ctx context.Context, digest string, content []byte) error {
-	return helper.store(ctx, digest, content)
+func (helper *DiskStorageHelperImpl) StoreDocumentation(ctx context.Context, blob *model.FileBlob) error {
+	return nil
 }
 
 func (helper *DiskStorageHelperImpl) ReadBlobToReader(ctx context.Context, fileName string) (io.Reader, error) {

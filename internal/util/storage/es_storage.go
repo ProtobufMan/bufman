@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/ProtobufMan/bufman/internal/constant"
+	"github.com/ProtobufMan/bufman/internal/model"
 	"github.com/ProtobufMan/bufman/internal/util/es"
 	"io"
 )
@@ -17,41 +18,21 @@ type FileMapping struct {
 	Content []byte
 }
 
-func (helper *ESStorageHelperImpl) StoreBlobFromReader(ctx context.Context, digest string, readCloser io.ReadCloser) error {
-	// 读取数据
-	content, err := io.ReadAll(readCloser)
-	defer readCloser.Close()
-	if err != nil {
-		return err
-	}
-
-	return helper.StoreBlob(ctx, digest, content)
+func (helper *ESStorageHelperImpl) StoreBlob(ctx context.Context, blob *model.FileBlob) error {
+	return helper.store(ctx, constant.ESFileBlobIndex, blob.Digest, blob)
 }
 
-func (helper *ESStorageHelperImpl) StoreBlob(ctx context.Context, digest string, content []byte) error {
-	return helper.store(ctx, constant.ESFileBlobIndex, digest, content)
+func (helper *ESStorageHelperImpl) StoreManifest(ctx context.Context, manifest *model.FileManifest) error {
+	return helper.store(ctx, constant.ESManifestIndex, manifest.Digest, manifest)
 }
 
-func (helper *ESStorageHelperImpl) StoreManifestFromReader(ctx context.Context, digest string, readCloser io.ReadCloser) error {
-	// 读取数据
-	content, err := io.ReadAll(readCloser)
-	defer readCloser.Close()
-	if err != nil {
-		return err
-	}
-
-	return helper.StoreManifest(ctx, digest, content)
+func (helper *ESStorageHelperImpl) StoreDocumentation(ctx context.Context, blob *model.FileBlob) error {
+	return helper.store(ctx, constant.ESDocumentIndex, blob.Digest, blob)
 }
 
-func (helper *ESStorageHelperImpl) StoreManifest(ctx context.Context, digest string, content []byte) error {
-	return helper.store(ctx, constant.ESManifestIndex, digest, content)
-}
-
-func (helper *ESStorageHelperImpl) store(ctx context.Context, index, digest string, content []byte) error {
+func (helper *ESStorageHelperImpl) store(ctx context.Context, index, digest string, v interface{}) error {
 	// 转为json
-	jsonBody, err := json.Marshal(FileMapping{
-		Content: content,
-	})
+	jsonBody, err := json.Marshal(&v)
 	if err != nil {
 		return err
 	}
