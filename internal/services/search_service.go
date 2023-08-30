@@ -9,10 +9,12 @@ import (
 
 type SearchService interface {
 	SearchUser(ctx context.Context, query string, offset, limit int, reverse bool) (model.Users, e.ResponseError)
+	SearchTag(ctx context.Context, repositoryID, query string, offset, limit int, reverse bool) (model.Tags, e.ResponseError)
 }
 
 type SearchServiceImpl struct {
 	userMapper mapper.UserMapper
+	tagMapper  mapper.TagMapper
 }
 
 func (searchService *SearchServiceImpl) SearchUser(ctx context.Context, query string, offset, limit int, reverse bool) (model.Users, e.ResponseError) {
@@ -22,4 +24,13 @@ func (searchService *SearchServiceImpl) SearchUser(ctx context.Context, query st
 	}
 
 	return users, nil
+}
+
+func (searchService *SearchServiceImpl) SearchTag(ctx context.Context, repositoryID, query string, offset, limit int, reverse bool) (model.Tags, e.ResponseError) {
+	tags, err := searchService.tagMapper.FindPageByRepositoryIDAndQuery(repositoryID, query, offset, limit, reverse)
+	if err != nil {
+		return nil, e.NewInternalError(err.Error())
+	}
+
+	return tags, nil
 }

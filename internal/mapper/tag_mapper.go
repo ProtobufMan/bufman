@@ -9,6 +9,7 @@ type TagMapper interface {
 	Create(tag *model.Tag) error
 	GetCountsByRepositoryID(repositoryID string) (int64, error)
 	FindPageByRepositoryID(repositoryID string, offset, limit int, reverse bool) (model.Tags, error)
+	FindPageByRepositoryIDAndQuery(repositoryID, query string, offset, limit int, reverse bool) (model.Tags, error)
 }
 
 type TagMapperImpl struct{}
@@ -23,6 +24,15 @@ func (t *TagMapperImpl) GetCountsByRepositoryID(repositoryID string) (int64, err
 
 func (t *TagMapperImpl) FindPageByRepositoryID(repositoryID string, offset, limit int, reverse bool) (model.Tags, error) {
 	stmt := dal.Tag.Where(dal.Tag.RepositoryID.Eq(repositoryID)).Offset(offset).Limit(limit)
+	if reverse {
+		stmt = stmt.Order(dal.Tag.ID.Desc())
+	}
+
+	return stmt.Find()
+}
+
+func (t *TagMapperImpl) FindPageByRepositoryIDAndQuery(repositoryID, query string, offset, limit int, reverse bool) (model.Tags, error) {
+	stmt := dal.Tag.Where(dal.Tag.RepositoryID.Eq(repositoryID), dal.Tag.TagName.Like("%"+query+"%")).Offset(offset).Limit(limit)
 	if reverse {
 		stmt = stmt.Order(dal.Tag.ID.Desc())
 	}
