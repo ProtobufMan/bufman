@@ -136,6 +136,15 @@ func InitRouter() *gin.Engine {
 	)
 	registerHandler(router, dockerRepoServicePath, dockerRepoServiceHandler)
 
+	// SearchService
+	searchServicePath, searchServiceHandler := registryv1alpha1connect.NewSearchServiceHandler(handlers.NewSearchServiceHandler(),
+		interceptors.WithOptionalAuthInterceptor(
+			registryv1alpha1connect.SearchServiceSearchTagProcedure,
+			registryv1alpha1connect.SearchServiceSearchDraftProcedure,
+		),
+	)
+	registerHandler(router, searchServicePath, searchServiceHandler)
+
 	return router
 }
 
