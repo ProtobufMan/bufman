@@ -63,7 +63,7 @@ type Plugins []*Plugin
 func (plugins *Plugins) ToProtoPlugins() []*registryv1alpha1.CuratedPlugin {
 	protoPlugins := make([]*registryv1alpha1.CuratedPlugin, 0, len(*plugins))
 	for i := 0; i < len(*plugins); i++ {
-		protoPlugins[i] = (*plugins)[i].ToProtoPlugin()
+		protoPlugins = append(protoPlugins, (*plugins)[i].ToProtoPlugin())
 	}
 
 	return protoPlugins
@@ -72,7 +72,7 @@ func (plugins *Plugins) ToProtoPlugins() []*registryv1alpha1.CuratedPlugin {
 func (plugins *Plugins) ToProtoSearchResults() []*registryv1alpha1.CuratedPluginSearchResult {
 	pluginSearchResults := make([]*registryv1alpha1.CuratedPluginSearchResult, 0, len(*plugins))
 	for i := 0; i < len(*plugins); i++ {
-		pluginSearchResults[i] = (*plugins)[i].ToProtoSearchResult()
+		pluginSearchResults = append(pluginSearchResults, (*plugins)[i].ToProtoSearchResult())
 	}
 
 	return pluginSearchResults

@@ -8,7 +8,7 @@ import (
 	"github.com/ProtobufMan/bufman/internal/mapper"
 	"github.com/ProtobufMan/bufman/internal/model"
 	"github.com/ProtobufMan/bufman/internal/util/es"
-	"sort"
+	"github.com/ProtobufMan/bufman/internal/util/lru"
 )
 
 type SearchService interface {
@@ -60,7 +60,7 @@ func (searchService *SearchServiceImpl) SearchLastCommitByContent(ctx context.Co
 		return nil, e.NewInternalError(err.Error())
 	}
 
-	fileBlobSet := make(map[string]*model.FileBlob)
+	lruQueue := lru.NewLru(len(results))
 	for i := 0; i < len(results); i++ {
 		data := results[i]
 		fileBlob := &model.FileBlob{}
@@ -70,25 +70,19 @@ func (searchService *SearchServiceImpl) SearchLastCommitByContent(ctx context.Co
 		}
 
 		identity := fileBlob.RepositoryID
-		if b, ok := fileBlobSet[identity]; !ok || (ok && b.CreatedTime.Before(fileBlob.CreatedTime)) {
+		if v, ok := lruQueue.Get(identity); !ok || (ok && v.(*model.FileBlob).CreatedTime.Before(fileBlob.CreatedTime)) {
 			// 同一个repo下，只记录最晚的匹配commit
-			fileBlobSet[identity] = b
+			_ = lruQueue.Add(identity, fileBlob)
 		}
 	}
 
-	// 查询顺序调整
-	keys := make([]string, 0, len(fileBlobSet))
-	for key := range fileBlobSet {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
-
-	// 转为对应的commit
-	commits := make([]*model.Commit, 0, len(fileBlobSet))
-	for i := 0; i < len(keys); i++ {
-		fileBlob, ok := fileBlobSet[keys[i]]
+	// 转为commit
+	// 在LRU队列上，越靠近后方，在es中的查询结果位置越靠前，所以倒序遍历
+	commits := make([]*model.Commit, 0, lruQueue.Len())
+	_ = lruQueue.RangeValue(true, func(key, value interface{}) error {
+		fileBlob, ok := value.(*model.FileBlob)
 		if !ok {
-			continue
+			return nil
 		}
 
 		commit := &model.Commit{
@@ -101,7 +95,9 @@ func (searchService *SearchServiceImpl) SearchLastCommitByContent(ctx context.Co
 		}
 
 		commits = append(commits, commit)
-	}
+
+		return nil
+	})
 
 	return commits, nil
 }

@@ -56,7 +56,7 @@ func (helper *ESStorageHelperImpl) ReadBlob(ctx context.Context, digest string) 
 		return nil, err
 	}
 
-	return b.Content, nil
+	return []byte(b.Content), nil
 }
 
 func (helper *ESStorageHelperImpl) ReadManifestToReader(ctx context.Context, digest string) (io.Reader, error) {
@@ -75,7 +75,7 @@ func (helper *ESStorageHelperImpl) ReadManifest(ctx context.Context, digest stri
 		return nil, err
 	}
 
-	return m.Content, nil
+	return []byte(m.Content), nil
 }
 
 func (helper *ESStorageHelperImpl) read(ctx context.Context, index string, digest string, v interface{}) error {

@@ -60,5 +60,5 @@ const (
 
 	MinQueryLength = 1
 	MaxQueryLength = 200
-	QueryPattern   = "^[a-zA-Z][a-zA-Z0-9_-]*[a-zA-Z0-9]$"
+	QueryPattern   = ".*"
 )

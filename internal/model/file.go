@@ -29,7 +29,7 @@ type FileManifest struct {
 	ID             int64     `gorm:"primaryKey;autoIncrement"`
 	Digest         string    // 文件清单哈希
 	CommitID       string    `gorm:"type:varchar(64), unique"`
-	Content        []byte    `gorm:"-"` // 文件清单内容
+	Content        string    `gorm:"-"` // 文件清单内容
 	UserID         string    `gorm:"-"`
 	UserName       string    `gorm:"-"`
 	RepositoryID   string    `gorm:"-"`
@@ -47,7 +47,7 @@ type FileBlob struct {
 	Digest         string // 文件哈希
 	CommitID       string `gorm:"type:varchar(64);index"`
 	FileName       string
-	Content        []byte    `gorm:"-"`
+	Content        string    `gorm:"-"`
 	UserID         string    `gorm:"-"`
 	UserName       string    `gorm:"-"`
 	RepositoryID   string    `gorm:"-"`

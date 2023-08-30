@@ -20,7 +20,7 @@ type DiskStorageHelperImpl struct {
 }
 
 func (helper *DiskStorageHelperImpl) StoreBlob(ctx context.Context, blob *model.FileBlob) error {
-	return helper.store(ctx, blob.Digest, blob.Content)
+	return helper.store(ctx, blob.Digest, []byte(blob.Content))
 }
 
 func (helper *DiskStorageHelperImpl) store(ctx context.Context, digest string, content []byte) error {
@@ -55,7 +55,7 @@ func (helper *DiskStorageHelperImpl) store(ctx context.Context, digest string, c
 }
 
 func (helper *DiskStorageHelperImpl) StoreManifest(ctx context.Context, manifest *model.FileManifest) error {
-	return helper.store(ctx, manifest.Digest, manifest.Content)
+	return helper.store(ctx, manifest.Digest, []byte(manifest.Content))
 }
 
 func (helper *DiskStorageHelperImpl) StoreDocumentation(ctx context.Context, blob *model.FileBlob) error {
