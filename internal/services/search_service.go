@@ -20,13 +20,22 @@ type SearchService interface {
 	SearchDraft(ctx context.Context, repositoryID, query string, offset, limit int, reverse bool) (model.Commits, e.ResponseError)
 }
 
+func NewSearchService() SearchService {
+	return &SearchServiceImpl{
+		userMapper:       &mapper.UserMapperImpl{},
+		repositoryMapper: &mapper.RepositoryMapperImpl{},
+		commitMapper:     &mapper.CommitMapperImpl{},
+		tagMapper:        &mapper.TagMapperImpl{},
+		pluginMapper:     &mapper.PluginMapperImpl{},
+	}
+}
+
 type SearchServiceImpl struct {
 	userMapper       mapper.UserMapper
 	repositoryMapper mapper.RepositoryMapper
 	commitMapper     mapper.CommitMapper
 	tagMapper        mapper.TagMapper
 	pluginMapper     mapper.PluginMapper
-	esClient         es.Client
 }
 
 func (searchService *SearchServiceImpl) SearchUser(ctx context.Context, query string, offset, limit int, reverse bool) (model.Users, e.ResponseError) {
@@ -39,12 +48,14 @@ func (searchService *SearchServiceImpl) SearchUser(ctx context.Context, query st
 }
 
 func (searchService *SearchServiceImpl) SearchLastCommitByContent(ctx context.Context, query string, offset, limit int, reverse bool) (model.Commits, e.ResponseError) {
-	if searchService.esClient == nil {
-		return nil, e.NewInternalError("not implement search commit by content")
+	// 连接elastic search
+	esClient, err := es.NewEsClient()
+	if err != nil || esClient == nil {
+		return nil, e.NewInternalError(err.Error())
 	}
 
 	// 在 ElasticSearch 中查询数据
-	results, err := searchService.esClient.Query(ctx, constant.ESFileBlobIndex, query, offset, limit)
+	results, err := esClient.Query(ctx, constant.ESFileBlobIndex, query, offset, limit)
 	if err != nil {
 		return nil, e.NewInternalError(err.Error())
 	}

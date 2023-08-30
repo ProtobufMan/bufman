@@ -52,7 +52,7 @@ func NewStorageHelper() StorageHelper {
 					},
 				}
 			} else {
-				esClient, err := es.NewEsClient(config.Properties.ElasticSearch.Username, config.Properties.ElasticSearch.Password, config.Properties.ElasticSearch.Urls...)
+				esClient, err := es.NewEsClient()
 				if err != nil {
 					panic(err)
 				}

@@ -3,6 +3,7 @@ package config
 import (
 	"github.com/ProtobufMan/bufman/internal/constant"
 	"github.com/docker/docker/client"
+	"github.com/olivere/elastic/v7"
 	"gorm.io/gorm"
 	"os"
 	"time"
@@ -96,4 +97,13 @@ func NewDockerClient() (*client.Client, error) {
 	}
 
 	return cli, nil
+}
+
+func NewEsClient() (*elastic.Client, error) {
+	c, err := elastic.NewClient(elastic.SetURL(Properties.ElasticSearch.Urls...), elastic.SetBasicAuth(Properties.ElasticSearch.Username, Properties.ElasticSearch.Password))
+	if err != nil {
+		return nil, err
+	}
+
+	return c, nil
 }

@@ -2,6 +2,7 @@ package es
 
 import (
 	"context"
+	"github.com/ProtobufMan/bufman/internal/config"
 	"github.com/olivere/elastic/v7"
 )
 
@@ -12,8 +13,8 @@ type Client interface {
 	Query(ctx context.Context, index string, query string, offset, limit int) ([][]byte, error)
 }
 
-func NewEsClient(username, password string, urls ...string) (Client, error) {
-	c, err := elastic.NewClient(elastic.SetURL(urls...), elastic.SetBasicAuth(username, password))
+func NewEsClient() (Client, error) {
+	c, err := config.NewEsClient()
 	if err != nil {
 		return nil, err
 	}

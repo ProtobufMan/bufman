@@ -17,6 +17,13 @@ type SearchServiceHandler struct {
 	searchService services.SearchService
 }
 
+func NewSearchServiceHandler() *SearchServiceHandler {
+	return &SearchServiceHandler{
+		validator:     validity.NewValidator(),
+		searchService: services.NewSearchService(),
+	}
+}
+
 func (handler *SearchServiceHandler) SearchUser(ctx context.Context, req *connect.Request[registryv1alpha1.SearchUserRequest]) (*connect.Response[registryv1alpha1.SearchUserResponse], error) {
 	// 验证参数
 	argErr := handler.validator.CheckPageSize(req.Msg.GetPageSize())
