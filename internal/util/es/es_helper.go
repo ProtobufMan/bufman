@@ -56,7 +56,7 @@ func (c *clientImpl) Find(ctx context.Context, index string, id string) ([]byte,
 }
 
 func (c *clientImpl) Query(ctx context.Context, index string, query string, offset, limit int) ([][]byte, error) {
-	q := elastic.NewMatchQuery("Content", query)
+	q := elastic.NewMultiMatchQuery(query, "RepositoryName", "Content")
 	res, err := c.client.Search(index).Query(q).Size(limit).From(offset).Do(ctx)
 	if err != nil {
 		return nil, err
