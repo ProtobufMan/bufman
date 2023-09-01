@@ -1,0 +1,40 @@
+bufman:
+  # debug, test, release, default is debug
+  mode: debug
+  # bufman server's host name
+  server_host: bufman.io
+  # page token expire time, default is 10min
+  page_token_expire_time: 10m
+  # page token's secret, default is 123456
+  # you can config it by env (key is BUFMAN_PAGE_TOKEN_SECRET)
+  page_token_secret: 123456
+  # default is false, if is true, use fs as file storage(default is ElasticSearch)
+  # if using fs, the buf server can not implement SearchService.SearchLastCommitByContent, so we recommend use ES!
+  use_fs_storage: false
+
+# mysql
+mysql:
+  # dsn can not be empty, you can config it by env (key is BUFMAN_MYSQL_DSN)
+  mysql_dsn: root:123456@tcp(127.0.0.1:3306)/bufman?charset=utf8mb4&parseTime=True&loc=Local
+  max_open_connections: 10
+  max_idle_connections: 10
+  max_life_time:
+  max_idle_time:
+
+# Docker Config
+docker:
+  # empty is default docker host
+  host:
+  ca_cert_path:
+  cert_path:
+  key_path:
+
+# ES Config
+elastic_search:
+  # default es host is http://127.0.0.1:9200
+  urls:
+    - "http://127.0.0.1:9200"
+  # # you can config it by env (key is BUFMAN_ES_USERNAME)
+  username:
+  # you can config it by env (key is BUFMAN_ES_PASSWORD)
+  password:
