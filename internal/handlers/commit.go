@@ -47,7 +47,9 @@ func (handler *CommitServiceHandler) ListRepositoryCommitsByReference(ctx contex
 	pageTokenChaim, err := security.ParsePageToken(req.Msg.GetPageToken())
 	if err != nil {
 		logger.Errorf("Error Parse Page Token: %v\n", err.Error())
-		return nil, e.NewInvalidArgumentError("page token")
+
+		respErr := e.NewInvalidArgumentError("page token")
+		return nil, connect.NewError(respErr.Code(), respErr)
 	}
 
 	// 查询
@@ -61,7 +63,9 @@ func (handler *CommitServiceHandler) ListRepositoryCommitsByReference(ctx contex
 	nextPageToken, err := security.GenerateNextPageToken(pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), len(commits))
 	if err != nil {
 		logger.Errorf("Error generate next page token: %v\n", err.Error())
-		return nil, e.NewInternalError("generate next page token")
+
+		respErr := e.NewInternalError("generate page token")
+		return nil, connect.NewError(respErr.Code(), respErr)
 	}
 
 	resp := connect.NewResponse(&registryv1alpha1.ListRepositoryCommitsByReferenceResponse{
@@ -117,7 +121,9 @@ func (handler *CommitServiceHandler) ListRepositoryDraftCommits(ctx context.Cont
 	pageTokenChaim, err := security.ParsePageToken(req.Msg.GetPageToken())
 	if err != nil {
 		logger.Errorf("Error Parse Page Token: %v\n", err.Error())
-		return nil, e.NewInvalidArgumentError("page token")
+
+		respErr := e.NewInvalidArgumentError("page token")
+		return nil, connect.NewError(respErr.Code(), respErr)
 	}
 
 	// 查询
@@ -130,7 +136,10 @@ func (handler *CommitServiceHandler) ListRepositoryDraftCommits(ctx context.Cont
 	// 生成下一页token
 	nextPageToken, err := security.GenerateNextPageToken(pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), len(commits))
 	if err != nil {
-		return nil, e.NewInternalError("generate next page token")
+		logger.Errorf("Error generate next page token: %v\n", err.Error())
+
+		respErr := e.NewInternalError("generate page token")
+		return nil, connect.NewError(respErr.Code(), respErr)
 	}
 
 	resp := connect.NewResponse(&registryv1alpha1.ListRepositoryDraftCommitsResponse{
