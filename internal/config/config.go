@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"github.com/ProtobufMan/bufman/internal/constant"
+	"github.com/ProtobufMan/bufman/internal/core/logger"
 	"github.com/docker/docker/client"
 	"github.com/gin-gonic/gin"
 	"github.com/olivere/elastic/v7"
@@ -100,6 +101,7 @@ func LoadConfig() {
 	loadFromENV()
 
 	gin.SetMode(Properties.BufMan.Mode)
+	logger.SetLevel(Properties.BufMan.Mode)
 
 	if Properties.BufMan.UseFSStorage {
 		if err := os.MkdirAll(constant.FileSavaDir, 0666); err != nil {
