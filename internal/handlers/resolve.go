@@ -7,6 +7,7 @@ import (
 	"github.com/ProtobufMan/bufman-cli/private/gen/proto/connect/bufman/alpha/registry/v1alpha1/registryv1alpha1connect"
 	registryv1alpha1 "github.com/ProtobufMan/bufman-cli/private/gen/proto/go/bufman/alpha/registry/v1alpha1"
 	"github.com/ProtobufMan/bufman/internal/constant"
+	"github.com/ProtobufMan/bufman/internal/core/logger"
 	"github.com/ProtobufMan/bufman/internal/core/resolve"
 	"github.com/ProtobufMan/bufman/internal/core/validity"
 	"github.com/ProtobufMan/bufman/internal/e"
@@ -38,6 +39,8 @@ func (handler *ResolveServiceHandler) GetModulePins(ctx context.Context, req *co
 		if !ok {
 			repo, checkErr = handler.validator.CheckRepositoryCanAccess(userID, moduleReference.GetOwner(), moduleReference.GetRepository(), registryv1alpha1connect.ResolveServiceGetModulePinsProcedure)
 			if checkErr != nil {
+				logger.Errorf("Error check: %v\n", checkErr.Error())
+
 				return nil, connect.NewError(checkErr.Code(), checkErr.Err())
 			}
 			repositoryMap[fullName] = repo
@@ -47,18 +50,24 @@ func (handler *ResolveServiceHandler) GetModulePins(ctx context.Context, req *co
 
 	moduleReferences, bufRefErr := bufmoduleref.NewModuleReferencesForProtos(req.Msg.GetModuleReferences()...)
 	if bufRefErr != nil {
+		logger.Errorf("Error read mod ref from proto: %v\n", bufRefErr.Error())
+
 		return nil, connect.NewError(e.NewInternalError(bufRefErr.Error()).Code(), bufRefErr)
 	}
 
 	// 获取所有的依赖commits
 	commits, err := handler.resolver.GetAllDependenciesFromModuleRefs(ctx, moduleReferences)
 	if err != nil {
+		logger.Errorf("Error get all dependencies: %v\n", err.Error())
+
 		return nil, connect.NewError(err.Code(), err)
 	}
 
 	retPins := commits.ToProtoModulePins()
 	currentModulePins, curPinErr := bufmoduleref.NewModulePinsForProtos(req.Msg.GetCurrentModulePins()...)
 	if curPinErr != nil {
+		logger.Errorf("Error read mod pins from proto: %v\n", curPinErr.Error())
+
 		return nil, connect.NewError(e.NewInternalError(curPinErr.Error()).Code(), curPinErr)
 	}
 	// 处理CurrentModulePins
@@ -78,7 +87,10 @@ func (handler *ResolveServiceHandler) GetModulePins(ctx context.Context, req *co
 				commitName := currentModulePin.Commit()
 				if commit.CommitName != commitName {
 					// 版本号不一样，存在breaking
-					return nil, e.NewInvalidArgumentError(fmt.Sprintf("%s/%s (possible to cause breaking)", currentModulePin.Owner(), currentModulePin.Repository()))
+					respErr := e.NewInvalidArgumentError(fmt.Sprintf("%s/%s (possible to cause breaking)", currentModulePin.Owner(), currentModulePin.Repository()))
+					logger.Errorf("Error has breaking: %v\n", respErr.Error())
+
+					return nil, connect.NewError(respErr.Code(), respErr)
 				}
 			}
 		}
