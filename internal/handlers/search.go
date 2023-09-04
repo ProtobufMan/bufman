@@ -5,6 +5,7 @@ import (
 	"github.com/ProtobufMan/bufman-cli/private/gen/proto/connect/bufman/alpha/registry/v1alpha1/registryv1alpha1connect"
 	registryv1alpha1 "github.com/ProtobufMan/bufman-cli/private/gen/proto/go/bufman/alpha/registry/v1alpha1"
 	"github.com/ProtobufMan/bufman/internal/constant"
+	"github.com/ProtobufMan/bufman/internal/core/logger"
 	"github.com/ProtobufMan/bufman/internal/core/security"
 	"github.com/ProtobufMan/bufman/internal/core/validity"
 	"github.com/ProtobufMan/bufman/internal/e"
@@ -28,29 +29,40 @@ func (handler *SearchServiceHandler) SearchUser(ctx context.Context, req *connec
 	// 验证参数
 	argErr := handler.validator.CheckPageSize(req.Msg.GetPageSize())
 	if argErr != nil {
+		logger.Errorf("Error check: %v\n", argErr.Error())
+
 		return nil, connect.NewError(argErr.Code(), argErr.Err())
 	}
 	argErr = handler.validator.CheckQuery(req.Msg.GetQuery())
 	if argErr != nil {
+		logger.Errorf("Error check: %v\n", argErr.Error())
+
 		return nil, connect.NewError(argErr.Code(), argErr.Err())
 	}
 
 	// 解析page token
 	pageTokenChaim, err := security.ParsePageToken(req.Msg.GetPageToken())
 	if err != nil {
+		logger.Errorf("Error parse page token: %v\n", err.Error())
+
 		return nil, e.NewInvalidArgumentError("page token")
 	}
 
 	// 查询结果
 	users, respErr := handler.searchService.SearchUser(ctx, req.Msg.GetQuery(), pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), req.Msg.GetReverse())
 	if respErr != nil {
+		logger.Errorf("Error search user: %v\n", respErr.Error())
+
 		return nil, connect.NewError(respErr.Code(), respErr)
 	}
 
 	// 生成下一页token
 	nextPageToken, err := security.GenerateNextPageToken(pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), len(users))
 	if err != nil {
-		return nil, e.NewInternalError("generate next page token")
+		logger.Errorf("Error generate next page token: %v\n", err.Error())
+
+		respErr := e.NewInternalError("generate next page token")
+		return nil, connect.NewError(respErr.Code(), respErr)
 	}
 
 	resp := connect.NewResponse(&registryv1alpha1.SearchUserResponse{
@@ -65,29 +77,40 @@ func (handler *SearchServiceHandler) SearchRepository(ctx context.Context, req *
 	// 验证参数
 	argErr := handler.validator.CheckPageSize(req.Msg.GetPageSize())
 	if argErr != nil {
+		logger.Errorf("Error check: %v\n", argErr.Error())
+
 		return nil, connect.NewError(argErr.Code(), argErr.Err())
 	}
 	argErr = handler.validator.CheckQuery(req.Msg.GetQuery())
 	if argErr != nil {
+		logger.Errorf("Error check: %v\n", argErr.Error())
+
 		return nil, connect.NewError(argErr.Code(), argErr.Err())
 	}
 
 	// 解析page token
 	pageTokenChaim, err := security.ParsePageToken(req.Msg.GetPageToken())
 	if err != nil {
+		logger.Errorf("Error parse page token: %v\n", err.Error())
+
 		return nil, e.NewInvalidArgumentError("page token")
 	}
 
 	// 查询结果
 	repositories, respErr := handler.searchService.SearchRepository(ctx, req.Msg.GetQuery(), pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), req.Msg.GetReverse())
 	if respErr != nil {
+		logger.Errorf("Error search repo: %v\n", respErr.Error())
+
 		return nil, connect.NewError(respErr.Code(), respErr)
 	}
 
 	// 生成下一页token
 	nextPageToken, err := security.GenerateNextPageToken(pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), len(repositories))
 	if err != nil {
-		return nil, e.NewInternalError("generate next page token")
+		logger.Errorf("Error generate next page token: %v\n", err.Error())
+
+		respErr := e.NewInternalError("generate next page token")
+		return nil, connect.NewError(respErr.Code(), respErr)
 	}
 
 	resp := connect.NewResponse(&registryv1alpha1.SearchRepositoryResponse{
@@ -102,29 +125,40 @@ func (handler *SearchServiceHandler) SearchLastCommitByContent(ctx context.Conte
 	// 验证参数
 	argErr := handler.validator.CheckPageSize(req.Msg.GetPageSize())
 	if argErr != nil {
+		logger.Errorf("Error check: %v\n", argErr.Error())
+
 		return nil, connect.NewError(argErr.Code(), argErr.Err())
 	}
 	argErr = handler.validator.CheckQuery(req.Msg.GetQuery())
 	if argErr != nil {
+		logger.Errorf("Error check: %v\n", argErr.Error())
+
 		return nil, connect.NewError(argErr.Code(), argErr.Err())
 	}
 
 	// 解析page token
 	pageTokenChaim, err := security.ParsePageToken(req.Msg.GetPageToken())
 	if err != nil {
+		logger.Errorf("Error parse page token: %v\n", err.Error())
+
 		return nil, e.NewInvalidArgumentError("page token")
 	}
 
 	// 查询结果
 	commits, respErr := handler.searchService.SearchLastCommitByContent(ctx, req.Msg.GetQuery(), pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), req.Msg.GetReverse())
 	if respErr != nil {
+		logger.Errorf("Error search commit by content: %v\n", err.Error())
+
 		return nil, connect.NewError(respErr.Code(), respErr)
 	}
 
 	// 生成下一页token
 	nextPageToken, err := security.GenerateNextPageToken(pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), len(commits))
 	if err != nil {
-		return nil, e.NewInternalError("generate next page token")
+		logger.Errorf("Error generate next page token: %v\n", err.Error())
+
+		respErr := e.NewInternalError("generate next page token")
+		return nil, connect.NewError(respErr.Code(), respErr)
 	}
 
 	resp := connect.NewResponse(&registryv1alpha1.SearchLastCommitByContentResponse{
@@ -139,29 +173,40 @@ func (handler *SearchServiceHandler) SearchCurationPlugin(ctx context.Context, r
 	// 验证参数
 	argErr := handler.validator.CheckPageSize(req.Msg.GetPageSize())
 	if argErr != nil {
+		logger.Errorf("Error check: %v\n", argErr.Error())
+
 		return nil, connect.NewError(argErr.Code(), argErr.Err())
 	}
 	argErr = handler.validator.CheckQuery(req.Msg.GetQuery())
 	if argErr != nil {
+		logger.Errorf("Error check: %v\n", argErr.Error())
+
 		return nil, connect.NewError(argErr.Code(), argErr.Err())
 	}
 
 	// 解析page token
 	pageTokenChaim, err := security.ParsePageToken(req.Msg.GetPageToken())
 	if err != nil {
+		logger.Errorf("Error parse page token: %v\n", err.Error())
+
 		return nil, e.NewInvalidArgumentError("page token")
 	}
 
 	// 查询结果
 	plugins, respErr := handler.searchService.SearchCurationPlugin(ctx, req.Msg.GetQuery(), pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), req.Msg.GetReverse())
 	if respErr != nil {
+		logger.Errorf("Error search curation plugin: %v\n", err.Error())
+
 		return nil, connect.NewError(respErr.Code(), respErr)
 	}
 
 	// 生成下一页token
 	nextPageToken, err := security.GenerateNextPageToken(pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), len(plugins))
 	if err != nil {
-		return nil, e.NewInternalError("generate next page token")
+		logger.Errorf("Error generate next page token: %v\n", err.Error())
+
+		respErr := e.NewInternalError("generate next page token")
+		return nil, connect.NewError(respErr.Code(), respErr)
 	}
 
 	resp := connect.NewResponse(&registryv1alpha1.SearchCuratedPluginResponse{
@@ -178,35 +223,48 @@ func (handler *SearchServiceHandler) SearchTag(ctx context.Context, req *connect
 	// 验证参数
 	argErr := handler.validator.CheckPageSize(req.Msg.GetPageSize())
 	if argErr != nil {
+		logger.Errorf("Error check: %v\n", argErr.Error())
+
 		return nil, connect.NewError(argErr.Code(), argErr.Err())
 	}
 	argErr = handler.validator.CheckQuery(req.Msg.GetQuery())
 	if argErr != nil {
+		logger.Errorf("Error check: %v\n", argErr.Error())
+
 		return nil, connect.NewError(argErr.Code(), argErr.Err())
 	}
 
 	// 查询权限
 	repository, checkErr := handler.validator.CheckRepositoryCanAccess(userID, req.Msg.GetRepositoryOwner(), req.Msg.GetRepositoryName(), registryv1alpha1connect.SearchServiceSearchTagProcedure)
 	if checkErr != nil {
+		logger.Errorf("Error check: %v\n", argErr.Error())
+
 		return nil, connect.NewError(checkErr.Code(), checkErr)
 	}
 
 	// 解析page token
 	pageTokenChaim, err := security.ParsePageToken(req.Msg.GetPageToken())
 	if err != nil {
+		logger.Errorf("Error parse page token: %v\n", err.Error())
+
 		return nil, e.NewInvalidArgumentError("page token")
 	}
 
 	// 查询结果
 	tags, respErr := handler.searchService.SearchTag(ctx, repository.RepositoryID, req.Msg.GetQuery(), pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), req.Msg.GetReverse())
 	if respErr != nil {
+		logger.Errorf("Error search tag: %v\n", err.Error())
+
 		return nil, connect.NewError(respErr.Code(), respErr)
 	}
 
 	// 生成下一页token
 	nextPageToken, err := security.GenerateNextPageToken(pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), len(tags))
 	if err != nil {
-		return nil, e.NewInternalError("generate next page token")
+		logger.Errorf("Error generate next page token: %v\n", err.Error())
+
+		respErr := e.NewInternalError("generate next page token")
+		return nil, connect.NewError(respErr.Code(), respErr)
 	}
 
 	resp := connect.NewResponse(&registryv1alpha1.SearchTagResponse{
@@ -223,35 +281,48 @@ func (handler *SearchServiceHandler) SearchDraft(ctx context.Context, req *conne
 	// 验证参数
 	argErr := handler.validator.CheckPageSize(req.Msg.GetPageSize())
 	if argErr != nil {
+		logger.Errorf("Error check: %v\n", argErr.Error())
+
 		return nil, connect.NewError(argErr.Code(), argErr.Err())
 	}
 	argErr = handler.validator.CheckQuery(req.Msg.GetQuery())
 	if argErr != nil {
+		logger.Errorf("Error check: %v\n", argErr.Error())
+
 		return nil, connect.NewError(argErr.Code(), argErr.Err())
 	}
 
 	// 查询权限
 	repository, checkErr := handler.validator.CheckRepositoryCanAccess(userID, req.Msg.GetRepositoryOwner(), req.Msg.GetRepositoryName(), registryv1alpha1connect.SearchServiceSearchTagProcedure)
 	if checkErr != nil {
+		logger.Errorf("Error check: %v\n", argErr.Error())
+
 		return nil, connect.NewError(checkErr.Code(), checkErr)
 	}
 
 	// 解析page token
 	pageTokenChaim, err := security.ParsePageToken(req.Msg.GetPageToken())
 	if err != nil {
+		logger.Errorf("Error parse page token: %v\n", err.Error())
+
 		return nil, e.NewInvalidArgumentError("page token")
 	}
 
 	// 查询结果
 	commits, respErr := handler.searchService.SearchDraft(ctx, repository.RepositoryID, req.Msg.GetQuery(), pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), req.Msg.GetReverse())
 	if respErr != nil {
+		logger.Errorf("Error search draft: %v\n", err.Error())
+
 		return nil, connect.NewError(respErr.Code(), respErr)
 	}
 
 	// 生成下一页token
 	nextPageToken, err := security.GenerateNextPageToken(pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), len(commits))
 	if err != nil {
-		return nil, e.NewInternalError("generate next page token")
+		logger.Errorf("Error generate next page token: %v\n", err.Error())
+
+		respErr := e.NewInternalError("generate next page token")
+		return nil, connect.NewError(respErr.Code(), respErr)
 	}
 
 	resp := connect.NewResponse(&registryv1alpha1.SearchDraftResponse{
