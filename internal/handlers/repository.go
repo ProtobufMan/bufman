@@ -5,6 +5,7 @@ import (
 	"github.com/ProtobufMan/bufman-cli/private/gen/proto/connect/bufman/alpha/registry/v1alpha1/registryv1alpha1connect"
 	registryv1alpha1 "github.com/ProtobufMan/bufman-cli/private/gen/proto/go/bufman/alpha/registry/v1alpha1"
 	"github.com/ProtobufMan/bufman/internal/constant"
+	"github.com/ProtobufMan/bufman/internal/core/logger"
 	"github.com/ProtobufMan/bufman/internal/core/security"
 	"github.com/ProtobufMan/bufman/internal/core/validity"
 	"github.com/ProtobufMan/bufman/internal/e"
@@ -28,11 +29,15 @@ func (handler *RepositoryServiceHandler) GetRepository(ctx context.Context, req 
 	// 查询
 	repository, err := handler.repositoryService.GetRepository(ctx, req.Msg.GetId())
 	if err != nil {
+		logger.Errorf("Error get repo: %v\n", err.Error())
+
 		return nil, connect.NewError(err.Code(), err.Err())
 	}
 
 	repositoryCounts, err := handler.repositoryService.GetRepositoryCounts(ctx, repository.RepositoryID)
 	if err != nil {
+		logger.Errorf("Error get repo counts: %v\n", err.Error())
+
 		return nil, connect.NewError(err.Code(), err.Err())
 	}
 
@@ -48,17 +53,23 @@ func (handler *RepositoryServiceHandler) GetRepositoryByFullName(ctx context.Con
 	// 验证参数
 	userName, repositoryName, argErr := handler.validator.SplitFullName(req.Msg.GetFullName())
 	if argErr != nil {
+		logger.Errorf("Error check: %v\n", argErr.Error())
+
 		return nil, connect.NewError(argErr.Code(), argErr.Err())
 	}
 
 	// 查询
 	repository, err := handler.repositoryService.GetRepositoryByUserNameAndRepositoryName(ctx, userName, repositoryName)
 	if err != nil {
+		logger.Errorf("Error get repo: %v\n", err.Error())
+
 		return nil, connect.NewError(err.Code(), err.Err())
 	}
 
 	repositoryCounts, err := handler.repositoryService.GetRepositoryCounts(ctx, repository.RepositoryID)
 	if err != nil {
+		logger.Errorf("Error get repo counts: %v\n", err.Error())
+
 		return nil, connect.NewError(err.Code(), err.Err())
 	}
 
@@ -74,24 +85,32 @@ func (handler *RepositoryServiceHandler) ListRepositories(ctx context.Context, r
 	// 验证参数
 	argErr := handler.validator.CheckPageSize(req.Msg.GetPageSize())
 	if argErr != nil {
+		logger.Errorf("Error check: %v\n", argErr.Error())
+
 		return nil, connect.NewError(argErr.Code(), argErr.Err())
 	}
 
 	// 解析page token
 	pageTokenChaim, err := security.ParsePageToken(req.Msg.GetPageToken())
 	if err != nil {
+		logger.Errorf("Error parse page token: %v\n", err.Error())
+
 		respErr := e.NewInvalidArgumentError("page token")
 		return nil, connect.NewError(respErr.Code(), respErr)
 	}
 
 	repositories, listErr := handler.repositoryService.ListRepositories(ctx, pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), req.Msg.Reverse)
 	if listErr != nil {
+		logger.Errorf("Error list repos: %v\n", listErr.Error())
+
 		return nil, connect.NewError(listErr.Code(), listErr)
 	}
 
 	// 生成下一页token
 	nextPageToken, err := security.GenerateNextPageToken(pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), len(repositories))
 	if err != nil {
+		logger.Errorf("Error generate next page token: %v\n", err.Error())
+
 		respErr := e.NewInternalError("generate next page token")
 		return nil, connect.NewError(respErr.Code(), respErr)
 	}
@@ -107,24 +126,32 @@ func (handler *RepositoryServiceHandler) ListUserRepositories(ctx context.Contex
 	// 验证参数
 	argErr := handler.validator.CheckPageSize(req.Msg.GetPageSize())
 	if argErr != nil {
+		logger.Errorf("Error check: %v\n", argErr.Error())
+
 		return nil, connect.NewError(argErr.Code(), argErr.Err())
 	}
 
 	// 解析page token
 	pageTokenChaim, err := security.ParsePageToken(req.Msg.GetPageToken())
 	if err != nil {
+		logger.Errorf("Error parse page token: %v\n", err.Error())
+
 		respErr := e.NewInvalidArgumentError("page token")
 		return nil, connect.NewError(respErr.Code(), respErr)
 	}
 
 	repositories, listErr := handler.repositoryService.ListUserRepositories(ctx, req.Msg.GetUserId(), pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), req.Msg.GetReverse())
 	if err != nil {
+		logger.Errorf("Error list user repos: %v\n", listErr.Error())
+
 		return nil, connect.NewError(listErr.Code(), listErr)
 	}
 
 	// 生成下一页token
 	nextPageToken, err := security.GenerateNextPageToken(pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), len(repositories))
 	if err != nil {
+		logger.Errorf("Error generate next page token: %v\n", err.Error())
+
 		respErr := e.NewInternalError("generate next page token")
 		return nil, connect.NewError(respErr.Code(), respErr)
 	}
@@ -140,12 +167,16 @@ func (handler *RepositoryServiceHandler) ListRepositoriesUserCanAccess(ctx conte
 	// 验证参数
 	argErr := handler.validator.CheckPageSize(req.Msg.GetPageSize())
 	if argErr != nil {
+		logger.Errorf("Error check: %v\n", argErr.Error())
+
 		return nil, connect.NewError(argErr.Code(), argErr.Err())
 	}
 
 	// 解析page token
 	pageTokenChaim, err := security.ParsePageToken(req.Msg.GetPageToken())
 	if err != nil {
+		logger.Errorf("Error parse page token: %v\n", err.Error())
+
 		respErr := e.NewInvalidArgumentError("page token")
 		return nil, connect.NewError(respErr.Code(), respErr)
 	}
@@ -153,12 +184,16 @@ func (handler *RepositoryServiceHandler) ListRepositoriesUserCanAccess(ctx conte
 	userID := ctx.Value(constant.UserIDKey).(string)
 	repositories, ListErr := handler.repositoryService.ListRepositoriesUserCanAccess(ctx, userID, pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), req.Msg.GetReverse())
 	if err != nil {
+		logger.Errorf("Error list repos user can access: %v\n", ListErr.Error())
+
 		return nil, connect.NewError(ListErr.Code(), ListErr)
 	}
 
 	// 生成下一页token
 	nextPageToken, err := security.GenerateNextPageToken(pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), len(repositories))
 	if err != nil {
+		logger.Errorf("Error generate next page token: %v\n", err.Error())
+
 		respErr := e.NewInternalError("generate next page token")
 		return nil, connect.NewError(respErr.Code(), respErr)
 	}
@@ -174,10 +209,14 @@ func (handler *RepositoryServiceHandler) CreateRepositoryByFullName(ctx context.
 	// 验证参数
 	userName, repositoryName, argErr := handler.validator.SplitFullName(req.Msg.GetFullName())
 	if argErr != nil {
+		logger.Errorf("Error check: %v", argErr.Error())
+
 		return nil, connect.NewError(argErr.Code(), argErr.Err())
 	}
 	argErr = handler.validator.CheckRepositoryName(repositoryName)
 	if argErr != nil {
+		logger.Errorf("Error check: %v", argErr.Error())
+
 		return nil, connect.NewError(argErr.Code(), argErr.Err())
 	}
 
@@ -186,6 +225,8 @@ func (handler *RepositoryServiceHandler) CreateRepositoryByFullName(ctx context.
 	// 创建
 	repository, err := handler.repositoryService.CreateRepositoryByUserNameAndRepositoryName(ctx, userID, userName, repositoryName, req.Msg.GetVisibility())
 	if err != nil {
+		logger.Errorf("Error create repo: %v", err.Error())
+
 		return nil, connect.NewError(err.Code(), err.Err())
 	}
 
@@ -202,12 +243,16 @@ func (handler *RepositoryServiceHandler) DeleteRepository(ctx context.Context, r
 	// 验证用户权限
 	_, permissionErr := handler.validator.CheckRepositoryCanDeleteByID(userID, req.Msg.GetId(), registryv1alpha1connect.RepositoryServiceDeleteRepositoryProcedure)
 	if permissionErr != nil {
+		logger.Errorf("Error check permission: %v", permissionErr.Error())
+
 		return nil, connect.NewError(permissionErr.Code(), permissionErr.Err())
 	}
 
 	// 查询repository，检查是否可以删除
 	err := handler.repositoryService.DeleteRepository(ctx, req.Msg.GetId())
 	if err != nil {
+		logger.Errorf("Error delete repo: %v", err.Error())
+
 		return nil, connect.NewError(err.Code(), err.Err())
 	}
 
@@ -219,6 +264,8 @@ func (handler *RepositoryServiceHandler) DeleteRepositoryByFullName(ctx context.
 	// 验证参数
 	userName, repositoryName, argErr := handler.validator.SplitFullName(req.Msg.GetFullName())
 	if argErr != nil {
+		logger.Errorf("Error check: %v\n", argErr.Error())
+
 		return nil, connect.NewError(argErr.Code(), argErr.Err())
 	}
 
@@ -227,12 +274,16 @@ func (handler *RepositoryServiceHandler) DeleteRepositoryByFullName(ctx context.
 	// 验证用户权限
 	_, permissionErr := handler.validator.CheckRepositoryCanDelete(userID, userName, repositoryName, registryv1alpha1connect.RepositoryServiceDeleteRepositoryByFullNameProcedure)
 	if permissionErr != nil {
+		logger.Errorf("Error check permission: %v", permissionErr.Error())
+
 		return nil, connect.NewError(permissionErr.Code(), permissionErr.Err())
 	}
 
 	// 删除
 	err := handler.repositoryService.DeleteRepositoryByUserNameAndRepositoryName(ctx, userName, repositoryName)
 	if err != nil {
+		logger.Errorf("Error delete repo: %v", err.Error())
+
 		return nil, connect.NewError(err.Code(), err.Err())
 	}
 
@@ -246,12 +297,16 @@ func (handler *RepositoryServiceHandler) DeprecateRepositoryByName(ctx context.C
 	// 验证用户权限
 	_, permissionErr := handler.validator.CheckRepositoryCanEdit(userID, req.Msg.GetOwnerName(), req.Msg.GetRepositoryName(), registryv1alpha1connect.RepositoryServiceDeprecateRepositoryByNameProcedure)
 	if permissionErr != nil {
+		logger.Errorf("Error check permission: %v", permissionErr.Error())
+
 		return nil, connect.NewError(permissionErr.Code(), permissionErr.Err())
 	}
 
 	// 修改数据库
 	updatedRepository, err := handler.repositoryService.DeprecateRepositoryByName(ctx, req.Msg.GetOwnerName(), req.Msg.GetRepositoryName(), req.Msg.GetDeprecationMessage())
 	if err != nil {
+		logger.Errorf("Error deprecate repo: %v", err.Error())
+
 		return nil, connect.NewError(err.Code(), err.Err())
 	}
 
@@ -267,12 +322,16 @@ func (handler *RepositoryServiceHandler) UndeprecateRepositoryByName(ctx context
 	// 验证用户权限
 	_, permissionErr := handler.validator.CheckRepositoryCanEdit(userID, req.Msg.GetOwnerName(), req.Msg.GetRepositoryName(), registryv1alpha1connect.RepositoryServiceUndeprecateRepositoryByNameProcedure)
 	if permissionErr != nil {
+		logger.Errorf("Error check permission: %v", permissionErr.Error())
+
 		return nil, connect.NewError(permissionErr.Code(), permissionErr.Err())
 	}
 
 	// 修改数据库
 	updatedRepository, err := handler.repositoryService.UndeprecateRepositoryByName(ctx, req.Msg.GetOwnerName(), req.Msg.GetRepositoryName())
 	if err != nil {
+		logger.Errorf("Error undeprecate repo: %v", err.Error())
+
 		return nil, connect.NewError(err.Code(), err.Err())
 	}
 
@@ -288,12 +347,16 @@ func (handler *RepositoryServiceHandler) UpdateRepositorySettingsByName(ctx cont
 	// 验证用户权限
 	_, permissionErr := handler.validator.CheckRepositoryCanEdit(userID, req.Msg.GetOwnerName(), req.Msg.GetRepositoryName(), registryv1alpha1connect.RepositoryServiceUpdateRepositorySettingsByNameProcedure)
 	if permissionErr != nil {
+		logger.Errorf("Error check permission: %v", permissionErr.Error())
+
 		return nil, connect.NewError(permissionErr.Code(), permissionErr.Err())
 	}
 
 	// 修改数据库
 	err := handler.repositoryService.UpdateRepositorySettingsByName(ctx, req.Msg.GetOwnerName(), req.Msg.GetRepositoryName(), req.Msg.GetVisibility(), req.Msg.GetDescription())
 	if err != nil {
+		logger.Errorf("Error update repo settings: %v", err.Error())
+
 		return nil, connect.NewError(err.Code(), err.Err())
 	}
 
@@ -313,12 +376,16 @@ func (handler *RepositoryServiceHandler) GetRepositoriesByFullName(ctx context.C
 		// 验证参数
 		userName, repositoryName, argErr := handler.validator.SplitFullName(fullName)
 		if argErr != nil {
+			logger.Errorf("Error check: %v\n", argErr.Error())
+
 			return nil, connect.NewError(argErr.Code(), argErr.Err())
 		}
 
 		// 查询
 		repository, err := handler.repositoryService.GetRepositoryByUserNameAndRepositoryName(ctx, userName, repositoryName)
 		if err != nil {
+			logger.Errorf("Error get repo: %v\n", err.Error())
+
 			return nil, connect.NewError(err.Code(), err.Err())
 		}
 		retRepos = append(retRepos, repository.ToProtoRepository())
