@@ -4,6 +4,7 @@ import (
 	"context"
 	registryv1alpha1 "github.com/ProtobufMan/bufman-cli/private/gen/proto/go/bufman/alpha/registry/v1alpha1"
 	"github.com/ProtobufMan/bufman/internal/constant"
+	"github.com/ProtobufMan/bufman/internal/core/logger"
 	"github.com/ProtobufMan/bufman/internal/services"
 	"github.com/bufbuild/connect-go"
 )
@@ -23,6 +24,7 @@ func (handler *AuthnServiceHandler) GetCurrentUser(ctx context.Context, req *con
 
 	user, err := handler.userService.GetUser(ctx, userID)
 	if err != nil {
+		logger.Errorf("Error Get User: %v\n", err.Error())
 		return nil, connect.NewError(err.Code(), err.Err())
 	}
 
