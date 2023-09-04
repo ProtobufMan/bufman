@@ -7,8 +7,8 @@ import (
 	"github.com/ProtobufMan/bufman-cli/private/bufpkg/bufmodule"
 	"github.com/ProtobufMan/bufman-cli/private/pkg/manifest"
 	"github.com/ProtobufMan/bufman/internal/config"
+	"github.com/ProtobufMan/bufman/internal/core/es"
 	"github.com/ProtobufMan/bufman/internal/model"
-	"github.com/ProtobufMan/bufman/internal/util/es"
 	"io"
 	"sync"
 )

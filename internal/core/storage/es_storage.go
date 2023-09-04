@@ -5,8 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/ProtobufMan/bufman/internal/constant"
+	"github.com/ProtobufMan/bufman/internal/core/es"
 	"github.com/ProtobufMan/bufman/internal/model"
-	"github.com/ProtobufMan/bufman/internal/util/es"
 	"io"
 )
 
