@@ -6,6 +6,7 @@ import (
 	"github.com/ProtobufMan/bufman-cli/private/gen/proto/connect/bufman/alpha/registry/v1alpha1/registryv1alpha1connect"
 	registryv1alpha1 "github.com/ProtobufMan/bufman-cli/private/gen/proto/go/bufman/alpha/registry/v1alpha1"
 	"github.com/ProtobufMan/bufman/internal/constant"
+	"github.com/ProtobufMan/bufman/internal/core/logger"
 	"github.com/ProtobufMan/bufman/internal/core/validity"
 	"github.com/ProtobufMan/bufman/internal/e"
 	"github.com/ProtobufMan/bufman/internal/services"
@@ -29,19 +30,26 @@ func (handler *DownloadServiceHandler) DownloadManifestAndBlobs(ctx context.Cont
 	userID, _ := ctx.Value(constant.UserIDKey).(string)
 	repository, checkErr := handler.validator.CheckRepositoryCanAccess(userID, req.Msg.GetOwner(), req.Msg.GetRepository(), registryv1alpha1connect.DownloadServiceDownloadManifestAndBlobsProcedure)
 	if checkErr != nil {
+		logger.Errorf("Error Check: %v\n", checkErr.Error())
+
 		return nil, connect.NewError(checkErr.Code(), checkErr)
 	}
 
 	// 获取对应文件内容、文件清单
 	fileManifest, blobSet, err := handler.downloadService.DownloadManifestAndBlobs(ctx, repository.RepositoryID, req.Msg.GetReference())
 	if err != nil {
+		logger.Errorf("Error download manifest and blobs: %v\n", err.Error())
+
 		return nil, connect.NewError(err.Code(), err)
 	}
 
 	// 转为响应格式
 	protoManifest, protoBlobs, toProtoErr := bufmanifest.ToProtoManifestAndBlobs(ctx, fileManifest, blobSet)
 	if toProtoErr != nil {
-		return nil, e.NewInternalError(registryv1alpha1connect.DownloadServiceDownloadManifestAndBlobsProcedure)
+		logger.Errorf("Error transform to response proto manifest and blobs: %v\n", toProtoErr.Error())
+
+		respErr := e.NewInternalError(registryv1alpha1connect.DownloadServiceDownloadManifestAndBlobsProcedure)
+		return nil, connect.NewError(respErr.Code(), respErr)
 	}
 
 	resp := connect.NewResponse(&registryv1alpha1.DownloadManifestAndBlobsResponse{
