@@ -20,10 +20,10 @@ package handlers
 import (
 	"context"
 	registryv1alpha1 "github.com/ProtobufMan/bufman-cli/private/gen/proto/go/bufman/alpha/registry/v1alpha1"
+	"github.com/ProtobufMan/bufman/internal/core/security"
+	"github.com/ProtobufMan/bufman/internal/core/validity"
 	"github.com/ProtobufMan/bufman/internal/e"
 	"github.com/ProtobufMan/bufman/internal/services"
-	"github.com/ProtobufMan/bufman/internal/util/security"
-	"github.com/ProtobufMan/bufman/internal/util/validity"
 	"github.com/bufbuild/connect-go"
 )
 

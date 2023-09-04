@@ -7,10 +7,10 @@ import (
 	"github.com/ProtobufMan/bufman-cli/private/gen/proto/connect/bufman/alpha/registry/v1alpha1/registryv1alpha1connect"
 	registryv1alpha1 "github.com/ProtobufMan/bufman-cli/private/gen/proto/go/bufman/alpha/registry/v1alpha1"
 	"github.com/ProtobufMan/bufman/internal/constant"
+	"github.com/ProtobufMan/bufman/internal/core/resolve"
+	"github.com/ProtobufMan/bufman/internal/core/validity"
 	"github.com/ProtobufMan/bufman/internal/e"
 	"github.com/ProtobufMan/bufman/internal/model"
-	"github.com/ProtobufMan/bufman/internal/util/resolve"
-	"github.com/ProtobufMan/bufman/internal/util/validity"
 	"github.com/bufbuild/connect-go"
 )
 

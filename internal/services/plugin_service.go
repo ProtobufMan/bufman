@@ -3,11 +3,11 @@ package services
 import (
 	"context"
 	"errors"
+	"github.com/ProtobufMan/bufman/internal/core/plugin"
+	"github.com/ProtobufMan/bufman/internal/core/storage"
 	"github.com/ProtobufMan/bufman/internal/e"
 	"github.com/ProtobufMan/bufman/internal/mapper"
 	"github.com/ProtobufMan/bufman/internal/model"
-	"github.com/ProtobufMan/bufman/internal/util/plugin"
-	"github.com/ProtobufMan/bufman/internal/util/storage"
 	"gorm.io/gorm"
 )
 
