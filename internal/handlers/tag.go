@@ -72,7 +72,8 @@ func (handler *TagServiceHandler) ListRepositoryTags(ctx context.Context, req *c
 	if err != nil {
 		logger.Errorf("Error parse page token: %v\n", err.Error())
 
-		return nil, e.NewInvalidArgumentError("page token")
+		respErr := e.NewInvalidArgumentError("page token")
+		return nil, connect.NewError(respErr.Code(), respErr)
 	}
 
 	// 尝试获取user ID

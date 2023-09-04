@@ -70,7 +70,8 @@ func (handler *TokenServiceHandler) ListTokens(ctx context.Context, req *connect
 	if err != nil {
 		logger.Errorf("Error parse page token: %v\n", err.Error())
 
-		return nil, e.NewInvalidArgumentError("page token")
+		respErr := e.NewInvalidArgumentError("page token")
+		return nil, connect.NewError(respErr.Code(), respErr)
 	}
 
 	userID := ctx.Value(constant.UserIDKey).(string)

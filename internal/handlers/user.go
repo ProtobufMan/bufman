@@ -110,7 +110,8 @@ func (handler *UserServiceHandler) ListUsers(ctx context.Context, req *connect.R
 	if err != nil {
 		logger.Errorf("Error parse page token: %v\n", err.Error())
 
-		return nil, e.NewInvalidArgumentError("page token")
+		respErr := e.NewInvalidArgumentError("page token")
+		return nil, connect.NewError(respErr.Code(), respErr)
 	}
 
 	users, ListErr := handler.userService.ListUsers(ctx, pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), req.Msg.GetReverse()) // 创建用户

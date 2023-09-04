@@ -45,7 +45,8 @@ func (handler *SearchServiceHandler) SearchUser(ctx context.Context, req *connec
 	if err != nil {
 		logger.Errorf("Error parse page token: %v\n", err.Error())
 
-		return nil, e.NewInvalidArgumentError("page token")
+		respErr := e.NewInvalidArgumentError("page token")
+		return nil, connect.NewError(respErr.Code(), respErr)
 	}
 
 	// 查询结果
@@ -93,7 +94,8 @@ func (handler *SearchServiceHandler) SearchRepository(ctx context.Context, req *
 	if err != nil {
 		logger.Errorf("Error parse page token: %v\n", err.Error())
 
-		return nil, e.NewInvalidArgumentError("page token")
+		respErr := e.NewInvalidArgumentError("page token")
+		return nil, connect.NewError(respErr.Code(), respErr)
 	}
 
 	// 查询结果

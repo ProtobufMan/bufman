@@ -92,21 +92,24 @@ func (handler *PushServiceHandler) PushManifestAndBlobs(ctx context.Context, req
 		if err != nil {
 			logger.Errorf("Error read config: %v\n", err.Error())
 
-			return nil, e.NewInternalError(err.Error())
+			respErr := e.NewInternalError(err.Error())
+			return nil, connect.NewError(respErr.Code(), respErr)
 		}
 		defer reader.Close()
 		configData, err := io.ReadAll(reader)
 		if err != nil {
 			logger.Errorf("Error read config: %v\n", err.Error())
 
-			return nil, e.NewInternalError(err.Error())
+			respErr := e.NewInternalError(err.Error())
+			return nil, connect.NewError(respErr.Code(), respErr)
 		}
 		bufConfig, err := bufconfig.GetConfigForData(ctx, configData)
 		if err != nil {
 			logger.Errorf("Error read config: %v\n", err.Error())
 
 			// 无法解析配置文件
-			return nil, e.NewInternalError(err.Error())
+			respErr := e.NewInternalError(err.Error())
+			return nil, connect.NewError(respErr.Code(), respErr)
 		}
 
 		// 获取全部依赖commits
