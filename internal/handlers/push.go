@@ -6,6 +6,7 @@ import (
 	registryv1alpha1 "github.com/ProtobufMan/bufman-cli/private/gen/proto/go/bufman/alpha/registry/v1alpha1"
 	"github.com/ProtobufMan/bufman-cli/private/pkg/manifest"
 	"github.com/ProtobufMan/bufman/internal/constant"
+	"github.com/ProtobufMan/bufman/internal/core/logger"
 	"github.com/ProtobufMan/bufman/internal/core/parser"
 	"github.com/ProtobufMan/bufman/internal/core/resolve"
 	"github.com/ProtobufMan/bufman/internal/core/storage"
@@ -43,6 +44,8 @@ func (handler *PushServiceHandler) PushManifestAndBlobs(ctx context.Context, req
 	for _, tag := range req.Msg.GetTags() {
 		argErr = handler.validator.CheckTagName(tag)
 		if argErr != nil {
+			logger.Errorf("Error check: %v\n", argErr.Err())
+
 			return nil, connect.NewError(argErr.Code(), argErr.Err())
 		}
 	}
@@ -51,6 +54,8 @@ func (handler *PushServiceHandler) PushManifestAndBlobs(ctx context.Context, req
 	if req.Msg.GetDraftName() != "" {
 		argErr = handler.validator.CheckDraftName(req.Msg.GetDraftName())
 		if argErr != nil {
+			logger.Errorf("Error check: %v\n", argErr.Err())
+
 			return nil, connect.NewError(argErr.Code(), argErr.Err())
 		}
 	}
@@ -58,18 +63,23 @@ func (handler *PushServiceHandler) PushManifestAndBlobs(ctx context.Context, req
 	// draft和tag只能二选一
 	if req.Msg.GetDraftName() != "" && len(req.Msg.GetTags()) > 0 {
 		responseError := e.NewInvalidArgumentError("draft and tags (only choose one)")
+		logger.Errorf("Error draft and tag must choose one (not both): %v\n", responseError.Err())
 		return nil, connect.NewError(responseError.Code(), responseError.Err())
 	}
 
 	// 检查上传文件
 	fileManifest, blobSet, checkErr := handler.validator.CheckManifestAndBlobs(ctx, req.Msg.GetManifest(), req.Msg.GetBlobs())
 	if checkErr != nil {
+		logger.Errorf("Error check manifest and blobs: %v\n", checkErr.Err())
+
 		return nil, connect.NewError(checkErr.Code(), checkErr)
 	}
 
 	// 获取bufConfig
 	bufConfigBlob, err := handler.storageHelper.GetBufManConfigFromBlob(ctx, fileManifest, blobSet)
 	if err != nil {
+		logger.Errorf("Error get config: %v\n", err.Error())
+
 		configErr := e.NewInternalError(err.Error())
 		return nil, connect.NewError(configErr.Code(), configErr)
 	}
@@ -80,15 +90,21 @@ func (handler *PushServiceHandler) PushManifestAndBlobs(ctx context.Context, req
 		// 生成Config
 		reader, err := bufConfigBlob.Open(ctx)
 		if err != nil {
+			logger.Errorf("Error read config: %v\n", err.Error())
+
 			return nil, e.NewInternalError(err.Error())
 		}
 		defer reader.Close()
 		configData, err := io.ReadAll(reader)
 		if err != nil {
+			logger.Errorf("Error read config: %v\n", err.Error())
+
 			return nil, e.NewInternalError(err.Error())
 		}
 		bufConfig, err := bufconfig.GetConfigForData(ctx, configData)
 		if err != nil {
+			logger.Errorf("Error read config: %v\n", err.Error())
+
 			// 无法解析配置文件
 			return nil, e.NewInternalError(err.Error())
 		}
@@ -96,6 +112,8 @@ func (handler *PushServiceHandler) PushManifestAndBlobs(ctx context.Context, req
 		// 获取全部依赖commits
 		dependentCommits, dependenceErr := handler.resolver.GetAllDependenciesFromBufConfig(ctx, bufConfig)
 		if dependenceErr != nil {
+			logger.Errorf("Error get all dependencies: %v\n", dependenceErr.Error())
+
 			return nil, connect.NewError(dependenceErr.Code(), dependenceErr)
 		}
 
@@ -106,6 +124,8 @@ func (handler *PushServiceHandler) PushManifestAndBlobs(ctx context.Context, req
 			dependentCommit := dependentCommits[i]
 			dependentManifest, dependentBlobSet, getErr := handler.pushService.GetManifestAndBlobSet(ctx, dependentCommit.RepositoryID, dependentCommit.CommitName)
 			if getErr != nil {
+				logger.Errorf("Error get manifest and blob set: %v\n", getErr.Error())
+
 				return nil, connect.NewError(getErr.Code(), getErr)
 			}
 
@@ -117,6 +137,8 @@ func (handler *PushServiceHandler) PushManifestAndBlobs(ctx context.Context, req
 	// 编译检查
 	compileErr := handler.protoParser.TryCompile(ctx, fileManifest, blobSet, dependentManifests, dependentBlobSets)
 	if compileErr != nil {
+		logger.Errorf("Error try to compile proto: %v\n", compileErr.Error())
+
 		return nil, connect.NewError(compileErr.Code(), compileErr)
 	}
 
@@ -131,6 +153,8 @@ func (handler *PushServiceHandler) PushManifestAndBlobs(ctx context.Context, req
 		commit, serviceErr = handler.pushService.PushManifestAndBlobs(ctx, userID, req.Msg.GetOwner(), req.Msg.GetRepository(), fileManifest, blobSet)
 	}
 	if serviceErr != nil {
+		logger.Errorf("Error push: %v\n", serviceErr.Error())
+
 		return nil, connect.NewError(serviceErr.Code(), serviceErr.Err())
 	}
 
