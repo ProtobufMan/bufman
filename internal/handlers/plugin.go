@@ -2,8 +2,10 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 	registryv1alpha1 "github.com/ProtobufMan/bufman-cli/private/gen/proto/go/bufman/alpha/registry/v1alpha1"
 	"github.com/ProtobufMan/bufman/internal/constant"
+	"github.com/ProtobufMan/bufman/internal/core/logger"
 	"github.com/ProtobufMan/bufman/internal/core/security"
 	"github.com/ProtobufMan/bufman/internal/core/validity"
 	"github.com/ProtobufMan/bufman/internal/e"
@@ -31,18 +33,24 @@ func (handler *PluginServiceHandler) ListCuratedPlugins(ctx context.Context, req
 	// 验证参数
 	argErr := handler.validator.CheckPageSize(req.Msg.GetPageSize())
 	if argErr != nil {
+		fmt.Printf("Error check: %v\n", argErr.Error())
+
 		return nil, connect.NewError(argErr.Code(), argErr.Err())
 	}
 
 	// 解析page token
 	pageTokenChaim, err := security.ParsePageToken(req.Msg.GetPageToken())
 	if err != nil {
+		logger.Errorf("Error parse page token: %v\n", err.Error())
+
 		respErr := e.NewInvalidArgumentError("page token")
 		return nil, connect.NewError(respErr.Code(), respErr)
 	}
 
 	plugins, err := handler.pluginService.ListPlugins(ctx, pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), req.Msg.GetReverse(), req.Msg.GetIncludeDeprecated())
 	if err != nil {
+		logger.Errorf("Error list plugins: %v\n", err.Error())
+
 		respErr := e.NewInvalidArgumentError("page token")
 		return nil, connect.NewError(respErr.Code(), respErr)
 	}
@@ -50,6 +58,8 @@ func (handler *PluginServiceHandler) ListCuratedPlugins(ctx context.Context, req
 	// 生成下一页token
 	nextPageToken, err := security.GenerateNextPageToken(pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), len(plugins))
 	if err != nil {
+		logger.Errorf("Error generate next page token: %v\n", err.Error())
+
 		respErr := e.NewInternalError("generate next page token")
 		return nil, connect.NewError(respErr.Code(), respErr)
 	}
@@ -67,29 +77,41 @@ func (handler *PluginServiceHandler) CreateCuratedPlugin(ctx context.Context, re
 	// 检查插件名称是否合法
 	checkErr := handler.validator.CheckPluginName(req.Msg.GetName())
 	if checkErr != nil {
+		fmt.Printf("Error check: %v\n", checkErr.Error())
+
 		return nil, connect.NewError(checkErr.Code(), checkErr)
 	}
 
 	// 检查版本号是否合法
 	checkErr = handler.validator.CheckVersion(req.Msg.GetVersion())
 	if checkErr != nil {
+		fmt.Printf("Error check: %v\n", checkErr.Error())
+
 		return nil, connect.NewError(checkErr.Code(), checkErr)
 	}
 
 	// 检查reversion
 	if req.Msg.GetRevision() < 1 {
 		checkErr = e.NewInvalidArgumentError("reversion must greater than 0")
+
+		fmt.Printf("Error check: %v\n", checkErr.Error())
+
 		return nil, connect.NewError(checkErr.Code(), checkErr)
 	}
 
 	// 检查用户名称
 	user, checkErr := handler.userService.GetUser(ctx, userID)
 	if checkErr != nil {
+		fmt.Printf("Error check: %v\n", checkErr.Error())
+
 		return nil, connect.NewError(checkErr.Code(), checkErr)
 	}
 	if user.UserName != req.Msg.GetOwner() {
 		// 用户id与owner必须对应
 		checkErr = e.NewPermissionDeniedError("token and owner mismatch")
+
+		fmt.Printf("Error check: %v\n", checkErr.Error())
+
 		return nil, connect.NewError(checkErr.Code(), checkErr)
 	}
 
@@ -113,6 +135,8 @@ func (handler *PluginServiceHandler) CreateCuratedPlugin(ctx context.Context, re
 		resp := connect.NewResponse(&registryv1alpha1.CreateCuratedPluginResponse{
 			Configuration: plugin.ToProtoPlugin(),
 		})
+		fmt.Printf("Error create plugin: %v\n", err.Error())
+
 		return resp, connect.NewError(err.Code(), err)
 	}
 
@@ -142,6 +166,8 @@ func (handler *PluginServiceHandler) GetLatestCuratedPlugin(ctx context.Context,
 		err = e.NewInvalidArgumentError("version is empty but reversion is not empty")
 	}
 	if err != nil {
+		fmt.Printf("Error get lastest curated plugin: %v\n", err.Error())
+
 		return nil, connect.NewError(err.Code(), err)
 	}
 
