@@ -4,6 +4,7 @@ import (
 	"context"
 	registryv1alpha1 "github.com/ProtobufMan/bufman-cli/private/gen/proto/go/bufman/alpha/registry/v1alpha1"
 	"github.com/ProtobufMan/bufman/internal/constant"
+	"github.com/ProtobufMan/bufman/internal/core/logger"
 	"github.com/ProtobufMan/bufman/internal/core/security"
 	"github.com/ProtobufMan/bufman/internal/core/validity"
 	"github.com/ProtobufMan/bufman/internal/e"
@@ -26,6 +27,8 @@ func NewTokenServiceHandler() *TokenServiceHandler {
 func (handler *TokenServiceHandler) CreateToken(ctx context.Context, req *connect.Request[registryv1alpha1.CreateTokenRequest]) (*connect.Response[registryv1alpha1.CreateTokenResponse], error) {
 	token, err := handler.tokenService.CreateToken(ctx, req.Msg.GetUsername(), req.Msg.GetPassword(), req.Msg.GetExpireTime().AsTime(), req.Msg.GetNote())
 	if err != nil {
+		logger.Errorf("Error create token: %v\n", err.Error())
+
 		return nil, connect.NewError(err.Code(), err.Err())
 	}
 
@@ -42,6 +45,8 @@ func (handler *TokenServiceHandler) GetToken(ctx context.Context, req *connect.R
 	// 查询token
 	token, err := handler.tokenService.GetToken(ctx, userID, req.Msg.GetTokenId())
 	if err != nil {
+		logger.Errorf("Error get token: %v\n", err.Error())
+
 		return nil, connect.NewError(err.Code(), err.Err())
 	}
 
@@ -55,12 +60,16 @@ func (handler *TokenServiceHandler) ListTokens(ctx context.Context, req *connect
 	// 验证参数
 	argErr := handler.validator.CheckPageSize(req.Msg.GetPageSize())
 	if argErr != nil {
+		logger.Errorf("Error check: %v\n", argErr.Error())
+
 		return nil, connect.NewError(argErr.Code(), argErr.Err())
 	}
 
 	// 解析page token
 	pageTokenChaim, err := security.ParsePageToken(req.Msg.GetPageToken())
 	if err != nil {
+		logger.Errorf("Error parse page token: %v\n", err.Error())
+
 		return nil, e.NewInvalidArgumentError("page token")
 	}
 
@@ -69,13 +78,18 @@ func (handler *TokenServiceHandler) ListTokens(ctx context.Context, req *connect
 	// 查询token
 	tokens, listErr := handler.tokenService.ListTokens(ctx, userID, pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), req.Msg.GetReverse())
 	if err != nil {
+		logger.Errorf("Error list tokens: %v\n", listErr.Error())
+
 		return nil, connect.NewError(listErr.Code(), listErr)
 	}
 
 	// 生成下一页token
 	nextPageToken, err := security.GenerateNextPageToken(pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), len(tokens))
 	if err != nil {
-		return nil, e.NewInternalError("generate next page token")
+		logger.Errorf("Error generate next page token: %v\n", err.Error())
+
+		respErr := e.NewInternalError("generate next page token")
+		return nil, connect.NewError(respErr.Code(), respErr)
 	}
 
 	resp := connect.NewResponse(&registryv1alpha1.ListTokensResponse{
@@ -91,6 +105,8 @@ func (handler *TokenServiceHandler) DeleteToken(ctx context.Context, req *connec
 	// 删除token
 	err := handler.tokenService.DeleteToken(ctx, userID, req.Msg.GetTokenId())
 	if err != nil {
+		logger.Errorf("Error delete token: %v\n", err.Error())
+
 		return nil, connect.NewError(err.Code(), err.Err())
 	}
 
