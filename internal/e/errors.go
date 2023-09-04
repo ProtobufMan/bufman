@@ -9,8 +9,8 @@ type UnknownError struct {
 	*BaseResponseError
 }
 
-func NewUnknownError(procedure string) *UnknownError {
-	msg := fmt.Sprintf("unknown error occurs while %s", procedure)
+func NewUnknownError(action string) *UnknownError {
+	msg := fmt.Sprintf("unknown error occurs while %s", action)
 	return &UnknownError{
 		NewBaseResponseError(msg, connect.CodeUnknown),
 	}
@@ -42,8 +42,8 @@ type PermissionDeniedError struct {
 	*BaseResponseError
 }
 
-func NewPermissionDeniedError(procedure string) *PermissionDeniedError {
-	msg := fmt.Sprintf("%s is permission denied", procedure)
+func NewPermissionDeniedError(action string) *PermissionDeniedError {
+	msg := fmt.Sprintf("%s is permission denied", action)
 	return &PermissionDeniedError{
 		NewBaseResponseError(msg, connect.CodePermissionDenied),
 	}
@@ -53,8 +53,8 @@ type InternalError struct {
 	*BaseResponseError
 }
 
-func NewInternalError(procedure string) *InternalError {
-	msg := fmt.Sprintf("internal error occurs while %s", procedure)
+func NewInternalError(action string) *InternalError {
+	msg := fmt.Sprintf("internal error occurs while %s", action)
 	return &InternalError{
 		NewBaseResponseError(msg, connect.CodeInternal),
 	}
@@ -64,8 +64,8 @@ type CodeUnauthenticatedError struct {
 	*BaseResponseError
 }
 
-func NewUnauthenticatedError(procedure string) *CodeUnauthenticatedError {
-	msg := fmt.Sprintf("unauthenticated error occurs while %s", procedure)
+func NewUnauthenticatedError(action string) *CodeUnauthenticatedError {
+	msg := fmt.Sprintf("unauthenticated error occurs while %s", action)
 	return &CodeUnauthenticatedError{
 		NewBaseResponseError(msg, connect.CodeUnauthenticated),
 	}
