@@ -5,6 +5,7 @@ import (
 	"github.com/ProtobufMan/bufman-cli/private/gen/proto/connect/bufman/alpha/registry/v1alpha1/registryv1alpha1connect"
 	registryv1alpha1 "github.com/ProtobufMan/bufman-cli/private/gen/proto/go/bufman/alpha/registry/v1alpha1"
 	"github.com/ProtobufMan/bufman/internal/constant"
+	"github.com/ProtobufMan/bufman/internal/core/logger"
 	"github.com/ProtobufMan/bufman/internal/core/security"
 	"github.com/ProtobufMan/bufman/internal/core/validity"
 	"github.com/ProtobufMan/bufman/internal/e"
@@ -28,6 +29,7 @@ func (handler *CommitServiceHandler) ListRepositoryCommitsByReference(ctx contex
 	// 验证参数
 	argErr := handler.validator.CheckPageSize(req.Msg.GetPageSize())
 	if argErr != nil {
+		logger.Errorf("Error Check Args: %v\n", argErr.Error())
 		return nil, connect.NewError(argErr.Code(), argErr.Err())
 	}
 
@@ -37,24 +39,28 @@ func (handler *CommitServiceHandler) ListRepositoryCommitsByReference(ctx contex
 	// 验证用户权限
 	repository, permissionErr := handler.validator.CheckRepositoryCanAccess(userID, req.Msg.GetRepositoryOwner(), req.Msg.GetRepositoryName(), registryv1alpha1connect.RepositoryCommitServiceListRepositoryCommitsByReferenceProcedure)
 	if permissionErr != nil {
+		logger.Errorf("Error Check Permission: %v\n", permissionErr.Error())
 		return nil, connect.NewError(permissionErr.Code(), permissionErr.Err())
 	}
 
 	// 解析page token
 	pageTokenChaim, err := security.ParsePageToken(req.Msg.GetPageToken())
 	if err != nil {
+		logger.Errorf("Error Parse Page Token: %v\n", err.Error())
 		return nil, e.NewInvalidArgumentError("page token")
 	}
 
 	// 查询
 	commits, respErr := handler.commitService.ListRepositoryCommitsByReference(ctx, repository.RepositoryID, req.Msg.GetReference(), pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), req.Msg.GetReverse())
 	if respErr != nil {
+		logger.Errorf("Error list repository commits: %v\n", respErr.Error())
 		return nil, connect.NewError(respErr.Code(), respErr.Err())
 	}
 
 	// 生成下一页token
 	nextPageToken, err := security.GenerateNextPageToken(pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), len(commits))
 	if err != nil {
+		logger.Errorf("Error generate next page token: %v\n", err.Error())
 		return nil, e.NewInternalError("generate next page token")
 	}
 
@@ -72,12 +78,14 @@ func (handler *CommitServiceHandler) GetRepositoryCommitByReference(ctx context.
 	// 验证用户权限
 	repository, permissionErr := handler.validator.CheckRepositoryCanAccess(userID, req.Msg.GetRepositoryOwner(), req.Msg.GetRepositoryName(), registryv1alpha1connect.RepositoryCommitServiceGetRepositoryCommitByReferenceProcedure)
 	if permissionErr != nil {
+		logger.Errorf("Error Check Permission: %v\n", permissionErr.Error())
 		return nil, connect.NewError(permissionErr.Code(), permissionErr.Err())
 	}
 
 	// 查询
 	commit, respErr := handler.commitService.GetRepositoryCommitByReference(ctx, repository.RepositoryID, req.Msg.GetReference())
 	if respErr != nil {
+		logger.Errorf("Error list repository commits: %v\n", respErr.Error())
 		return nil, connect.NewError(respErr.Code(), respErr.Err())
 	}
 
@@ -91,6 +99,7 @@ func (handler *CommitServiceHandler) ListRepositoryDraftCommits(ctx context.Cont
 	// 验证参数
 	argErr := handler.validator.CheckPageSize(req.Msg.GetPageSize())
 	if argErr != nil {
+		logger.Errorf("Error Check Args: %v\n", argErr.Error())
 		return nil, connect.NewError(argErr.Code(), argErr.Err())
 	}
 
@@ -100,18 +109,21 @@ func (handler *CommitServiceHandler) ListRepositoryDraftCommits(ctx context.Cont
 	// 验证用户权限
 	repository, permissionErr := handler.validator.CheckRepositoryCanAccess(userID, req.Msg.GetRepositoryOwner(), req.Msg.GetRepositoryName(), registryv1alpha1connect.RepositoryCommitServiceListRepositoryDraftCommitsProcedure)
 	if permissionErr != nil {
+		logger.Errorf("Error Check Permission: %v\n", permissionErr.Error())
 		return nil, connect.NewError(permissionErr.Code(), permissionErr.Err())
 	}
 
 	// 解析page token
 	pageTokenChaim, err := security.ParsePageToken(req.Msg.GetPageToken())
 	if err != nil {
+		logger.Errorf("Error Parse Page Token: %v\n", err.Error())
 		return nil, e.NewInvalidArgumentError("page token")
 	}
 
 	// 查询
 	commits, respErr := handler.commitService.ListRepositoryDraftCommits(ctx, repository.RepositoryID, pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), req.Msg.GetReverse())
 	if respErr != nil {
+		logger.Errorf("Error list repository draft commits: %v\n", respErr.Error())
 		return nil, connect.NewError(respErr.Code(), respErr.Err())
 	}
 
@@ -135,12 +147,14 @@ func (handler *CommitServiceHandler) DeleteRepositoryDraftCommit(ctx context.Con
 	// 验证用户权限
 	repository, permissionErr := handler.validator.CheckRepositoryCanEdit(userID, req.Msg.GetRepositoryOwner(), req.Msg.GetRepositoryName(), registryv1alpha1connect.RepositoryCommitServiceDeleteRepositoryDraftCommitProcedure)
 	if permissionErr != nil {
+		logger.Errorf("Error Check Permission: %v\n", permissionErr.Error())
 		return nil, connect.NewError(permissionErr.Code(), permissionErr.Err())
 	}
 
 	// 删除
 	err := handler.commitService.DeleteRepositoryDraftCommit(ctx, repository.RepositoryID, req.Msg.GetDraftName())
 	if err != nil {
+		logger.Errorf("Error delete repository draft commits: %v\n", err.Error())
 		return nil, connect.NewError(err.Code(), err.Err())
 	}
 
