@@ -20,6 +20,7 @@ package handlers
 import (
 	"context"
 	registryv1alpha1 "github.com/ProtobufMan/bufman-cli/private/gen/proto/go/bufman/alpha/registry/v1alpha1"
+	"github.com/ProtobufMan/bufman/internal/core/logger"
 	"github.com/ProtobufMan/bufman/internal/core/security"
 	"github.com/ProtobufMan/bufman/internal/core/validity"
 	"github.com/ProtobufMan/bufman/internal/e"
@@ -43,15 +44,21 @@ func (handler *UserServiceHandler) CreateUser(ctx context.Context, req *connect.
 	// 验证参数
 	argErr := handler.validator.CheckUserName(req.Msg.GetUsername())
 	if argErr != nil {
+		logger.Errorf("Error check: %v\n", argErr.Error())
+
 		return nil, connect.NewError(argErr.Code(), argErr.Err())
 	}
 	argErr = handler.validator.CheckPassword(req.Msg.GetPassword())
 	if argErr != nil {
+		logger.Errorf("Error check: %v\n", argErr.Error())
+
 		return nil, connect.NewError(argErr.Code(), argErr.Err())
 	}
 
 	user, err := handler.userService.CreateUser(ctx, req.Msg.GetUsername(), req.Msg.GetPassword()) // 创建用户
 	if err != nil {
+		logger.Errorf("Error create user: %v\n", err.Error())
+
 		return nil, connect.NewError(err.Code(), err.Err())
 	}
 
@@ -65,6 +72,8 @@ func (handler *UserServiceHandler) CreateUser(ctx context.Context, req *connect.
 func (handler *UserServiceHandler) GetUser(ctx context.Context, req *connect.Request[registryv1alpha1.GetUserRequest]) (*connect.Response[registryv1alpha1.GetUserResponse], error) {
 	user, err := handler.userService.GetUser(ctx, req.Msg.GetId()) // 创建用户
 	if err != nil {
+		logger.Errorf("Error get user: %v\n", err.Error())
+
 		return nil, connect.NewError(err.Code(), err.Err())
 	}
 
@@ -76,6 +85,8 @@ func (handler *UserServiceHandler) GetUser(ctx context.Context, req *connect.Req
 func (handler *UserServiceHandler) GetUserByUsername(ctx context.Context, req *connect.Request[registryv1alpha1.GetUserByUsernameRequest]) (*connect.Response[registryv1alpha1.GetUserByUsernameResponse], error) {
 	user, err := handler.userService.GetUserByUsername(ctx, req.Msg.GetUsername()) // 创建用户
 	if err != nil {
+		logger.Errorf("Error get user: %v\n", err.Error())
+
 		return nil, connect.NewError(err.Code(), err.Err())
 	}
 
@@ -89,24 +100,33 @@ func (handler *UserServiceHandler) ListUsers(ctx context.Context, req *connect.R
 	// 验证参数
 	argErr := handler.validator.CheckPageSize(req.Msg.GetPageSize())
 	if argErr != nil {
+		logger.Errorf("Error check: %v\n", argErr.Error())
+
 		return nil, connect.NewError(argErr.Code(), argErr.Err())
 	}
 
 	// 解析page token
 	pageTokenChaim, err := security.ParsePageToken(req.Msg.GetPageToken())
 	if err != nil {
+		logger.Errorf("Error parse page token: %v\n", err.Error())
+
 		return nil, e.NewInvalidArgumentError("page token")
 	}
 
 	users, ListErr := handler.userService.ListUsers(ctx, pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), req.Msg.GetReverse()) // 创建用户
 	if err != nil {
+		logger.Errorf("Error list users: %v\n", ListErr.Error())
+
 		return nil, connect.NewError(ListErr.Code(), ListErr)
 	}
 
 	// 生成下一页token
 	nextPageToken, err := security.GenerateNextPageToken(pageTokenChaim.PageOffset, int(req.Msg.GetPageSize()), len(users))
 	if err != nil {
-		return nil, e.NewInternalError("generate next page token")
+		logger.Errorf("Error generate next page token: %v\n", err.Error())
+
+		respErr := e.NewInternalError("generate next page token")
+		return nil, connect.NewError(respErr.Code(), respErr)
 	}
 
 	resp := connect.NewResponse(&registryv1alpha1.ListUsersResponse{
