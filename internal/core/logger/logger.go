@@ -23,6 +23,8 @@ func initLogger() {
 }
 
 func SetLevel(mode string) error {
+	initLogger()
+
 	switch mode {
 	case gin.DebugMode:
 		logger.SetLevel(logrus.DebugLevel)
