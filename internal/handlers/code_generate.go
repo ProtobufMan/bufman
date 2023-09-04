@@ -4,6 +4,7 @@ import (
 	"context"
 	registryv1alpha1 "github.com/ProtobufMan/bufman-cli/private/gen/proto/go/bufman/alpha/registry/v1alpha1"
 	"github.com/ProtobufMan/bufman/internal/constant"
+	"github.com/ProtobufMan/bufman/internal/core/logger"
 	"github.com/ProtobufMan/bufman/internal/services"
 	"github.com/bufbuild/connect-go"
 	"time"
@@ -26,6 +27,7 @@ func (handler *CodeGenerateServiceHandler) GenerateCode(ctx context.Context, req
 	defer cancel()
 	codeGeneratorResponses, err := handler.codeGenerateService.PluginCodeGenerate(timeoutCtx, userID, req)
 	if err != nil {
+		logger.Errorf("Error Plugin Code Generate: %v\n", err.Error())
 		return nil, connect.NewError(err.Code(), err)
 	}
 
