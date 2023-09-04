@@ -5,6 +5,7 @@ import (
 	"github.com/ProtobufMan/bufman-cli/private/gen/proto/connect/bufman/alpha/registry/v1alpha1/registryv1alpha1connect"
 	registryv1alpha1 "github.com/ProtobufMan/bufman-cli/private/gen/proto/go/bufman/alpha/registry/v1alpha1"
 	"github.com/ProtobufMan/bufman/internal/constant"
+	"github.com/ProtobufMan/bufman/internal/core/logger"
 	"github.com/ProtobufMan/bufman/internal/core/validity"
 	"github.com/ProtobufMan/bufman/internal/services"
 	"github.com/bufbuild/connect-go"
@@ -28,12 +29,16 @@ func (handler *DocServiceHandler) GetSourceDirectoryInfo(ctx context.Context, re
 	// 检查用户权限
 	repository, checkErr := handler.validator.CheckRepositoryCanAccess(userID, req.Msg.GetOwner(), req.Msg.GetRepository(), registryv1alpha1connect.DocServiceGetSourceDirectoryInfoProcedure)
 	if checkErr != nil {
+		logger.Errorf("Error Check: %v\n", checkErr.Error())
+
 		return nil, connect.NewError(checkErr.Code(), checkErr)
 	}
 
 	// 获取目录结构信息
 	directoryInfo, respErr := handler.docsService.GetSourceDirectoryInfo(ctx, repository.RepositoryID, req.Msg.GetReference())
 	if respErr != nil {
+		logger.Errorf("Error get source dir info: %v\n", respErr.Error())
+
 		return nil, connect.NewError(respErr.Code(), respErr)
 	}
 
@@ -49,12 +54,16 @@ func (handler *DocServiceHandler) GetSourceFile(ctx context.Context, req *connec
 	// 检查用户权限
 	repository, checkErr := handler.validator.CheckRepositoryCanAccess(userID, req.Msg.GetOwner(), req.Msg.GetRepository(), registryv1alpha1connect.DocServiceGetSourceFileProcedure)
 	if checkErr != nil {
+		logger.Errorf("Error Check: %v\n", checkErr.Error())
+
 		return nil, connect.NewError(checkErr.Code(), checkErr)
 	}
 
 	// 获取源码内容
 	content, respErr := handler.docsService.GetSourceFile(ctx, repository.RepositoryID, req.Msg.GetReference(), req.Msg.GetPath())
 	if respErr != nil {
+		logger.Errorf("Error get source file: %v\n", respErr.Error())
+
 		return nil, connect.NewError(respErr.Code(), respErr)
 	}
 
@@ -70,11 +79,15 @@ func (handler *DocServiceHandler) GetModulePackages(ctx context.Context, req *co
 	// 检查用户权限
 	repository, checkErr := handler.validator.CheckRepositoryCanAccess(userID, req.Msg.GetOwner(), req.Msg.GetRepository(), registryv1alpha1connect.DocServiceGetModulePackagesProcedure)
 	if checkErr != nil {
+		logger.Errorf("Error Check: %v\n", checkErr.Error())
+
 		return nil, connect.NewError(checkErr.Code(), checkErr)
 	}
 
 	modulePackages, respErr := handler.docsService.GetModulePackages(ctx, repository.RepositoryID, req.Msg.GetReference())
 	if respErr != nil {
+		logger.Errorf("Error get module packages: %v\n", respErr.Error())
+
 		return nil, connect.NewError(respErr.Code(), respErr)
 	}
 
@@ -91,11 +104,15 @@ func (handler *DocServiceHandler) GetModuleDocumentation(ctx context.Context, re
 	// 检查用户权限
 	repository, checkErr := handler.validator.CheckRepositoryCanAccess(userID, req.Msg.GetOwner(), req.Msg.GetRepository(), registryv1alpha1connect.DocServiceGetModuleDocumentationProcedure)
 	if checkErr != nil {
+		logger.Errorf("Error Check: %v\n", checkErr.Error())
+
 		return nil, connect.NewError(checkErr.Code(), checkErr)
 	}
 
 	moduleDocumentation, respErr := handler.docsService.GetModuleDocumentation(ctx, repository.RepositoryID, req.Msg.GetReference())
 	if respErr != nil {
+		logger.Errorf("Error get module doc: %v\n", respErr.Error())
+
 		return nil, connect.NewError(respErr.Code(), respErr)
 	}
 
@@ -111,11 +128,15 @@ func (handler *DocServiceHandler) GetPackageDocumentation(ctx context.Context, r
 	// 检查用户权限
 	repository, checkErr := handler.validator.CheckRepositoryCanAccess(userID, req.Msg.GetOwner(), req.Msg.GetRepository(), registryv1alpha1connect.DocServiceGetPackageDocumentationProcedure)
 	if checkErr != nil {
+		logger.Errorf("Error Check: %v\n", checkErr.Error())
+
 		return nil, connect.NewError(checkErr.Code(), checkErr)
 	}
 
 	packageDocumentation, respErr := handler.docsService.GetPackageDocumentation(ctx, repository.RepositoryID, req.Msg.GetReference(), req.Msg.GetPackageName())
 	if respErr != nil {
+		logger.Errorf("Error get package doc: %v\n", respErr.Error())
+
 		return nil, connect.NewError(respErr.Code(), respErr)
 	}
 
