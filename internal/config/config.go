@@ -7,6 +7,7 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/gin-gonic/gin"
 	"github.com/olivere/elastic/v7"
+	"github.com/silenceper/pool"
 	"github.com/spf13/viper"
 	"gorm.io/gorm"
 	"os"
@@ -54,21 +55,30 @@ type MySQL struct {
 }
 
 type Docker struct {
-	Host       string `mapstructure:"host"`
-	CACertPath string `mapstructure:"ca_cert_path"`
-	CertPath   string `mapstructure:"cert_path"`
-	KeyPath    string `mapstructure:"key_path"`
+	Host               string        `mapstructure:"host"`
+	CACertPath         string        `mapstructure:"ca_cert_path"`
+	CertPath           string        `mapstructure:"cert_path"`
+	KeyPath            string        `mapstructure:"key_path"`
+	MaxOpenConnections int           `mapstructure:"max_open_connections"`
+	MaxIdleConnections int           `mapstructure:"max_idle_connections"`
+	MaxIdleTime        time.Duration `mapstructure:"max_idle_time"`
 }
 
 type ElasticSearch struct {
-	Urls     []string `mapstructure:"urls"`
-	Username string   `mapstructure:"username"`
-	Password string   `mapstructure:"password"`
+	Urls               []string      `mapstructure:"urls"`
+	Username           string        `mapstructure:"username"`
+	Password           string        `mapstructure:"password"`
+	MaxOpenConnections int           `mapstructure:"max_open_connections"`
+	MaxIdleConnections int           `mapstructure:"max_idle_connections"`
+	MaxIdleTime        time.Duration `mapstructure:"max_idle_time"`
 }
 
 var (
 	DataBase   *gorm.DB
 	Properties = &Config{}
+
+	DockerCliPool pool.Pool
+	EsCliPool     pool.Pool
 )
 
 func LoadConfig() {
@@ -82,15 +92,19 @@ func LoadConfig() {
 			PageTokenSecret:     "123456",
 		},
 		Docker: Docker{
-			Host:       client.DefaultDockerHost,
-			CACertPath: "",
-			CertPath:   "",
-			KeyPath:    "",
+			Host:               client.DefaultDockerHost,
+			CACertPath:         "",
+			CertPath:           "",
+			KeyPath:            "",
+			MaxOpenConnections: 10,
+			MaxIdleConnections: 10,
 		},
 		ElasticSearch: ElasticSearch{
-			Urls:     []string{elastic.DefaultURL},
-			Username: "",
-			Password: "",
+			Urls:               []string{elastic.DefaultURL},
+			Username:           "",
+			Password:           "",
+			MaxOpenConnections: 10,
+			MaxIdleConnections: 10,
 		},
 	}
 
@@ -100,26 +114,27 @@ func LoadConfig() {
 	// 从环境变量中读取
 	loadFromENV()
 
+	// gin、logger设置level
 	gin.SetMode(Properties.BufMan.Mode)
-	logger.SetLevel(Properties.BufMan.Mode)
+	err := logger.SetLevel(Properties.BufMan.Mode)
+	if err != nil {
+		panic(err)
+	}
+
+	DockerCliPool, err = NewDockerCliPool()
+	if err != nil {
+		panic(err)
+	}
 
 	if Properties.BufMan.UseFSStorage {
 		if err := os.MkdirAll(constant.FileSavaDir, 0666); err != nil {
 			panic(err)
 		}
-	}
-
-	// test docker config
-	dockerCli, err := NewDockerClient()
-	if err != nil {
-		panic(err)
-	}
-	defer dockerCli.Close()
-
-	// test es config
-	_, err = NewEsClient()
-	if err != nil {
-		panic(err)
+	} else {
+		EsCliPool, err = NewElasticSearchCliPool()
+		if err != nil {
+			panic(err)
+		}
 	}
 }
 

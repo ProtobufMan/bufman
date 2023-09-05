@@ -53,6 +53,7 @@ func (searchService *SearchServiceImpl) SearchLastCommitByContent(ctx context.Co
 	if err != nil || esClient == nil {
 		return nil, e.NewInternalError(err.Error())
 	}
+	defer esClient.Close()
 
 	// 在 ElasticSearch 中查询数据
 	results, err := esClient.Query(ctx, constant.ESFileBlobIndex, query, offset, limit)

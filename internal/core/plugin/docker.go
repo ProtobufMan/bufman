@@ -33,10 +33,11 @@ type docker struct {
 }
 
 func NewDocker(serverAddress, username, password string) (Docker, error) {
-	cli, err := config.NewDockerClient()
+	v, err := config.DockerCliPool.Get()
 	if err != nil {
 		return nil, err
 	}
+	cli := v.(*client.Client)
 
 	return &docker{
 		cli:           cli,
@@ -48,7 +49,7 @@ func NewDocker(serverAddress, username, password string) (Docker, error) {
 
 func (d *docker) Close() error {
 	if d.cli != nil {
-		_ = d.cli.Close()
+		return config.DockerCliPool.Put(d.cli)
 	}
 
 	return nil

@@ -28,6 +28,9 @@ docker:
   ca_cert_path:
   cert_path:
   key_path:
+  max_open_connections: 10
+  max_idle_connections: 10
+  max_idle_time:
 
 # ES Config
 elastic_search:
@@ -38,3 +41,6 @@ elastic_search:
   username:
   # you can config it by env (key is BUFMAN_ES_PASSWORD)
   password:
+  max_open_connections: 10
+  max_idle_connections: 10
+  max_idle_time:

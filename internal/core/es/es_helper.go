@@ -11,13 +11,15 @@ type Client interface {
 	Delete(ctx context.Context, index string, id string) error
 	Find(ctx context.Context, index string, id string) ([]byte, error)
 	Query(ctx context.Context, index string, query string, offset, limit int) ([][]byte, error)
+	Close() error
 }
 
 func NewEsClient() (Client, error) {
-	c, err := config.NewEsClient()
+	v, err := config.EsCliPool.Get()
 	if err != nil {
 		return nil, err
 	}
+	c := v.(*elastic.Client)
 
 	return &clientImpl{
 		client: c,
@@ -73,4 +75,12 @@ func (c *clientImpl) Query(ctx context.Context, index string, query string, offs
 	}
 
 	return ret, nil
+}
+
+func (c *clientImpl) Close() error {
+	if c.client != nil {
+		return config.EsCliPool.Put(c.client)
+	}
+
+	return nil
 }

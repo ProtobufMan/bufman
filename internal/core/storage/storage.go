@@ -56,6 +56,7 @@ func NewStorageHelper() StorageHelper {
 				if err != nil {
 					panic(err)
 				}
+				defer esClient.Close()
 
 				storageHelperImpl = &StorageHelperImpl{
 					BaseStorageHelper: &ESStorageHelperImpl{
