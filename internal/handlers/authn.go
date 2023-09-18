@@ -5,18 +5,16 @@ import (
 	registryv1alpha1 "github.com/ProtobufMan/bufman-cli/private/gen/proto/go/bufman/alpha/registry/v1alpha1"
 	"github.com/ProtobufMan/bufman/internal/controllers"
 	"github.com/ProtobufMan/bufman/internal/core/logger"
-	"github.com/ProtobufMan/bufman/internal/services"
 	"github.com/bufbuild/connect-go"
 )
 
 type AuthnServiceHandler struct {
-	userService     services.UserService
-	authnController controllers.AuthnController
+	authnController *controllers.AuthnController
 }
 
 func NewAuthnServiceHandler() *AuthnServiceHandler {
 	return &AuthnServiceHandler{
-		userService: services.NewUserService(),
+		authnController: controllers.NewAuthnController(),
 	}
 }
 
