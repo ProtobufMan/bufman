@@ -25,7 +25,6 @@ import (
 	"github.com/ProtobufMan/bufman/internal/core/validity"
 	"github.com/ProtobufMan/bufman/internal/e"
 	"github.com/ProtobufMan/bufman/internal/services"
-	"github.com/bufbuild/connect-go"
 )
 
 type UserServiceHandler struct {
@@ -136,34 +135,4 @@ func (handler *UserServiceHandler) ListUsers(ctx context.Context, req *connect.R
 	})
 
 	return resp, nil
-}
-
-func (handler *UserServiceHandler) ListOrganizationUsers(ctx context.Context, req *connect.Request[registryv1alpha1.ListOrganizationUsersRequest]) (*connect.Response[registryv1alpha1.ListOrganizationUsersResponse], error) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (handler *UserServiceHandler) DeleteUser(ctx context.Context, req *connect.Request[registryv1alpha1.DeleteUserRequest]) (*connect.Response[registryv1alpha1.DeleteUserResponse], error) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (handler *UserServiceHandler) DeactivateUser(ctx context.Context, req *connect.Request[registryv1alpha1.DeactivateUserRequest]) (*connect.Response[registryv1alpha1.DeactivateUserResponse], error) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (handler *UserServiceHandler) UpdateUserServerRole(ctx context.Context, req *connect.Request[registryv1alpha1.UpdateUserServerRoleRequest]) (*connect.Response[registryv1alpha1.UpdateUserServerRoleResponse], error) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (handler *UserServiceHandler) CountUsers(ctx context.Context, req *connect.Request[registryv1alpha1.CountUsersRequest]) (*connect.Response[registryv1alpha1.CountUsersResponse], error) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (handler *UserServiceHandler) UpdateUserSettings(ctx context.Context, req *connect.Request[registryv1alpha1.UpdateUserSettingsRequest]) (*connect.Response[registryv1alpha1.UpdateUserSettingsResponse], error) {
-	//TODO implement me
-	panic("implement me")
 }

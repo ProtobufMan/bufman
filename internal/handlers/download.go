@@ -10,7 +10,6 @@ import (
 	"github.com/ProtobufMan/bufman/internal/core/validity"
 	"github.com/ProtobufMan/bufman/internal/e"
 	"github.com/ProtobufMan/bufman/internal/services"
-	"github.com/bufbuild/connect-go"
 )
 
 type DownloadServiceHandler struct {
@@ -57,9 +56,4 @@ func (handler *DownloadServiceHandler) DownloadManifestAndBlobs(ctx context.Cont
 		Blobs:    protoBlobs,
 	})
 	return resp, nil
-}
-
-func (handler *DownloadServiceHandler) Download(ctx context.Context, req *connect.Request[registryv1alpha1.DownloadRequest]) (*connect.Response[registryv1alpha1.DownloadResponse], error) {
-	//TODO implement me
-	panic("implement me")
 }
