@@ -6,6 +6,7 @@ import (
 	"github.com/ProtobufMan/bufman/internal/controllers"
 	"github.com/ProtobufMan/bufman/internal/core/logger"
 	"github.com/ProtobufMan/bufman/internal/services"
+	"github.com/bufbuild/connect-go"
 )
 
 type AuthnServiceHandler struct {

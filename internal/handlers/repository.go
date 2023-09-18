@@ -10,6 +10,7 @@ import (
 	"github.com/ProtobufMan/bufman/internal/core/validity"
 	"github.com/ProtobufMan/bufman/internal/e"
 	"github.com/ProtobufMan/bufman/internal/services"
+	"github.com/bufbuild/connect-go"
 )
 
 type RepositoryServiceHandler struct {
@@ -363,6 +364,11 @@ func (handler *RepositoryServiceHandler) UpdateRepositorySettingsByName(ctx cont
 	return resp, nil
 }
 
+func (handler *RepositoryServiceHandler) ListOrganizationRepositories(ctx context.Context, req *connect.Request[registryv1alpha1.ListOrganizationRepositoriesRequest]) (*connect.Response[registryv1alpha1.ListOrganizationRepositoriesResponse], error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (handler *RepositoryServiceHandler) GetRepositoriesByFullName(ctx context.Context, req *connect.Request[registryv1alpha1.GetRepositoriesByFullNameRequest]) (*connect.Response[registryv1alpha1.GetRepositoriesByFullNameResponse], error) {
 
 	retRepos := make([]*registryv1alpha1.Repository, 0, len(req.Msg.FullNames))
@@ -392,7 +398,27 @@ func (handler *RepositoryServiceHandler) GetRepositoriesByFullName(ctx context.C
 	return resp, nil
 }
 
+func (handler *RepositoryServiceHandler) SetRepositoryContributor(ctx context.Context, req *connect.Request[registryv1alpha1.SetRepositoryContributorRequest]) (*connect.Response[registryv1alpha1.SetRepositoryContributorResponse], error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (handler *RepositoryServiceHandler) ListRepositoryContributors(ctx context.Context, req *connect.Request[registryv1alpha1.ListRepositoryContributorsRequest]) (*connect.Response[registryv1alpha1.ListRepositoryContributorsResponse], error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (handler *RepositoryServiceHandler) GetRepositoryContributor(ctx context.Context, req *connect.Request[registryv1alpha1.GetRepositoryContributorRequest]) (*connect.Response[registryv1alpha1.GetRepositoryContributorResponse], error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (handler *RepositoryServiceHandler) GetRepositorySettings(ctx context.Context, req *connect.Request[registryv1alpha1.GetRepositorySettingsRequest]) (*connect.Response[registryv1alpha1.GetRepositorySettingsResponse], error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (handler *RepositoryServiceHandler) GetRepositoriesMetadata(ctx context.Context, req *connect.Request[registryv1alpha1.GetRepositoriesMetadataRequest]) (*connect.Response[registryv1alpha1.GetRepositoriesMetadataResponse], error) {
 	//TODO implement me
 	panic("implement me")
 }

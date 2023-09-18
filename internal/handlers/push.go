@@ -14,6 +14,7 @@ import (
 	"github.com/ProtobufMan/bufman/internal/e"
 	"github.com/ProtobufMan/bufman/internal/model"
 	"github.com/ProtobufMan/bufman/internal/services"
+	"github.com/bufbuild/connect-go"
 	"io"
 )
 
@@ -164,4 +165,9 @@ func (handler *PushServiceHandler) PushManifestAndBlobs(ctx context.Context, req
 		LocalModulePin: commit.ToProtoLocalModulePin(),
 	})
 	return resp, nil
+}
+
+func (handler *PushServiceHandler) Push(ctx context.Context, req *connect.Request[registryv1alpha1.PushRequest]) (*connect.Response[registryv1alpha1.PushResponse], error) {
+	//TODO implement me
+	panic("implement me")
 }
