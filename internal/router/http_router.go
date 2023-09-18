@@ -5,9 +5,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func InitHTTPRouter() *gin.Engine {
-	router := gin.Default()
-
+func InitHTTPRouter(r *gin.Engine) {
+	router := r.Group("/api/v1")
 	authn := router.Group("/authn")
 	{
 		authn.GET("/current_user", http_handlers.AuthnGroup.GetCurrentUser) // 根据token获取当前用户信息
@@ -89,6 +88,4 @@ func InitHTTPRouter() *gin.Engine {
 		search.POST("/tag", http_handlers.SearchGroup.SearchTag)                    // 搜索tag
 		search.POST("/draft", http_handlers.SearchGroup.SearchDraft)                // 搜索草稿
 	}
-
-	return router
 }

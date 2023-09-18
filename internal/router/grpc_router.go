@@ -8,9 +8,7 @@ import (
 	"net/http"
 )
 
-func InitGRPCRouter() *gin.Engine {
-	router := gin.Default()
-
+func InitGRPCRouter(router *gin.Engine) {
 	// UserService
 	userServicePath, userServiceHandler := registryv1alpha1connect.NewUserServiceHandler(grpc_handlers.NewUserServiceHandler())
 	registerHandler(router, userServicePath, userServiceHandler)
@@ -144,8 +142,6 @@ func InitGRPCRouter() *gin.Engine {
 		),
 	)
 	registerHandler(router, searchServicePath, searchServiceHandler)
-
-	return router
 }
 
 func registerHandler(router *gin.Engine, path string, handler http.Handler) {

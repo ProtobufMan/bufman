@@ -18,7 +18,7 @@ func main() {
 	dal.SetDefault(config.DataBase)
 
 	// init router
-	r := router.InitGRPCRouter()
+	r := router.InitRouter()
 
 	err := http.ListenAndServe(
 		"localhost:80",
