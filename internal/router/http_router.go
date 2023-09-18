@@ -80,5 +80,15 @@ func InitHTTPRouter() *gin.Engine {
 		docker.PUT("/update", http_handlers.DockerGroup.UpdateDockerRepoByID) // 更新docker registry账户管理
 	}
 
+	search := router.Group("/search")
+	{
+		search.POST("/user", http_handlers.SearchGroup.SearchUser)                  // 搜索用户
+		search.POST("/repository", http_handlers.SearchGroup.SearchRepository)      // 搜索仓库
+		search.POST("/commit", http_handlers.SearchGroup.SearchLastCommitByContent) // 搜索根据内容搜索最近一次提交
+		search.POST("/plugin", http_handlers.SearchGroup.SearchCurationPlugin)      // 搜索插件
+		search.POST("/tag", http_handlers.SearchGroup.SearchTag)                    // 搜索tag
+		search.POST("/draft", http_handlers.SearchGroup.SearchDraft)                // 搜索草稿
+	}
+
 	return router
 }
