@@ -26,5 +26,7 @@ func main() {
 		// avoid x/net/http2 by using http.ListenAndServeTLS.
 		h2c.NewHandler(r, &http2.Server{}),
 	)
-	panic(err)
+	if err != nil {
+		panic(err)
+	}
 }
