@@ -72,5 +72,13 @@ func InitHTTPRouter() *gin.Engine {
 		plugin.GET("/:owner/:name/:version/:revision", http_handlers.PluginGroup.GetLatestCuratedPlugin) // 查询插件
 	}
 
+	docker := router.Group("/docker")
+	{
+		docker.POST("/create", http_handlers.DockerGroup.CreateDockerRepo)    // 创建docker registry账户管理
+		docker.GET("/:id", http_handlers.DockerGroup.GetDockerRepo)           // 根据id获取docker registry账户管理
+		docker.POST("/list", http_handlers.DockerGroup.ListDockerRepos)       // 批量查询docker registry账户管理
+		docker.PUT("/update", http_handlers.DockerGroup.UpdateDockerRepoByID) // 更新docker registry账户管理
+	}
+
 	return router
 }
