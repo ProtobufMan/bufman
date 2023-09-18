@@ -58,8 +58,3 @@ func (handler *DownloadServiceHandler) DownloadManifestAndBlobs(ctx context.Cont
 	})
 	return resp, nil
 }
-
-func (handler *DownloadServiceHandler) Download(ctx context.Context, req *connect.Request[registryv1alpha1.DownloadRequest]) (*connect.Response[registryv1alpha1.DownloadResponse], error) {
-	//TODO implement me
-	panic("implement me")
-}

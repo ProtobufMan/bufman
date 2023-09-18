@@ -166,8 +166,3 @@ func (handler *PushServiceHandler) PushManifestAndBlobs(ctx context.Context, req
 	})
 	return resp, nil
 }
-
-func (handler *PushServiceHandler) Push(ctx context.Context, req *connect.Request[registryv1alpha1.PushRequest]) (*connect.Response[registryv1alpha1.PushResponse], error) {
-	//TODO implement me
-	panic("implement me")
-}
