@@ -391,8 +391,3 @@ func (controller *RepositoryController) GetRepositoriesByFullName(ctx context.Co
 
 	return resp, nil
 }
-
-func (controller *RepositoryController) GetRepositorySettings(ctx context.Context, c *registryv1alpha1.GetRepositorySettingsRequest) (*registryv1alpha1.GetRepositorySettingsResponse, e.ResponseError) {
-	//TODO implement me
-	panic("implement me")
-}
