@@ -2,21 +2,21 @@ package router
 
 import (
 	"github.com/ProtobufMan/bufman-cli/private/gen/proto/connect/bufman/alpha/registry/v1alpha1/registryv1alpha1connect"
-	"github.com/ProtobufMan/bufman/internal/handlers"
+	"github.com/ProtobufMan/bufman/internal/handlers/grpc_handlers"
 	"github.com/ProtobufMan/bufman/internal/interceptors"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
 
-func InitRouter() *gin.Engine {
+func InitGRPCRouter() *gin.Engine {
 	router := gin.Default()
 
 	// UserService
-	userServicePath, userServiceHandler := registryv1alpha1connect.NewUserServiceHandler(handlers.NewUserServiceHandler())
+	userServicePath, userServiceHandler := registryv1alpha1connect.NewUserServiceHandler(grpc_handlers.NewUserServiceHandler())
 	registerHandler(router, userServicePath, userServiceHandler)
 
 	// TokenService
-	tokenServicePath, tokenServiceHandler := registryv1alpha1connect.NewTokenServiceHandler(handlers.NewTokenServiceHandler(),
+	tokenServicePath, tokenServiceHandler := registryv1alpha1connect.NewTokenServiceHandler(grpc_handlers.NewTokenServiceHandler(),
 		interceptors.WithAuthInterceptor(
 			registryv1alpha1connect.TokenServiceGetTokenProcedure,
 			registryv1alpha1connect.TokenServiceListTokensProcedure,
@@ -26,7 +26,7 @@ func InitRouter() *gin.Engine {
 	registerHandler(router, tokenServicePath, tokenServiceHandler)
 
 	// AuthnService
-	authnServicePath, authnServiceHandler := registryv1alpha1connect.NewAuthnServiceHandler(handlers.NewAuthnServiceHandler(),
+	authnServicePath, authnServiceHandler := registryv1alpha1connect.NewAuthnServiceHandler(grpc_handlers.NewAuthnServiceHandler(),
 		interceptors.WithAuthInterceptor(
 			registryv1alpha1connect.AuthnServiceGetCurrentUserProcedure,
 		),
@@ -34,7 +34,7 @@ func InitRouter() *gin.Engine {
 	registerHandler(router, authnServicePath, authnServiceHandler)
 
 	// RepositoryService
-	repositoryServicePath, repositoryServiceHandler := registryv1alpha1connect.NewRepositoryServiceHandler(handlers.NewRepositoryServiceHandler(),
+	repositoryServicePath, repositoryServiceHandler := registryv1alpha1connect.NewRepositoryServiceHandler(grpc_handlers.NewRepositoryServiceHandler(),
 		interceptors.WithAuthInterceptor(
 			registryv1alpha1connect.RepositoryServiceListRepositoriesUserCanAccessProcedure,
 			registryv1alpha1connect.RepositoryServiceCreateRepositoryByFullNameProcedure,
@@ -48,7 +48,7 @@ func InitRouter() *gin.Engine {
 	registerHandler(router, repositoryServicePath, repositoryServiceHandler)
 
 	// PushService
-	pushServicePath, pushServiceHandler := registryv1alpha1connect.NewPushServiceHandler(handlers.NewPushServiceHandler(),
+	pushServicePath, pushServiceHandler := registryv1alpha1connect.NewPushServiceHandler(grpc_handlers.NewPushServiceHandler(),
 		interceptors.WithAuthInterceptor(
 			registryv1alpha1connect.PushServicePushManifestAndBlobsProcedure,
 		),
@@ -56,7 +56,7 @@ func InitRouter() *gin.Engine {
 	registerHandler(router, pushServicePath, pushServiceHandler)
 
 	// CommitService
-	commitServicePath, commitServiceHandler := registryv1alpha1connect.NewRepositoryCommitServiceHandler(handlers.NewCommitServiceHandler(),
+	commitServicePath, commitServiceHandler := registryv1alpha1connect.NewRepositoryCommitServiceHandler(grpc_handlers.NewCommitServiceHandler(),
 		interceptors.WithOptionalAuthInterceptor(
 			registryv1alpha1connect.RepositoryCommitServiceListRepositoryCommitsByReferenceProcedure,
 			registryv1alpha1connect.RepositoryCommitServiceGetRepositoryCommitByReferenceProcedure,
@@ -69,7 +69,7 @@ func InitRouter() *gin.Engine {
 	registerHandler(router, commitServicePath, commitServiceHandler)
 
 	// TagService
-	tagServicePath, tagServiceHandler := registryv1alpha1connect.NewRepositoryTagServiceHandler(handlers.NewTagServiceHandler(),
+	tagServicePath, tagServiceHandler := registryv1alpha1connect.NewRepositoryTagServiceHandler(grpc_handlers.NewTagServiceHandler(),
 		interceptors.WithOptionalAuthInterceptor(
 			registryv1alpha1connect.RepositoryTagServiceListRepositoryTagsProcedure,
 		),
@@ -80,7 +80,7 @@ func InitRouter() *gin.Engine {
 	registerHandler(router, tagServicePath, tagServiceHandler)
 
 	// ResolveService
-	resolveServicePath, resolveServiceHandler := registryv1alpha1connect.NewResolveServiceHandler(handlers.NewResolveServiceHandler(),
+	resolveServicePath, resolveServiceHandler := registryv1alpha1connect.NewResolveServiceHandler(grpc_handlers.NewResolveServiceHandler(),
 		interceptors.WithOptionalAuthInterceptor(
 			registryv1alpha1connect.ResolveServiceGetModulePinsProcedure,
 		),
@@ -88,7 +88,7 @@ func InitRouter() *gin.Engine {
 	registerHandler(router, resolveServicePath, resolveServiceHandler)
 
 	// DownloadService
-	downloadServicePath, downloadServiceHandler := registryv1alpha1connect.NewDownloadServiceHandler(handlers.NewDownloadServiceHandler(),
+	downloadServicePath, downloadServiceHandler := registryv1alpha1connect.NewDownloadServiceHandler(grpc_handlers.NewDownloadServiceHandler(),
 		interceptors.WithOptionalAuthInterceptor(
 			registryv1alpha1connect.DownloadServiceDownloadManifestAndBlobsProcedure,
 		),
@@ -96,7 +96,7 @@ func InitRouter() *gin.Engine {
 	registerHandler(router, downloadServicePath, downloadServiceHandler)
 
 	// PluginService
-	pluginServicePath, pluginServiceHandler := registryv1alpha1connect.NewPluginCurationServiceHandler(handlers.NewPluginServiceHandler(),
+	pluginServicePath, pluginServiceHandler := registryv1alpha1connect.NewPluginCurationServiceHandler(grpc_handlers.NewPluginServiceHandler(),
 		interceptors.WithAuthInterceptor(
 			registryv1alpha1connect.PluginCurationServiceCreateCuratedPluginProcedure,
 		),
@@ -104,7 +104,7 @@ func InitRouter() *gin.Engine {
 	registerHandler(router, pluginServicePath, pluginServiceHandler)
 
 	// CodeGenerateService
-	codeGenerateServicePath, codeGenerateServiceHandler := registryv1alpha1connect.NewCodeGenerationServiceHandler(handlers.NewCodeGenerateServiceHandler(),
+	codeGenerateServicePath, codeGenerateServiceHandler := registryv1alpha1connect.NewCodeGenerationServiceHandler(grpc_handlers.NewCodeGenerateServiceHandler(),
 		interceptors.WithOptionalAuthInterceptor(
 			registryv1alpha1connect.CodeGenerationServiceGenerateCodeProcedure,
 		),
@@ -112,7 +112,7 @@ func InitRouter() *gin.Engine {
 	registerHandler(router, codeGenerateServicePath, codeGenerateServiceHandler)
 
 	// DocService
-	docServicePath, docsServiceHandler := registryv1alpha1connect.NewDocServiceHandler(handlers.NewDocServiceHandler(),
+	docServicePath, docsServiceHandler := registryv1alpha1connect.NewDocServiceHandler(grpc_handlers.NewDocServiceHandler(),
 		interceptors.WithOptionalAuthInterceptor(
 			registryv1alpha1connect.DocServiceGetSourceDirectoryInfoProcedure,
 			registryv1alpha1connect.DocServiceGetSourceFileProcedure,
@@ -124,7 +124,7 @@ func InitRouter() *gin.Engine {
 	registerHandler(router, docServicePath, docsServiceHandler)
 
 	// DockerRepoService
-	dockerRepoServicePath, dockerRepoServiceHandler := registryv1alpha1connect.NewDockerRepoServiceHandler(handlers.NewDockerRepoServiceHandler(),
+	dockerRepoServicePath, dockerRepoServiceHandler := registryv1alpha1connect.NewDockerRepoServiceHandler(grpc_handlers.NewDockerRepoServiceHandler(),
 		interceptors.WithAuthInterceptor(
 			registryv1alpha1connect.DockerRepoServiceCreateDockerRepoProcedure,
 			registryv1alpha1connect.DockerRepoServiceGetDockerRepoProcedure,
@@ -137,7 +137,7 @@ func InitRouter() *gin.Engine {
 	registerHandler(router, dockerRepoServicePath, dockerRepoServiceHandler)
 
 	// SearchService
-	searchServicePath, searchServiceHandler := registryv1alpha1connect.NewSearchServiceHandler(handlers.NewSearchServiceHandler(),
+	searchServicePath, searchServiceHandler := registryv1alpha1connect.NewSearchServiceHandler(grpc_handlers.NewSearchServiceHandler(),
 		interceptors.WithOptionalAuthInterceptor(
 			registryv1alpha1connect.SearchServiceSearchTagProcedure,
 			registryv1alpha1connect.SearchServiceSearchDraftProcedure,

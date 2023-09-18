@@ -1,4 +1,4 @@
-package handlers
+package grpc_handlers
 
 import (
 	"context"

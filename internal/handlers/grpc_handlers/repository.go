@@ -1,4 +1,4 @@
-package handlers
+package grpc_handlers
 
 import (
 	"context"
@@ -391,4 +391,9 @@ func (handler *RepositoryServiceHandler) GetRepositoriesByFullName(ctx context.C
 	})
 
 	return resp, nil
+}
+
+func (handler *RepositoryServiceHandler) GetRepositorySettings(ctx context.Context, c *connect.Request[registryv1alpha1.GetRepositorySettingsRequest]) (*connect.Response[registryv1alpha1.GetRepositorySettingsResponse], error) {
+	//TODO implement me
+	panic("implement me")
 }
