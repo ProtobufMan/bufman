@@ -20,6 +20,7 @@ func (group *authnGroup) GetCurrentUser(c *gin.Context) {
 	resp, err := group.authnController.GetCurrentUser(c, req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, NewHTTPResponse(err))
+		return
 	}
 
 	// 正常返回
