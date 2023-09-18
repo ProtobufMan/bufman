@@ -39,14 +39,20 @@ func InitHTTPRouter() *gin.Engine {
 		repository.PUT("/deprecate", http_handlers.RepositoryGroup.DeprecateRepositoryByName)            // 弃用repository
 		repository.PUT("/undeprecate", http_handlers.RepositoryGroup.UndeprecateRepositoryByName)        // 解除弃用
 		repository.PUT("/update", http_handlers.RepositoryGroup.UpdateRepositorySettingsByName)          // 更新repository
-	}
 
-	commit := router.Group("/commit")
-	{
-		commit.POST("/list/:repository_owner/:repository_name/:reference", http_handlers.CommitGroup.ListRepositoryCommitsByReference) // 获取reference对应commit以及之前的commits
-		commit.GET("/:repository_owner/:repository_name/:reference", http_handlers.CommitGroup.GetRepositoryCommitByReference)         // 获取reference对应commit
-		commit.POST("/draft/list/:repository_owner/:repository_name", http_handlers.CommitGroup.ListRepositoryDraftCommits)            // 获取所有的草稿
-		commit.DELETE("/draft/:repository_owner/:repository_name/:draft_name", http_handlers.CommitGroup.DeleteRepositoryDraftCommit)  // 删除草稿
+		commit := repository.Group("/commit")
+		{
+			commit.POST("/list/:repository_owner/:repository_name/:reference", http_handlers.CommitGroup.ListRepositoryCommitsByReference) // 获取reference对应commit以及之前的commits
+			commit.GET("/:repository_owner/:repository_name/:reference", http_handlers.CommitGroup.GetRepositoryCommitByReference)         // 获取reference对应commit
+			commit.POST("/draft/list/:repository_owner/:repository_name", http_handlers.CommitGroup.ListRepositoryDraftCommits)            // 获取所有的草稿
+			commit.DELETE("/draft/:repository_owner/:repository_name/:draft_name", http_handlers.CommitGroup.DeleteRepositoryDraftCommit)  // 删除草稿
+		}
+
+		tag := repository.Group("/tag")
+		{
+			tag.POST("/create", http_handlers.TagGroup.CreateRepositoryTag) // 创建tag
+			tag.POST("/list", http_handlers.TagGroup.ListRepositoryTags)    // 查询repository下的所有tag
+		}
 	}
 
 	return router
