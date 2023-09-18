@@ -30,15 +30,16 @@ func InitHTTPRouter() *gin.Engine {
 
 	repository := router.Group("/repository")
 	{
-		repository.POST("/create", http_handlers.RepositoryGroup.CreateRepositoryByFullName)             // 创建repository
-		repository.GET("/:id", http_handlers.RepositoryGroup.GetRepository)                              // 获取repository
-		repository.POST("/list", http_handlers.RepositoryGroup.ListRepositories)                         // 批量查询所有repository
-		repository.DELETE("/:id", http_handlers.RepositoryGroup.DeleteRepository)                        // 删除repository
-		repository.POST("/list/:user_id", http_handlers.RepositoryGroup.ListUserRepositories)            // 批量查询用户的repository
-		repository.POST("/list_accessible", http_handlers.RepositoryGroup.ListRepositoriesUserCanAccess) // 批量查询当前用户可访问的repository
-		repository.PUT("/deprecate", http_handlers.RepositoryGroup.DeprecateRepositoryByName)            // 弃用repository
-		repository.PUT("/undeprecate", http_handlers.RepositoryGroup.UndeprecateRepositoryByName)        // 解除弃用
-		repository.PUT("/update", http_handlers.RepositoryGroup.UpdateRepositorySettingsByName)          // 更新repository
+		repository.POST("/create", http_handlers.RepositoryGroup.CreateRepositoryByFullName)                         // 创建repository
+		repository.GET("/:id", http_handlers.RepositoryGroup.GetRepository)                                          // 根据id获取repository
+		repository.GET("/:repository_owner/:repository_name", http_handlers.RepositoryGroup.GetRepositoryByFullName) // 获取repository
+		repository.POST("/list", http_handlers.RepositoryGroup.ListRepositories)                                     // 批量查询所有repository
+		repository.DELETE("/:id", http_handlers.RepositoryGroup.DeleteRepository)                                    // 删除repository
+		repository.POST("/list/:user_id", http_handlers.RepositoryGroup.ListUserRepositories)                        // 批量查询用户的repository
+		repository.POST("/list_accessible", http_handlers.RepositoryGroup.ListRepositoriesUserCanAccess)             // 批量查询当前用户可访问的repository
+		repository.PUT("/deprecate", http_handlers.RepositoryGroup.DeprecateRepositoryByName)                        // 弃用repository
+		repository.PUT("/undeprecate", http_handlers.RepositoryGroup.UndeprecateRepositoryByName)                    // 解除弃用
+		repository.PUT("/update", http_handlers.RepositoryGroup.UpdateRepositorySettingsByName)                      // 更新repository
 
 		commit := repository.Group("/commit")
 		{
@@ -62,6 +63,13 @@ func InitHTTPRouter() *gin.Engine {
 			doc.GET("/package/:repository_owner/:repository_name/:reference", http_handlers.DocGroup.GetModulePackages)                     // 获取repo packages
 			doc.GET("/package/:repository_owner/:repository_name/:reference/:package_name", http_handlers.DocGroup.GetPackageDocumentation) //获取包说明文档
 		}
+	}
+
+	plugin := router.Group("/plugin")
+	{
+		plugin.POST("/create", http_handlers.PluginGroup.CreateCuratedPlugin)                            // 创建插件
+		plugin.POST("/list", http_handlers.PluginGroup.ListCuratedPlugins)                               // 批量查询插件
+		plugin.GET("/:owner/:name/:version/:revision", http_handlers.PluginGroup.GetLatestCuratedPlugin) // 查询插件
 	}
 
 	return router

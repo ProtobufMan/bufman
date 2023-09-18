@@ -51,6 +51,23 @@ func (group *repositoryGroup) GetRepository(c *gin.Context) {
 	c.JSON(http.StatusOK, NewHTTPResponse(resp))
 }
 
+func (group *repositoryGroup) GetRepositoryByFullName(c *gin.Context) {
+	// 绑定参数
+	req := &registryv1alpha1.GetRepositoryByFullNameRequest{}
+	repositoryName := c.Param("repository_name")
+	repositoryOwner := c.Param("repository_owner")
+	fullName := repositoryOwner + "/" + repositoryName
+	req.FullName = fullName
+
+	resp, err := group.repositoryController.GetRepositoryByFullName(c, req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, NewHTTPResponse(err))
+	}
+
+	// 正常返回
+	c.JSON(http.StatusOK, NewHTTPResponse(resp))
+}
+
 func (group *repositoryGroup) ListRepositories(c *gin.Context) {
 	// 绑定参数
 	req := &registryv1alpha1.ListRepositoriesRequest{}
