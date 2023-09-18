@@ -53,6 +53,15 @@ func InitHTTPRouter() *gin.Engine {
 			tag.POST("/create", http_handlers.TagGroup.CreateRepositoryTag) // 创建tag
 			tag.POST("/list", http_handlers.TagGroup.ListRepositoryTags)    // 查询repository下的所有tag
 		}
+
+		doc := repository.Group("/doc")
+		{
+			doc.GET("/source/:repository_owner/:repository_name/:reference", http_handlers.DocGroup.GetSourceDirectoryInfo)                 // 获取目录信息
+			doc.GET("/source/:repository_owner/:repository_name/:reference/:path", http_handlers.DocGroup.GetSourceFile)                    // 获取文件源码
+			doc.GET("/module/:repository_owner/:repository_name/:reference", http_handlers.DocGroup.GetModuleDocumentation)                 // 获取repo说明文档
+			doc.GET("/package/:repository_owner/:repository_name/:reference", http_handlers.DocGroup.GetModulePackages)                     // 获取repo packages
+			doc.GET("/package/:repository_owner/:repository_name/:reference/:package_name", http_handlers.DocGroup.GetPackageDocumentation) //获取包说明文档
+		}
 	}
 
 	return router
