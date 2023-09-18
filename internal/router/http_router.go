@@ -20,5 +20,13 @@ func InitHTTPRouter() *gin.Engine {
 		user.POST("/list", http_handlers.UserGroup.ListUsers) // 批量查询用户
 	}
 
+	token := router.Group("/token")
+	{
+		token.POST("/", http_handlers.TokenGroup.CreateToken)            // 创建token
+		token.GET("/:token_id", http_handlers.TokenGroup.GetToken)       // 获取token
+		token.POST("/list", http_handlers.TokenGroup.ListTokens)         // 批量查询token
+		token.DELETE("/:token_id", http_handlers.TokenGroup.DeleteToken) // 删除tokens
+	}
+
 	return router
 }
