@@ -39,6 +39,7 @@ type Config struct {
 type BufMan struct {
 	Mode       string `mapstructure:"mode"`
 	ServerHost string `mapstructure:"server_host"`
+	Port       int    `mapstructure:"port"`
 
 	PageTokenExpireTime time.Duration `mapstructure:"page_token_expire_time"`
 	PageTokenSecret     string        `mapstructure:"page_token_secret"`
@@ -85,9 +86,9 @@ func LoadConfig() {
 	// 默认值
 	Properties = &Config{
 		BufMan: BufMan{
-			Mode:       gin.DebugMode,
-			ServerHost: "bufman.io",
-
+			Mode:                gin.DebugMode,
+			ServerHost:          "bufman.io",
+			Port:                8080,
 			PageTokenExpireTime: time.Minute * 10, // 默认过期时间为10分钟
 			PageTokenSecret:     "123456",
 		},

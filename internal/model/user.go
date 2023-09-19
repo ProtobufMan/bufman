@@ -54,7 +54,6 @@ func (user *User) ToProtoUser() *registryv1alpha1.User {
 		Deactivated: user.Deactivated,
 		Description: user.Description,
 		Url:         user.Url,
-		UserType:    registryv1alpha1.UserType(user.UserType),
 	}
 }
 

@@ -3,6 +3,8 @@ bufman:
   mode: debug
   # bufman server's host name
   server_host: bufman.io
+  # bufman server port
+  port: 8080
   # page token expire time, default is 10min
   page_token_expire_time: 10m
   # page token's secret, default is 123456
@@ -15,7 +17,7 @@ bufman:
 # mysql
 mysql:
   # dsn can not be empty, you can config it by env (key is BUFMAN_MYSQL_DSN)
-  mysql_dsn: root:123456@tcp(127.0.0.1:3306)/bufman?charset=utf8mb4&parseTime=True&loc=Local
+  mysql_dsn: root:12345678@tcp(127.0.0.1:3306)/bufman?charset=utf8mb4&parseTime=True&loc=Local
   max_open_connections: 10
   max_idle_connections: 10
   max_life_time:

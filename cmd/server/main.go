@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/ProtobufMan/bufman/internal/config"
 	"github.com/ProtobufMan/bufman/internal/dal"
 	"github.com/ProtobufMan/bufman/internal/model"
@@ -21,7 +22,7 @@ func main() {
 	r := router.InitRouter()
 
 	err := http.ListenAndServe(
-		"localhost:80",
+		fmt.Sprintf(":%v", config.Properties.BufMan.Port),
 		// For gRPC clients, it's convenient to support HTTP/2 without TLS. You can
 		// avoid x/net/http2 by using http.ListenAndServeTLS.
 		h2c.NewHandler(r, &http2.Server{}),
