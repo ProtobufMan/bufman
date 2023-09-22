@@ -33,6 +33,13 @@ func (controller *DockerRepoController) CreateDockerRepo(ctx context.Context, re
 		return nil, checkErr
 	}
 
+	// 检查是否可以登录registry
+	checkErr = controller.validator.CheckRegistryAuth(ctx, req.GetAddress(), req.GetUsername(), req.GetPassword())
+	if checkErr != nil {
+		logger.Errorf("Error Check Registry Login: %v\n", checkErr.Error())
+		return nil, checkErr
+	}
+
 	// 在数据库中增加
 	dockerRepo, err := controller.dockerRepoService.CreateDockerRepo(ctx, userID, req.GetName(), req.GetAddress(), req.GetUsername(), req.GetPassword(), req.GetNote())
 	if err != nil {
@@ -161,6 +168,13 @@ func (controller *DockerRepoController) UpdateDockerRepoByID(ctx context.Context
 
 		respErr := e.NewPermissionDeniedError("update docker repo")
 		return nil, respErr
+	}
+
+	// 检查是否可以登录registry
+	checkErr := controller.validator.CheckRegistryAuth(ctx, req.GetAddress(), req.GetUsername(), req.GetPassword())
+	if checkErr != nil {
+		logger.Errorf("Error Check Registry Login: %v\n", checkErr.Error())
+		return nil, checkErr
 	}
 
 	// 更新

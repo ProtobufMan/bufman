@@ -11,6 +11,7 @@ import (
 	modulev1alpha1 "github.com/ProtobufMan/bufman-cli/private/gen/proto/go/bufman/alpha/module/v1alpha1"
 	"github.com/ProtobufMan/bufman-cli/private/pkg/manifest"
 	"github.com/ProtobufMan/bufman/internal/constant"
+	"github.com/ProtobufMan/bufman/internal/core/docker"
 	"github.com/ProtobufMan/bufman/internal/e"
 	"golang.org/x/mod/semver"
 	"regexp"
@@ -30,6 +31,9 @@ type Validator interface {
 	CheckPageSize(pageSize uint32) e.ResponseError                                            // 检查page size合法性
 	SplitFullName(fullName string) (userName, repositoryName string, respErr e.ResponseError) // 分割full name
 
+	// CheckRegistryAuth 检查是否可以登录registry
+	CheckRegistryAuth(ctx context.Context, address, username, password string) e.ResponseError
+
 	// CheckManifestAndBlobs 检查上传的文件是否合法
 	CheckManifestAndBlobs(ctx context.Context, protoManifest *modulev1alpha1.Blob, protoBlobs []*modulev1alpha1.Blob) (*manifest.Manifest, *manifest.BlobSet, e.ResponseError)
 }
@@ -39,6 +43,20 @@ func NewValidator() Validator {
 }
 
 type ValidatorImpl struct {
+}
+
+func (validator *ValidatorImpl) CheckRegistryAuth(ctx context.Context, address, username, password string) e.ResponseError {
+	// 验证username和password是否合法
+	d, err := docker.NewDockerClient(address, username, password)
+	if err != nil {
+		return e.NewInternalError(err.Error())
+	}
+	_, err = d.RegistryLogin(ctx)
+	if err != nil {
+		return e.NewInternalError(err.Error())
+	}
+
+	return nil
 }
 
 func (validator *ValidatorImpl) CheckUserName(username string) e.ResponseError {

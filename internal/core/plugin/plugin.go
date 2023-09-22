@@ -3,6 +3,7 @@ package plugin
 import (
 	"context"
 	"github.com/ProtobufMan/bufman-cli/private/bufpkg/bufimage"
+	"github.com/ProtobufMan/bufman/internal/core/docker"
 	"google.golang.org/protobuf/types/pluginpb"
 )
 
@@ -32,7 +33,7 @@ func (helper *CodeGenerateHelperImpl) GetGeneratorRequest(image bufimage.Image, 
 func (helper *CodeGenerateHelperImpl) Generate(ctx context.Context, pluginName, imageName, imageDigest string, codeGeneratorRequest *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorResponse, error) {
 
 	// 连接docker repo
-	d, err := NewDocker(helper.address, helper.username, helper.password)
+	d, err := docker.NewDockerClient(helper.address, helper.username, helper.password)
 	if err != nil {
 		return nil, err
 	}

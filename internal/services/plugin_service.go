@@ -3,7 +3,7 @@ package services
 import (
 	"context"
 	"errors"
-	"github.com/ProtobufMan/bufman/internal/core/plugin"
+	"github.com/ProtobufMan/bufman/internal/core/docker"
 	"github.com/ProtobufMan/bufman/internal/core/storage"
 	"github.com/ProtobufMan/bufman/internal/e"
 	"github.com/ProtobufMan/bufman/internal/mapper"
@@ -54,13 +54,13 @@ func (pluginService *PluginServiceImpl) CreatePlugin(ctx context.Context, plugin
 	}
 
 	// try pull
-	docker, err := plugin.NewDocker(dockerRepo.Address, dockerRepo.UserName, dockerRepo.Password)
+	d, err := docker.NewDockerClient(dockerRepo.Address, dockerRepo.UserName, dockerRepo.Password)
 	if err != nil {
 		return nil, e.NewInternalError(err.Error())
 	}
-	defer docker.Close()
+	defer d.Close()
 
-	err = docker.TryPullImage(ctx, pluginModel.ImageName, pluginModel.ImageDigest)
+	err = d.TryPullImage(ctx, pluginModel.ImageName, pluginModel.ImageDigest)
 	if err != nil {
 		return nil, e.NewInternalError(err.Error())
 	}

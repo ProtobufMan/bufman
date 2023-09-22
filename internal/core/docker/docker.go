@@ -1,4 +1,4 @@
-package plugin
+package docker
 
 import (
 	"bytes"
@@ -19,8 +19,9 @@ import (
 	"os"
 )
 
-type Docker interface {
+type DockerClient interface {
 	Close() error
+	RegistryLogin(ctx context.Context) (string, error)
 	TryPullImage(ctx context.Context, imageName, imageDigest string) error // 尝试拉取镜像，如果已经存在，则不会拉取
 	GenerateCode(ctx context.Context, pluginName, imageName, imageDigest string, request *pluginpb.CodeGeneratorRequest) (*pluginpb.CodeGeneratorResponse, error)
 }
@@ -32,7 +33,7 @@ type docker struct {
 	password      string
 }
 
-func NewDocker(serverAddress, username, password string) (Docker, error) {
+func NewDockerClient(serverAddress, username, password string) (DockerClient, error) {
 	v, err := config.DockerCliPool.Get()
 	if err != nil {
 		return nil, err
@@ -108,19 +109,24 @@ func (d *docker) FindImageByDigest(ctx context.Context, imageDigest string) (typ
 	return types.ImageSummary{}, false
 }
 
+func (d *docker) RegistryLogin(ctx context.Context) (string, error) {
+	authenticateOKBody, err := d.cli.RegistryLogin(ctx, registry.AuthConfig{
+		Username:      d.username,
+		Password:      d.password,
+		ServerAddress: d.serverAddress,
+	})
+
+	if err != nil {
+		return "", err
+	}
+
+	return authenticateOKBody.IdentityToken, nil
+}
+
 func (d *docker) PullImage(ctx context.Context, refStr string) error {
 	responseBody, err := d.cli.ImagePull(ctx, refStr, types.ImagePullOptions{
 		PrivilegeFunc: func() (string, error) {
-			authenticateOKBody, err := d.cli.RegistryLogin(ctx, registry.AuthConfig{
-				Username:      d.username,
-				Password:      d.password,
-				ServerAddress: d.serverAddress,
-			})
-			if err != nil {
-				return "", err
-			}
-
-			return authenticateOKBody.IdentityToken, nil
+			return d.RegistryLogin(ctx)
 		},
 	})
 	if err != nil {
