@@ -9,14 +9,10 @@ import (
 	"github.com/ProtobufMan/bufman-cli/private/bufpkg/bufmanifest"
 	"github.com/ProtobufMan/bufman-cli/private/bufpkg/bufmodule"
 	modulev1alpha1 "github.com/ProtobufMan/bufman-cli/private/gen/proto/go/bufman/alpha/module/v1alpha1"
-	registryv1alpha1 "github.com/ProtobufMan/bufman-cli/private/gen/proto/go/bufman/alpha/registry/v1alpha1"
 	"github.com/ProtobufMan/bufman-cli/private/pkg/manifest"
 	"github.com/ProtobufMan/bufman/internal/constant"
 	"github.com/ProtobufMan/bufman/internal/e"
-	"github.com/ProtobufMan/bufman/internal/mapper"
-	"github.com/ProtobufMan/bufman/internal/model"
 	"golang.org/x/mod/semver"
-	"gorm.io/gorm"
 	"regexp"
 	"strings"
 )
@@ -34,25 +30,15 @@ type Validator interface {
 	CheckPageSize(pageSize uint32) e.ResponseError                                            // 检查page size合法性
 	SplitFullName(fullName string) (userName, repositoryName string, respErr e.ResponseError) // 分割full name
 
-	CheckRepositoryCanAccess(userID, ownerName, repositoryName, procedure string) (*model.Repository, e.ResponseError) // 检查user id用户是否可以访问repo
-	CheckRepositoryCanAccessByID(userID, repositoryID, procedure string) (*model.Repository, e.ResponseError)
-	CheckRepositoryCanEdit(userID, ownerName, repositoryName, procedure string) (*model.Repository, e.ResponseError) // 检查user是否可以修改repo
-	CheckRepositoryCanEditByID(userID, repositoryID, procedure string) (*model.Repository, e.ResponseError)
-	CheckRepositoryCanDelete(userID, ownerName, repositoryName, procedure string) (*model.Repository, e.ResponseError) // 检查用户是否可以删除repo
-	CheckRepositoryCanDeleteByID(userID, repositoryID, procedure string) (*model.Repository, e.ResponseError)
+	// CheckManifestAndBlobs 检查上传的文件是否合法
 	CheckManifestAndBlobs(ctx context.Context, protoManifest *modulev1alpha1.Blob, protoBlobs []*modulev1alpha1.Blob) (*manifest.Manifest, *manifest.BlobSet, e.ResponseError)
 }
 
 func NewValidator() Validator {
-	return &ValidatorImpl{
-		repositoryMapper: &mapper.RepositoryMapperImpl{},
-		commitMapper:     &mapper.CommitMapperImpl{},
-	}
+	return &ValidatorImpl{}
 }
 
 type ValidatorImpl struct {
-	repositoryMapper mapper.RepositoryMapper
-	commitMapper     mapper.CommitMapper
 }
 
 func (validator *ValidatorImpl) CheckUserName(username string) e.ResponseError {
@@ -178,112 +164,6 @@ func (validator *ValidatorImpl) doCheckByLengthAndPattern(str string, minLength,
 	}
 
 	return nil
-}
-
-func (validator *ValidatorImpl) CheckRepositoryCanAccess(userID, ownerName, repositoryName, procedure string) (*model.Repository, e.ResponseError) {
-	repository, err := validator.repositoryMapper.FindByUserNameAndRepositoryName(ownerName, repositoryName)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, e.NewNotFoundError(fmt.Sprintf("repository [name=%s/%s]", ownerName, repositoryName))
-		}
-
-		return nil, e.NewInternalError(procedure)
-	}
-
-	if registryv1alpha1.Visibility(repository.Visibility) != registryv1alpha1.Visibility_VISIBILITY_PUBLIC && repository.UserID != userID {
-		return nil, e.NewPermissionDeniedError(fmt.Sprintf("repository [name=%s/%s]", ownerName, repositoryName))
-	}
-
-	return repository, nil
-}
-
-func (validator *ValidatorImpl) CheckRepositoryCanAccessByID(userID, repositoryID, procedure string) (*model.Repository, e.ResponseError) {
-	repository, err := validator.repositoryMapper.FindByRepositoryID(repositoryID)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, e.NewNotFoundError(fmt.Sprintf("repository [id=%s]", repositoryID))
-		}
-
-		return nil, e.NewInternalError(procedure)
-	}
-
-	if registryv1alpha1.Visibility(repository.Visibility) != registryv1alpha1.Visibility_VISIBILITY_PUBLIC && repository.UserID != userID {
-		return nil, e.NewPermissionDeniedError(fmt.Sprintf("repository [id=%s]", repositoryID))
-	}
-
-	return repository, nil
-}
-
-func (validator *ValidatorImpl) CheckRepositoryCanEdit(userID, ownerName, repositoryName, procedure string) (*model.Repository, e.ResponseError) {
-	repository, err := validator.repositoryMapper.FindByUserNameAndRepositoryName(ownerName, repositoryName)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, e.NewNotFoundError(fmt.Sprintf("repository [name=%s/%s]", ownerName, repositoryName))
-		}
-
-		return nil, e.NewInternalError(procedure)
-	}
-
-	// 只有所属用户才能修改
-	if repository.UserID != userID {
-		return nil, e.NewPermissionDeniedError(fmt.Sprintf("repository [name=%s/%s]", ownerName, repositoryName))
-	}
-
-	return repository, nil
-}
-
-func (validator *ValidatorImpl) CheckRepositoryCanEditByID(userID, repositoryID, procedure string) (*model.Repository, e.ResponseError) {
-	repository, err := validator.repositoryMapper.FindByRepositoryID(repositoryID)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, e.NewNotFoundError(fmt.Sprintf("repository [id=%s]", repositoryID))
-		}
-
-		return nil, e.NewInternalError(procedure)
-	}
-
-	// 只有所属用户才能修改
-	if repository.UserID != userID {
-		return nil, e.NewPermissionDeniedError(fmt.Sprintf("repository [id=%s]", repositoryID))
-	}
-
-	return repository, nil
-}
-
-func (validator *ValidatorImpl) CheckRepositoryCanDelete(userID, ownerName, repositoryName, procedure string) (*model.Repository, e.ResponseError) {
-	repository, err := validator.repositoryMapper.FindByUserNameAndRepositoryName(ownerName, repositoryName)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, e.NewNotFoundError(fmt.Sprintf("repository [name=%s/%s]", ownerName, repositoryName))
-		}
-
-		return nil, e.NewInternalError(procedure)
-	}
-
-	// 只有所属用户才能修改
-	if repository.UserID != userID {
-		return nil, e.NewPermissionDeniedError(fmt.Sprintf("repository [name=%s/%s]", ownerName, repositoryName))
-	}
-
-	return repository, nil
-}
-
-func (validator *ValidatorImpl) CheckRepositoryCanDeleteByID(userID, repositoryID, procedure string) (*model.Repository, e.ResponseError) {
-	repository, err := validator.repositoryMapper.FindByRepositoryID(repositoryID)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, e.NewNotFoundError(fmt.Sprintf("repository [id=%s]", repositoryID))
-		}
-
-		return nil, e.NewInternalError(procedure)
-	}
-
-	// 只有所属用户才能修改
-	if repository.UserID != userID {
-		return nil, e.NewPermissionDeniedError(fmt.Sprintf("repository [id=%s]", repositoryID))
-	}
-
-	return repository, nil
 }
 
 func (validator *ValidatorImpl) CheckManifestAndBlobs(ctx context.Context, protoManifest *modulev1alpha1.Blob, protoBlobs []*modulev1alpha1.Blob) (*manifest.Manifest, *manifest.BlobSet, e.ResponseError) {

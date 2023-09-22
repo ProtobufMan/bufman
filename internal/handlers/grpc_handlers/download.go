@@ -7,28 +7,27 @@ import (
 	registryv1alpha1 "github.com/ProtobufMan/bufman-cli/private/gen/proto/go/bufman/alpha/registry/v1alpha1"
 	"github.com/ProtobufMan/bufman/internal/constant"
 	"github.com/ProtobufMan/bufman/internal/core/logger"
-	"github.com/ProtobufMan/bufman/internal/core/validity"
 	"github.com/ProtobufMan/bufman/internal/e"
 	"github.com/ProtobufMan/bufman/internal/services"
 	"github.com/bufbuild/connect-go"
 )
 
 type DownloadServiceHandler struct {
-	downloadService services.DownloadService
-	validator       validity.Validator
+	downloadService      services.DownloadService
+	authorizationService services.AuthorizationService
 }
 
 func NewDownloadServiceHandler() *DownloadServiceHandler {
 	return &DownloadServiceHandler{
-		downloadService: services.NewDownloadService(),
-		validator:       validity.NewValidator(),
+		downloadService:      services.NewDownloadService(),
+		authorizationService: services.NewAuthorizationService(),
 	}
 }
 
 func (handler *DownloadServiceHandler) DownloadManifestAndBlobs(ctx context.Context, req *connect.Request[registryv1alpha1.DownloadManifestAndBlobsRequest]) (*connect.Response[registryv1alpha1.DownloadManifestAndBlobsResponse], error) {
 	// 检查用户权限
 	userID, _ := ctx.Value(constant.UserIDKey).(string)
-	repository, checkErr := handler.validator.CheckRepositoryCanAccess(userID, req.Msg.GetOwner(), req.Msg.GetRepository(), registryv1alpha1connect.DownloadServiceDownloadManifestAndBlobsProcedure)
+	repository, checkErr := handler.authorizationService.CheckRepositoryCanAccess(userID, req.Msg.GetOwner(), req.Msg.GetRepository(), registryv1alpha1connect.DownloadServiceDownloadManifestAndBlobsProcedure)
 	if checkErr != nil {
 		logger.Errorf("Error Check: %v\n", checkErr.Error())
 

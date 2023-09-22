@@ -13,14 +13,16 @@ import (
 )
 
 type TagController struct {
-	tagService services.TagService
-	validator  validity.Validator
+	tagService           services.TagService
+	authorizationService services.AuthorizationService
+	validator            validity.Validator
 }
 
 func NewTagController() *TagController {
 	return &TagController{
-		tagService: services.NewTagService(),
-		validator:  validity.NewValidator(),
+		tagService:           services.NewTagService(),
+		authorizationService: services.NewAuthorizationService(),
+		validator:            validity.NewValidator(),
 	}
 }
 
@@ -37,7 +39,7 @@ func (controller *TagController) CreateRepositoryTag(ctx context.Context, req *r
 	userID := ctx.Value(constant.UserIDKey).(string)
 
 	// 验证用户权限
-	_, permissionErr := controller.validator.CheckRepositoryCanEditByID(userID, req.GetRepositoryId(), registryv1alpha1connect.RepositoryTagServiceCreateRepositoryTagProcedure)
+	_, permissionErr := controller.authorizationService.CheckRepositoryCanEditByID(userID, req.GetRepositoryId(), registryv1alpha1connect.RepositoryTagServiceCreateRepositoryTagProcedure)
 	if permissionErr != nil {
 		logger.Errorf("Error check permission: %v", permissionErr.Error())
 
@@ -79,7 +81,7 @@ func (controller *TagController) ListRepositoryTags(ctx context.Context, req *re
 	userID, _ := ctx.Value(constant.UserIDKey).(string)
 
 	// 验证用户权限
-	_, permissionErr := controller.validator.CheckRepositoryCanAccessByID(userID, req.GetRepositoryId(), registryv1alpha1connect.RepositoryTagServiceListRepositoryTagsProcedure)
+	_, permissionErr := controller.authorizationService.CheckRepositoryCanAccessByID(userID, req.GetRepositoryId(), registryv1alpha1connect.RepositoryTagServiceListRepositoryTagsProcedure)
 	if permissionErr != nil {
 		logger.Errorf("Error check permission: %v", permissionErr.Error())
 

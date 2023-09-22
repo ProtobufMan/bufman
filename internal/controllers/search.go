@@ -13,14 +13,16 @@ import (
 )
 
 type SearchController struct {
-	validator     validity.Validator
-	searchService services.SearchService
+	validator            validity.Validator
+	searchService        services.SearchService
+	authorizationService services.AuthorizationService
 }
 
 func NewSearchController() *SearchController {
 	return &SearchController{
-		validator:     validity.NewValidator(),
-		searchService: services.NewSearchService(),
+		validator:            validity.NewValidator(),
+		searchService:        services.NewSearchService(),
+		authorizationService: services.NewAuthorizationService(),
 	}
 }
 
@@ -236,7 +238,7 @@ func (controller *SearchController) SearchTag(ctx context.Context, req *registry
 	}
 
 	// 查询权限
-	repository, checkErr := controller.validator.CheckRepositoryCanAccess(userID, req.GetRepositoryOwner(), req.GetRepositoryName(), registryv1alpha1connect.SearchServiceSearchTagProcedure)
+	repository, checkErr := controller.authorizationService.CheckRepositoryCanAccess(userID, req.GetRepositoryOwner(), req.GetRepositoryName(), registryv1alpha1connect.SearchServiceSearchTagProcedure)
 	if checkErr != nil {
 		logger.Errorf("Error check: %v\n", argErr.Error())
 
@@ -294,7 +296,7 @@ func (controller *SearchController) SearchDraft(ctx context.Context, req *regist
 	}
 
 	// 查询权限
-	repository, checkErr := controller.validator.CheckRepositoryCanAccess(userID, req.GetRepositoryOwner(), req.GetRepositoryName(), registryv1alpha1connect.SearchServiceSearchTagProcedure)
+	repository, checkErr := controller.authorizationService.CheckRepositoryCanAccess(userID, req.GetRepositoryOwner(), req.GetRepositoryName(), registryv1alpha1connect.SearchServiceSearchTagProcedure)
 	if checkErr != nil {
 		logger.Errorf("Error check: %v\n", argErr.Error())
 

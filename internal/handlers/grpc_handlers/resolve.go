@@ -9,21 +9,21 @@ import (
 	"github.com/ProtobufMan/bufman/internal/constant"
 	"github.com/ProtobufMan/bufman/internal/core/logger"
 	"github.com/ProtobufMan/bufman/internal/core/resolve"
-	"github.com/ProtobufMan/bufman/internal/core/validity"
 	"github.com/ProtobufMan/bufman/internal/e"
 	"github.com/ProtobufMan/bufman/internal/model"
+	"github.com/ProtobufMan/bufman/internal/services"
 	"github.com/bufbuild/connect-go"
 )
 
 type ResolveServiceHandler struct {
-	validator validity.Validator
-	resolver  resolve.Resolver
+	resolver             resolve.Resolver
+	authorizationService services.AuthorizationService
 }
 
 func NewResolveServiceHandler() *ResolveServiceHandler {
 	return &ResolveServiceHandler{
-		validator: validity.NewValidator(),
-		resolver:  resolve.NewResolver(),
+		resolver:             resolve.NewResolver(),
+		authorizationService: services.NewAuthorizationService(),
 	}
 }
 
@@ -37,7 +37,7 @@ func (handler *ResolveServiceHandler) GetModulePins(ctx context.Context, req *co
 		fullName := moduleReference.GetOwner() + "/" + moduleReference.GetRepository()
 		repo, ok := repositoryMap[fullName]
 		if !ok {
-			repo, checkErr = handler.validator.CheckRepositoryCanAccess(userID, moduleReference.GetOwner(), moduleReference.GetRepository(), registryv1alpha1connect.ResolveServiceGetModulePinsProcedure)
+			repo, checkErr = handler.authorizationService.CheckRepositoryCanAccess(userID, moduleReference.GetOwner(), moduleReference.GetRepository(), registryv1alpha1connect.ResolveServiceGetModulePinsProcedure)
 			if checkErr != nil {
 				logger.Errorf("Error check: %v\n", checkErr.Error())
 

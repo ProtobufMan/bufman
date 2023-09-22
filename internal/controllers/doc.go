@@ -12,14 +12,16 @@ import (
 )
 
 type DocController struct {
-	docsService services.DocsService
-	validator   validity.Validator
+	docsService          services.DocsService
+	authorizationService services.AuthorizationService
+	validator            validity.Validator
 }
 
 func NewDocController() *DocController {
 	return &DocController{
-		docsService: services.NewDocsService(),
-		validator:   validity.NewValidator(),
+		docsService:          services.NewDocsService(),
+		authorizationService: services.NewAuthorizationService(),
+		validator:            validity.NewValidator(),
 	}
 }
 
@@ -27,7 +29,7 @@ func (controller *DocController) GetSourceDirectoryInfo(ctx context.Context, req
 	userID, _ := ctx.Value(constant.UserIDKey).(string)
 
 	// 检查用户权限
-	repository, checkErr := controller.validator.CheckRepositoryCanAccess(userID, req.GetOwner(), req.GetRepository(), registryv1alpha1connect.DocServiceGetSourceDirectoryInfoProcedure)
+	repository, checkErr := controller.authorizationService.CheckRepositoryCanAccess(userID, req.GetOwner(), req.GetRepository(), registryv1alpha1connect.DocServiceGetSourceDirectoryInfoProcedure)
 	if checkErr != nil {
 		logger.Errorf("Error Check: %v\n", checkErr.Error())
 
@@ -52,7 +54,7 @@ func (controller *DocController) GetSourceFile(ctx context.Context, req *registr
 	userID, _ := ctx.Value(constant.UserIDKey).(string)
 
 	// 检查用户权限
-	repository, checkErr := controller.validator.CheckRepositoryCanAccess(userID, req.GetOwner(), req.GetRepository(), registryv1alpha1connect.DocServiceGetSourceFileProcedure)
+	repository, checkErr := controller.authorizationService.CheckRepositoryCanAccess(userID, req.GetOwner(), req.GetRepository(), registryv1alpha1connect.DocServiceGetSourceFileProcedure)
 	if checkErr != nil {
 		logger.Errorf("Error Check: %v\n", checkErr.Error())
 
@@ -77,7 +79,7 @@ func (controller *DocController) GetModulePackages(ctx context.Context, req *reg
 	userID, _ := ctx.Value(constant.UserIDKey).(string)
 
 	// 检查用户权限
-	repository, checkErr := controller.validator.CheckRepositoryCanAccess(userID, req.GetOwner(), req.GetRepository(), registryv1alpha1connect.DocServiceGetModulePackagesProcedure)
+	repository, checkErr := controller.authorizationService.CheckRepositoryCanAccess(userID, req.GetOwner(), req.GetRepository(), registryv1alpha1connect.DocServiceGetModulePackagesProcedure)
 	if checkErr != nil {
 		logger.Errorf("Error Check: %v\n", checkErr.Error())
 
@@ -102,7 +104,7 @@ func (controller *DocController) GetModuleDocumentation(ctx context.Context, req
 	userID, _ := ctx.Value(constant.UserIDKey).(string)
 
 	// 检查用户权限
-	repository, checkErr := controller.validator.CheckRepositoryCanAccess(userID, req.GetOwner(), req.GetRepository(), registryv1alpha1connect.DocServiceGetModuleDocumentationProcedure)
+	repository, checkErr := controller.authorizationService.CheckRepositoryCanAccess(userID, req.GetOwner(), req.GetRepository(), registryv1alpha1connect.DocServiceGetModuleDocumentationProcedure)
 	if checkErr != nil {
 		logger.Errorf("Error Check: %v\n", checkErr.Error())
 
@@ -126,7 +128,7 @@ func (controller *DocController) GetPackageDocumentation(ctx context.Context, re
 	userID, _ := ctx.Value(constant.UserIDKey).(string)
 
 	// 检查用户权限
-	repository, checkErr := controller.validator.CheckRepositoryCanAccess(userID, req.GetOwner(), req.GetRepository(), registryv1alpha1connect.DocServiceGetPackageDocumentationProcedure)
+	repository, checkErr := controller.authorizationService.CheckRepositoryCanAccess(userID, req.GetOwner(), req.GetRepository(), registryv1alpha1connect.DocServiceGetPackageDocumentationProcedure)
 	if checkErr != nil {
 		logger.Errorf("Error Check: %v\n", checkErr.Error())
 

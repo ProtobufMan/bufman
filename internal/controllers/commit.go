@@ -13,14 +13,16 @@ import (
 )
 
 type CommitController struct {
-	commitService services.CommitService
-	validator     validity.Validator
+	commitService        services.CommitService
+	authorizationService services.AuthorizationService
+	validator            validity.Validator
 }
 
 func NewCommitController() *CommitController {
 	return &CommitController{
-		commitService: services.NewCommitService(),
-		validator:     validity.NewValidator(),
+		commitService:        services.NewCommitService(),
+		authorizationService: services.NewAuthorizationService(),
+		validator:            validity.NewValidator(),
 	}
 }
 
@@ -36,7 +38,7 @@ func (controller *CommitController) ListRepositoryCommitsByReference(ctx context
 	userID, _ := ctx.Value(constant.UserIDKey).(string)
 
 	// 验证用户权限
-	repository, permissionErr := controller.validator.CheckRepositoryCanAccess(userID, req.GetRepositoryOwner(), req.GetRepositoryName(), registryv1alpha1connect.RepositoryCommitServiceListRepositoryCommitsByReferenceProcedure)
+	repository, permissionErr := controller.authorizationService.CheckRepositoryCanAccess(userID, req.GetRepositoryOwner(), req.GetRepositoryName(), registryv1alpha1connect.RepositoryCommitServiceListRepositoryCommitsByReferenceProcedure)
 	if permissionErr != nil {
 		logger.Errorf("Error Check Permission: %v\n", permissionErr.Error())
 		return nil, permissionErr
@@ -79,7 +81,7 @@ func (controller *CommitController) GetRepositoryCommitByReference(ctx context.C
 	userID, _ := ctx.Value(constant.UserIDKey).(string)
 
 	// 验证用户权限
-	repository, permissionErr := controller.validator.CheckRepositoryCanAccess(userID, req.GetRepositoryOwner(), req.GetRepositoryName(), registryv1alpha1connect.RepositoryCommitServiceGetRepositoryCommitByReferenceProcedure)
+	repository, permissionErr := controller.authorizationService.CheckRepositoryCanAccess(userID, req.GetRepositoryOwner(), req.GetRepositoryName(), registryv1alpha1connect.RepositoryCommitServiceGetRepositoryCommitByReferenceProcedure)
 	if permissionErr != nil {
 		logger.Errorf("Error Check Permission: %v\n", permissionErr.Error())
 		return nil, permissionErr
@@ -110,7 +112,7 @@ func (controller *CommitController) ListRepositoryDraftCommits(ctx context.Conte
 	userID, _ := ctx.Value(constant.UserIDKey).(string)
 
 	// 验证用户权限
-	repository, permissionErr := controller.validator.CheckRepositoryCanAccess(userID, req.GetRepositoryOwner(), req.GetRepositoryName(), registryv1alpha1connect.RepositoryCommitServiceListRepositoryDraftCommitsProcedure)
+	repository, permissionErr := controller.authorizationService.CheckRepositoryCanAccess(userID, req.GetRepositoryOwner(), req.GetRepositoryName(), registryv1alpha1connect.RepositoryCommitServiceListRepositoryDraftCommitsProcedure)
 	if permissionErr != nil {
 		logger.Errorf("Error Check Permission: %v\n", permissionErr.Error())
 		return nil, permissionErr
@@ -153,7 +155,7 @@ func (controller *CommitController) DeleteRepositoryDraftCommit(ctx context.Cont
 	userID := ctx.Value(constant.UserIDKey).(string)
 
 	// 验证用户权限
-	repository, permissionErr := controller.validator.CheckRepositoryCanEdit(userID, req.GetRepositoryOwner(), req.GetRepositoryName(), registryv1alpha1connect.RepositoryCommitServiceDeleteRepositoryDraftCommitProcedure)
+	repository, permissionErr := controller.authorizationService.CheckRepositoryCanEdit(userID, req.GetRepositoryOwner(), req.GetRepositoryName(), registryv1alpha1connect.RepositoryCommitServiceDeleteRepositoryDraftCommitProcedure)
 	if permissionErr != nil {
 		logger.Errorf("Error Check Permission: %v\n", permissionErr.Error())
 		return nil, permissionErr

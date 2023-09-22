@@ -13,14 +13,16 @@ import (
 )
 
 type RepositoryController struct {
-	repositoryService services.RepositoryService
-	validator         validity.Validator
+	repositoryService    services.RepositoryService
+	authorizationService services.AuthorizationService
+	validator            validity.Validator
 }
 
 func NewRepositoryController() *RepositoryController {
 	return &RepositoryController{
-		repositoryService: services.NewRepositoryService(),
-		validator:         validity.NewValidator(),
+		repositoryService:    services.NewRepositoryService(),
+		authorizationService: services.NewAuthorizationService(),
+		validator:            validity.NewValidator(),
 	}
 }
 
@@ -240,7 +242,7 @@ func (controller *RepositoryController) DeleteRepository(ctx context.Context, re
 	userID := ctx.Value(constant.UserIDKey).(string)
 
 	// 验证用户权限
-	_, permissionErr := controller.validator.CheckRepositoryCanDeleteByID(userID, req.GetId(), registryv1alpha1connect.RepositoryServiceDeleteRepositoryProcedure)
+	_, permissionErr := controller.authorizationService.CheckRepositoryCanDeleteByID(userID, req.GetId(), registryv1alpha1connect.RepositoryServiceDeleteRepositoryProcedure)
 	if permissionErr != nil {
 		logger.Errorf("Error check permission: %v", permissionErr.Error())
 
@@ -271,7 +273,7 @@ func (controller *RepositoryController) DeleteRepositoryByFullName(ctx context.C
 	userID := ctx.Value(constant.UserIDKey).(string)
 
 	// 验证用户权限
-	_, permissionErr := controller.validator.CheckRepositoryCanDelete(userID, userName, repositoryName, registryv1alpha1connect.RepositoryServiceDeleteRepositoryByFullNameProcedure)
+	_, permissionErr := controller.authorizationService.CheckRepositoryCanDelete(userID, userName, repositoryName, registryv1alpha1connect.RepositoryServiceDeleteRepositoryByFullNameProcedure)
 	if permissionErr != nil {
 		logger.Errorf("Error check permission: %v", permissionErr.Error())
 
@@ -294,7 +296,7 @@ func (controller *RepositoryController) DeprecateRepositoryByName(ctx context.Co
 	userID := ctx.Value(constant.UserIDKey).(string)
 
 	// 验证用户权限
-	_, permissionErr := controller.validator.CheckRepositoryCanEdit(userID, req.GetOwnerName(), req.GetRepositoryName(), registryv1alpha1connect.RepositoryServiceDeprecateRepositoryByNameProcedure)
+	_, permissionErr := controller.authorizationService.CheckRepositoryCanEdit(userID, req.GetOwnerName(), req.GetRepositoryName(), registryv1alpha1connect.RepositoryServiceDeprecateRepositoryByNameProcedure)
 	if permissionErr != nil {
 		logger.Errorf("Error check permission: %v", permissionErr.Error())
 
@@ -319,7 +321,7 @@ func (controller *RepositoryController) UndeprecateRepositoryByName(ctx context.
 	userID := ctx.Value(constant.UserIDKey).(string)
 
 	// 验证用户权限
-	_, permissionErr := controller.validator.CheckRepositoryCanEdit(userID, req.GetOwnerName(), req.GetRepositoryName(), registryv1alpha1connect.RepositoryServiceUndeprecateRepositoryByNameProcedure)
+	_, permissionErr := controller.authorizationService.CheckRepositoryCanEdit(userID, req.GetOwnerName(), req.GetRepositoryName(), registryv1alpha1connect.RepositoryServiceUndeprecateRepositoryByNameProcedure)
 	if permissionErr != nil {
 		logger.Errorf("Error check permission: %v", permissionErr.Error())
 
@@ -344,7 +346,7 @@ func (controller *RepositoryController) UpdateRepositorySettingsByName(ctx conte
 	userID := ctx.Value(constant.UserIDKey).(string)
 
 	// 验证用户权限
-	_, permissionErr := controller.validator.CheckRepositoryCanEdit(userID, req.GetOwnerName(), req.GetRepositoryName(), registryv1alpha1connect.RepositoryServiceUpdateRepositorySettingsByNameProcedure)
+	_, permissionErr := controller.authorizationService.CheckRepositoryCanEdit(userID, req.GetOwnerName(), req.GetRepositoryName(), registryv1alpha1connect.RepositoryServiceUpdateRepositorySettingsByNameProcedure)
 	if permissionErr != nil {
 		logger.Errorf("Error check permission: %v", permissionErr.Error())
 
