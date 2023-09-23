@@ -140,6 +140,13 @@ func (controller *DockerRepoController) ListDockerRepos(ctx context.Context, req
 func (controller *DockerRepoController) UpdateDockerRepoByName(ctx context.Context, req *registryv1alpha1.UpdateDockerRepoByNameRequest) (*registryv1alpha1.UpdateDockerRepoByNameResponse, e.ResponseError) {
 	userID := ctx.Value(constant.UserIDKey).(string)
 
+	// 检查是否可以登录registry
+	checkErr := controller.validator.CheckRegistryAuth(ctx, req.GetAddress(), req.GetUsername(), req.GetPassword())
+	if checkErr != nil {
+		logger.Errorf("Error Check Registry Login: %v\n", checkErr.Error())
+		return nil, checkErr
+	}
+
 	// 更新
 	err := controller.dockerRepoService.UpdateDockerRepoByName(ctx, userID, req.GetName(), req.GetAddress(), req.Username, req.Password)
 	if err != nil {

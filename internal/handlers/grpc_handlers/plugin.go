@@ -48,3 +48,13 @@ func (handler *PluginServiceHandler) DeleteCuratedPlugin(ctx context.Context, re
 	//TODO implement me
 	panic("implement me")
 }
+
+func (handler *PluginServiceHandler) UpdateCuratedPlugin(ctx context.Context, req *connect.Request[registryv1alpha1.UpdateCuratedPluginRequest]) (*connect.Response[registryv1alpha1.UpdateCuratedPluginResponse], error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (handler *PluginServiceHandler) UpdateCuratedPluginDeprecation(ctx context.Context, req *connect.Request[registryv1alpha1.UpdateCuratedPluginDeprecationRequest]) (*connect.Response[registryv1alpha1.UpdateCuratedPluginDeprecationResponse], error) {
+	//TODO implement me
+	panic("implement me")
+}

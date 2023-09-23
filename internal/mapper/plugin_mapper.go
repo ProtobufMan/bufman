@@ -3,21 +3,29 @@ package mapper
 import (
 	"github.com/ProtobufMan/bufman/internal/dal"
 	"github.com/ProtobufMan/bufman/internal/model"
+	"gorm.io/gen/field"
 )
 
 type PluginMapper interface {
 	Create(plugin *model.Plugin) error
+	FindByPluginID(pluginID string) (*model.Plugin, error)
 	FindByNameAndVersionReversion(userName, pluginName, version string, reversion uint32) (*model.Plugin, error)
 	FindLastByName(userName, pluginName string) (*model.Plugin, error)
 	FindLastByNameAndVersion(userName, pluginName string, version string) (*model.Plugin, error)
 	FindPage(offset int, limit int, reverse bool, includeDeprecated bool) ([]*model.Plugin, error)
 	FindPageByQuery(query string, offset int, limit int, reverse bool) ([]*model.Plugin, error)
+	UpdateAvailable(pluginID string, isAvailable bool) error
+	FindAllUnavailable() ([]*model.Plugin, error)
 }
 
 type PluginMapperImpl struct{}
 
 func (p *PluginMapperImpl) Create(plugin *model.Plugin) error {
 	return dal.Plugin.Create(plugin)
+}
+
+func (p *PluginMapperImpl) FindByPluginID(pluginID string) (*model.Plugin, error) {
+	return dal.Plugin.Where(dal.Plugin.PluginID.Eq(pluginID)).First()
 }
 
 func (p *PluginMapperImpl) FindByNameAndVersionReversion(userName, pluginName, version string, reversion uint32) (*model.Plugin, error) {
@@ -56,4 +64,20 @@ func (p *PluginMapperImpl) FindPageByQuery(query string, offset int, limit int, 
 	}
 
 	return stmt.Find()
+}
+
+func (p *PluginMapperImpl) UpdateAvailable(pluginID string, isAvailable bool) error {
+	var tryNumExpr field.AssignExpr
+	if isAvailable {
+		tryNumExpr = dal.Plugin.TryNum.Zero()
+	} else {
+		tryNumExpr = dal.Plugin.TryNum.Add(1)
+	}
+
+	_, err := dal.Plugin.Where(dal.Plugin.PluginID.Eq(pluginID)).UpdateSimple(dal.Plugin.IsAvailable.Value(isAvailable), tryNumExpr)
+	return err
+}
+
+func (p *PluginMapperImpl) FindAllUnavailable() ([]*model.Plugin, error) {
+	return dal.Plugin.Where(dal.Plugin.IsAvailable.Not()).Order(dal.Plugin.UpdateTime.Desc()).Find()
 }

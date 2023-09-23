@@ -14,9 +14,6 @@ import (
 	"time"
 )
 
-/*
-TODO ！！！这是临时的，之后改为读取配置文件
-*/
 const (
 	mysqlDSNKey        = "BUFMAN_MYSQL_DSN"
 	pageTokenSecretKey = "BUFMAN_PAGE_TOKEN_SECRET"
@@ -27,6 +24,11 @@ const (
 const (
 	configFileName = "config.yaml"
 	configFileType = "yaml"
+)
+
+const (
+	storageFSMode = "fs"
+	storageESMode = "elasticsearch"
 )
 
 type Config struct {
@@ -44,7 +46,8 @@ type BufMan struct {
 	PageTokenExpireTime time.Duration `mapstructure:"page_token_expire_time"`
 	PageTokenSecret     string        `mapstructure:"page_token_secret"`
 
-	UseFSStorage bool `mapstructure:"use_fs_storage"`
+	StorageMode  string `mapstructure:"storage_mode"`
+	UseFSStorage bool   `mapstructure:"-"`
 }
 
 type MySQL struct {
@@ -91,6 +94,14 @@ func LoadConfig() {
 			Port:                8080,
 			PageTokenExpireTime: time.Minute * 10, // 默认过期时间为10分钟
 			PageTokenSecret:     "123456",
+			StorageMode:         storageFSMode,
+		},
+		MySQL: MySQL{
+			MysqlDsn:           "root:12345678@tcp(127.0.0.1:3306)/bufman?charset=utf8mb4&parseTime=True&loc=Local",
+			MaxOpenConnections: 10,
+			MaxIdleConnections: 10,
+			MaxLifeTime:        15 * time.Minute,
+			MaxIdleTime:        15 * time.Minute,
 		},
 		Docker: Docker{
 			Host:               client.DefaultDockerHost,
@@ -99,6 +110,7 @@ func LoadConfig() {
 			KeyPath:            "",
 			MaxOpenConnections: 10,
 			MaxIdleConnections: 10,
+			MaxIdleTime:        15 * time.Minute,
 		},
 		ElasticSearch: ElasticSearch{
 			Urls:               []string{elastic.DefaultURL},
@@ -106,6 +118,7 @@ func LoadConfig() {
 			Password:           "",
 			MaxOpenConnections: 10,
 			MaxIdleConnections: 10,
+			MaxIdleTime:        15 * time.Minute,
 		},
 	}
 
@@ -114,6 +127,10 @@ func LoadConfig() {
 
 	// 从环境变量中读取
 	loadFromENV()
+
+	if Properties.BufMan.StorageMode != storageESMode {
+		Properties.BufMan.UseFSStorage = true
+	}
 
 	// gin、logger设置level
 	gin.SetMode(Properties.BufMan.Mode)

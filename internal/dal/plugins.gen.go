@@ -39,10 +39,15 @@ func newPlugin(db *gorm.DB, opts ...gen.DOOption) plugin {
 	_plugin.DockerRepoID = field.NewString(tableName, "docker_repo_id")
 	_plugin.Description = field.NewString(tableName, "description")
 	_plugin.Visibility = field.NewUint8(tableName, "visibility")
+	_plugin.SourceUrl = field.NewString(tableName, "source_url")
+	_plugin.SPDXLicenseID = field.NewString(tableName, "spdx_license_id")
+	_plugin.LicenseUrl = field.NewString(tableName, "license_url")
 	_plugin.Deprecated = field.NewBool(tableName, "deprecated")
 	_plugin.DeprecationMsg = field.NewString(tableName, "deprecation_msg")
 	_plugin.CreatedTime = field.NewTime(tableName, "created_time")
 	_plugin.UpdateTime = field.NewTime(tableName, "update_time")
+	_plugin.IsAvailable = field.NewBool(tableName, "is_available")
+	_plugin.TryNum = field.NewInt(tableName, "try_num")
 
 	_plugin.fillFieldMap()
 
@@ -65,10 +70,15 @@ type plugin struct {
 	DockerRepoID   field.String
 	Description    field.String
 	Visibility     field.Uint8
+	SourceUrl      field.String
+	SPDXLicenseID  field.String
+	LicenseUrl     field.String
 	Deprecated     field.Bool
 	DeprecationMsg field.String
 	CreatedTime    field.Time
 	UpdateTime     field.Time
+	IsAvailable    field.Bool
+	TryNum         field.Int
 
 	fieldMap map[string]field.Expr
 }
@@ -97,10 +107,15 @@ func (p *plugin) updateTableName(table string) *plugin {
 	p.DockerRepoID = field.NewString(table, "docker_repo_id")
 	p.Description = field.NewString(table, "description")
 	p.Visibility = field.NewUint8(table, "visibility")
+	p.SourceUrl = field.NewString(table, "source_url")
+	p.SPDXLicenseID = field.NewString(table, "spdx_license_id")
+	p.LicenseUrl = field.NewString(table, "license_url")
 	p.Deprecated = field.NewBool(table, "deprecated")
 	p.DeprecationMsg = field.NewString(table, "deprecation_msg")
 	p.CreatedTime = field.NewTime(table, "created_time")
 	p.UpdateTime = field.NewTime(table, "update_time")
+	p.IsAvailable = field.NewBool(table, "is_available")
+	p.TryNum = field.NewInt(table, "try_num")
 
 	p.fillFieldMap()
 
@@ -117,7 +132,7 @@ func (p *plugin) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (p *plugin) fillFieldMap() {
-	p.fieldMap = make(map[string]field.Expr, 16)
+	p.fieldMap = make(map[string]field.Expr, 21)
 	p.fieldMap["id"] = p.ID
 	p.fieldMap["user_id"] = p.UserID
 	p.fieldMap["user_name"] = p.UserName
@@ -130,10 +145,15 @@ func (p *plugin) fillFieldMap() {
 	p.fieldMap["docker_repo_id"] = p.DockerRepoID
 	p.fieldMap["description"] = p.Description
 	p.fieldMap["visibility"] = p.Visibility
+	p.fieldMap["source_url"] = p.SourceUrl
+	p.fieldMap["spdx_license_id"] = p.SPDXLicenseID
+	p.fieldMap["license_url"] = p.LicenseUrl
 	p.fieldMap["deprecated"] = p.Deprecated
 	p.fieldMap["deprecation_msg"] = p.DeprecationMsg
 	p.fieldMap["created_time"] = p.CreatedTime
 	p.fieldMap["update_time"] = p.UpdateTime
+	p.fieldMap["is_available"] = p.IsAvailable
+	p.fieldMap["try_num"] = p.TryNum
 }
 
 func (p plugin) clone(db *gorm.DB) plugin {

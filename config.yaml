@@ -10,9 +10,10 @@ bufman:
   # page token's secret, default is 123456
   # you can config it by env (key is BUFMAN_PAGE_TOKEN_SECRET)
   page_token_secret: 123456
-  # default is false, if is true, use fs as file storage(default is ElasticSearch)
-  # if using fs, the buf server can not implement SearchService.SearchLastCommitByContent, so we recommend use ES!
-  use_fs_storage: false
+  # file storage mode, fs or elasticsearch
+  # default is fs, use fs as file storage
+  # if using fs, the buf server can not implement SearchService.SearchLastCommitByContent, so we recommend use elasticsearch!
+  storage_mode: fs
 
 # mysql
 mysql:
@@ -20,8 +21,8 @@ mysql:
   mysql_dsn: root:12345678@tcp(127.0.0.1:3306)/bufman?charset=utf8mb4&parseTime=True&loc=Local
   max_open_connections: 10
   max_idle_connections: 10
-  max_life_time:
-  max_idle_time:
+  max_life_time: 15m
+  max_idle_time: 15m
 
 # Docker Config
 docker:
@@ -32,7 +33,7 @@ docker:
   key_path:
   max_open_connections: 10
   max_idle_connections: 10
-  max_idle_time:
+  max_idle_time: 15m
 
 # ES Config
 elastic_search:
@@ -45,4 +46,4 @@ elastic_search:
   password:
   max_open_connections: 10
   max_idle_connections: 10
-  max_idle_time:
+  max_idle_time: 15m

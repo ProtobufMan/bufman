@@ -3,11 +3,11 @@ package services
 import (
 	"context"
 	"errors"
-	"github.com/ProtobufMan/bufman/internal/core/docker"
 	"github.com/ProtobufMan/bufman/internal/core/storage"
 	"github.com/ProtobufMan/bufman/internal/e"
 	"github.com/ProtobufMan/bufman/internal/mapper"
 	"github.com/ProtobufMan/bufman/internal/model"
+	"github.com/ProtobufMan/bufman/internal/task"
 	"gorm.io/gorm"
 )
 
@@ -52,19 +52,6 @@ func (pluginService *PluginServiceImpl) CreatePlugin(ctx context.Context, plugin
 
 		return nil, e.NewInternalError(err.Error())
 	}
-
-	// try pull
-	d, err := docker.NewDockerClient(dockerRepo.Address, dockerRepo.UserName, dockerRepo.Password)
-	if err != nil {
-		return nil, e.NewInternalError(err.Error())
-	}
-	defer d.Close()
-
-	err = d.TryPullImage(ctx, pluginModel.ImageName, pluginModel.ImageDigest)
-	if err != nil {
-		return nil, e.NewInternalError(err.Error())
-	}
-
 	// 记录在数据库中
 	pluginModel.DockerRepoID = dockerRepo.DockerRepoID
 	err = pluginService.pluginMapper.Create(pluginModel)
@@ -74,6 +61,9 @@ func (pluginService *PluginServiceImpl) CreatePlugin(ctx context.Context, plugin
 		}
 		return nil, e.NewInternalError(err.Error())
 	}
+
+	// add a sync pull task
+	_ = task.AddPullPluginImageJob(pluginModel.PluginID)
 
 	return pluginModel, nil
 }

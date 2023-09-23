@@ -20,10 +20,15 @@ type Plugin struct {
 
 	Description    string    // 插件描述信息
 	Visibility     uint8     `gorm:"default:1"` // 可见性，1:public 2:private
+	SourceUrl      string    // 插件的源码url
+	SPDXLicenseID  string    // license of the plugin, see in https://spdx.org/licenses
+	LicenseUrl     string    // license_url specifies an optional URL for the plugin's license (if not using a standard spdx_license_id)
 	Deprecated     bool      // 是否弃用
 	DeprecationMsg string    // 弃用说明
 	CreatedTime    time.Time `gorm:"autoCreateTime"`
 	UpdateTime     time.Time `gorm:"autoUpdateTime"`
+	IsAvailable    bool      //  true means the plugin image can be pulled success
+	TryNum         int       // 尝试次数
 }
 
 func (plugin *Plugin) ToProtoPlugin() *registryv1alpha1.CuratedPlugin {
@@ -32,16 +37,21 @@ func (plugin *Plugin) ToProtoPlugin() *registryv1alpha1.CuratedPlugin {
 	}
 
 	return &registryv1alpha1.CuratedPlugin{
-		Id:                 plugin.PluginID,
-		Owner:              plugin.UserName,
-		Name:               plugin.PluginName,
-		Version:            plugin.Version,
-		CreateTime:         timestamppb.New(plugin.CreatedTime),
-		Description:        plugin.Description,
-		Revision:           plugin.Reversion,
-		Visibility:         registryv1alpha1.CuratedPluginVisibility(plugin.Visibility),
-		Deprecated:         plugin.Deprecated,
-		DeprecationMessage: plugin.DeprecationMsg,
+		Id:                   plugin.PluginID,
+		Owner:                plugin.UserName,
+		Name:                 plugin.PluginName,
+		Version:              plugin.Version,
+		ContainerImageDigest: plugin.ImageDigest,
+		CreateTime:           timestamppb.New(plugin.CreatedTime),
+		SourceUrl:            plugin.SourceUrl,
+		Description:          plugin.Description,
+		Revision:             plugin.Reversion,
+		SpdxLicenseId:        plugin.SPDXLicenseID,
+		LicenseUrl:           plugin.LicenseUrl,
+		Visibility:           registryv1alpha1.CuratedPluginVisibility(plugin.Visibility),
+		Deprecated:           plugin.Deprecated,
+		DeprecationMessage:   plugin.DeprecationMsg,
+		IsAvailable:          plugin.IsAvailable,
 	}
 }
 

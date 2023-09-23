@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	dsn := "root:123456@tcp(127.0.0.1:3306)/idl_manager?charset=utf8mb4&parseTime=True&loc=Local"
+	dsn := "root:12345678@tcp(127.0.0.1:3306)/bufman?charset=utf8mb4&parseTime=True&loc=Local"
 
 	// Initialize the generator with configuration
 	g := gen.NewGenerator(gen.Config{
